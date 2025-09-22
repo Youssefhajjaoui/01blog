@@ -51,38 +51,36 @@ public class AuthController {
             // Check for validation errors
             if (result.hasErrors()) {
                 Map<String, String> errors = new HashMap<>();
-                result.getFieldErrors().forEach(error -> 
-                    errors.put(error.getField(), error.getDefaultMessage()));
+                result.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
                 return ResponseEntity.badRequest().body(errors);
             }
 
             // Check if username already exists
             if (userRepository.existsByUsername(userDto.getUsername())) {
                 return ResponseEntity.badRequest()
-                    .body(new AuthResponseDto("Username already exists"));
+                        .body(new AuthResponseDto("Username already exists"));
             }
 
             // Check if email already exists
             if (userRepository.existsByEmail(userDto.getEmail())) {
                 return ResponseEntity.badRequest()
-                    .body(new AuthResponseDto("Email already exists"));
+                        .body(new AuthResponseDto("Email already exists"));
             }
 
             // Create new user
             User user = new User(
-                userDto.getUsername(),
-                userDto.getEmail(),
-                passwordEncoder.encode(userDto.getPassword())
-            );
+                    userDto.getUsername(),
+                    userDto.getEmail(),
+                    passwordEncoder.encode(userDto.getPassword()));
 
             userRepository.save(user);
-            
+
             return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new AuthResponseDto("User registered successfully"));
-                
+                    .body(new AuthResponseDto("User registered successfully"));
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new AuthResponseDto("Registration failed: " + e.getMessage()));
+                    .body(new AuthResponseDto("Registration failed: " + e.getMessage()));
         }
     }
 
@@ -92,41 +90,39 @@ public class AuthController {
             // Check for validation errors
             if (result.hasErrors()) {
                 Map<String, String> errors = new HashMap<>();
-                result.getFieldErrors().forEach(error -> 
-                    errors.put(error.getField(), error.getDefaultMessage()));
+                result.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
                 return ResponseEntity.badRequest().body(errors);
             }
 
             // Authenticate user
             Authentication authentication = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    loginDto.getUsername(),
-                    loginDto.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(
+                            loginDto.getUsername(),
+                            loginDto.getPassword()));
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            
+
             // Get user information
             User user = userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
             // Check if user is banned
             if (user.isCurrentlyBanned()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new AuthResponseDto("Account is banned"));
+                        .body(new AuthResponseDto("Account is banned"));
             }
 
             // Generate token
             String token = jwtUtil.generateToken(userDetails);
-            
+
             return ResponseEntity.ok(new AuthResponseDto(token, user.getUsername(), user.getRole().toString()));
-            
+
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new AuthResponseDto("Invalid username or password"));
+                    .body(new AuthResponseDto("Invalid username or password"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new AuthResponseDto("Login failed: " + e.getMessage()));
+                    .body(new AuthResponseDto("Login failed: " + e.getMessage()));
         }
     }
 
@@ -137,12 +133,12 @@ public class AuthController {
             // 1. Add the token to a blacklist
             // 2. Store blacklisted tokens in Redis with expiration
             // 3. Or use a stateful approach with sessions
-            
+
             // For now, just return success - client should remove token
             return ResponseEntity.ok(new AuthResponseDto("Logged out successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new AuthResponseDto("Logout failed: " + e.getMessage()));
+                    .body(new AuthResponseDto("Logout failed: " + e.getMessage()));
         }
     }
 }
