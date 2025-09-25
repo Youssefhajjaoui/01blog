@@ -1,6 +1,7 @@
 package com.example.demo.repositories;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.example.demo.models.Post;
 import com.example.demo.models.User;
@@ -16,6 +17,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // Find all posts by creator id (if you only have the id)
     List<Post> findByCreator_Id(Long creatorId);
+
+    // Ownership-scoped fetch by post id and creator id
+    Optional<Post> findByIdAndCreator_Id(Long id, Long creatorId);
 
     // Find posts containing text in content
     List<Post> findByContentContaining(String keyword);

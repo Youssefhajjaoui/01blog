@@ -45,7 +45,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<AuthResponseDto> handleGenericException(Exception ex) {
+        ex.printStackTrace(); // logs the real error to the console
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new AuthResponseDto("An unexpected error occurred"));
+                .body(new AuthResponseDto("Error: " + ex.getMessage()));
     }
+
 }
