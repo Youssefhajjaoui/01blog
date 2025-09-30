@@ -1,8 +1,12 @@
 package com.example.demo.controllers;
 
+import com.example.demo.models.Notification;
 import com.example.demo.models.Post;
+import com.example.demo.models.Subscription;
 import com.example.demo.models.User;
+import com.example.demo.repositories.NotificationRepository;
 import com.example.demo.repositories.PostRepository;
+import com.example.demo.repositories.SubscriptionRepository;
 import com.example.demo.repositories.UserRepository;
 
 import org.springframework.http.HttpStatus;
@@ -20,10 +24,15 @@ public class PostController {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final NotificationRepository notificationRepository;
 
-    public PostController(PostRepository postRepository, UserRepository userRepository) {
+    public PostController(PostRepository postRepository, UserRepository userRepository,
+            SubscriptionRepository subscriptionRepository, NotificationRepository notificationRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     // ----------------- CREATE -----------------
@@ -40,6 +49,10 @@ public class PostController {
         User currentUser = optionalUser.get();
         post.setCreator(currentUser); // Set the logged-in user as creator
         Post saved = postRepository.save(post);
+        
+        // Create notifications for all followers
+        createNotificationsForFollowers(currentUser, saved);
+        
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -112,5 +125,23 @@ public class PostController {
 
         postRepository.delete(optionalPost.get());
         return ResponseEntity.noContent().build();
+    }
+
+    // ----------------- PRIVATE METHODS -----------------
+    private void createNotificationsForFollowers(User postCreator, Post post) {
+        // Get all followers of the post creator
+        List<Subscription> followers = subscriptionRepository.findByFollowed(postCreator);
+        
+        // Create a notification for each follower
+        for (Subscription subscription : followers) {
+            Notification notification = new Notification();
+            notification.setCreator(postCreator);
+            notification.setReceiver(subscription.getFollower());
+            notification.setContent(postCreator.getUsername() + " created a new post: " + 
+                (post.getContent().length() > 50 ? 
+                    post.getContent().substring(0, 50) + "..." : 
+                    post.getContent()));
+            notificationRepository.save(notification);
+        }
     }
 }
