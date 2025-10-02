@@ -111,7 +111,7 @@ public class PostController {
     // ----------------- DELETE -----------------
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable Long id,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

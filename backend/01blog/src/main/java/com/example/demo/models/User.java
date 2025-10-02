@@ -2,6 +2,11 @@ package com.example.demo.models;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "users")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class User {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,7 +64,8 @@ public class User {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt = LocalDateTime.now();
 
-	public User() {}
+	public User() {
+	}
 
 	// Constructor for registration
 	public User(String username, String email, String passwordHash) {
@@ -70,38 +76,93 @@ public class User {
 	}
 
 	// Getters and Setters
-	public Long getId() { return id; }
-	public void setId(Long id) { this.id = id; }
-	
-	public String getUsername() { return username; }
-	public void setUsername(String username) { this.username = username; }
-	
-	public String getEmail() { return email; }
-	public void setEmail(String email) { this.email = email; }
-	
-	public String getPasswordHash() { return passwordHash; }
-	public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-	
-	public String getImage() { return image; }
-	public void setImage(String image) { this.image = image; }
-	
-	public LocalDate getBirthday() { return birthday; }
-	public void setBirthday(LocalDate birthday) { this.birthday = birthday; }
-	
-	public UserRole getRole() { return role; }
-	public void setRole(UserRole role) { this.role = role; }
-	
-	public boolean isBanned() { return banned; }
-	public void setBanned(boolean banned) { this.banned = banned; }
-	
-	public LocalDateTime getBanEnd() { return banEnd; }
-	public void setBanEnd(LocalDateTime banEnd) { this.banEnd = banEnd; }
-	
-	public LocalDateTime getCreatedAt() { return createdAt; }
-	public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
+	}
+
+	public LocalDate getBirthday() {
+		return birthday;
+	}
+
+	public void setBirthday(LocalDate birthday) {
+		this.birthday = birthday;
+	}
+
+	public UserRole getRole() {
+		return role;
+	}
+
+	public void setRole(UserRole role) {
+		this.role = role;
+	}
+
+	public boolean isBanned() {
+		return banned;
+	}
+
+	public void setBanned(boolean banned) {
+		this.banned = banned;
+	}
+
+	public LocalDateTime getBanEnd() {
+		return banEnd;
+	}
+
+	public void setBanEnd(LocalDateTime banEnd) {
+		this.banEnd = banEnd;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
 
 	// Check if user is currently banned
 	public boolean isCurrentlyBanned() {
 		return banned && (banEnd == null || banEnd.isAfter(LocalDateTime.now()));
 	}
+
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+	}
+
 }

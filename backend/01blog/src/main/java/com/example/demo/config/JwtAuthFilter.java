@@ -1,6 +1,10 @@
 package com.example.demo.config;
 
 import java.io.IOException;
+import java.util.Optional;
+
+import com.example.demo.models.*;
+import com.example.demo.repositories.UserRepository;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,9 +23,9 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserRepository userDetailsService;
 
-    public JwtAuthFilter(JwtUtil jwtUtil, CustomUserDetailsService uds) {
+    public JwtAuthFilter(JwtUtil jwtUtil, UserRepository uds) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = uds;
     }
@@ -39,8 +43,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (username != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                Optional<User> optionalUser = userDetailsService.findByUsername(username);
 
+                if (optionalUser.isEmpty()) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"Invalid token or user does not exist\"}");
+                    return; // stop filter chain here
+                }
+
+                User userDetails = optionalUser.get();
                 if (jwtUtil.validateToken(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
