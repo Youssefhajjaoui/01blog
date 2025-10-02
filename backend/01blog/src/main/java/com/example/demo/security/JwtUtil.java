@@ -7,6 +7,9 @@ import java.security.Key;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+
+import com.example.demo.models.User;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -19,7 +22,7 @@ import io.jsonwebtoken.security.SignatureException;
 public class JwtUtil {
     @Value("${jwt.secret}")
     private String secretKey;
-    
+
     @Value("${jwt.expiration}")
     private Long expiration;
 
@@ -46,12 +49,12 @@ public class JwtUtil {
         }
     }
 
-    public boolean validateToken(String token, UserDetails userDetails) {
+    public boolean validateToken(String token, User userDetails) {
         try {
             final String username = extractUsername(token);
-            return username != null && 
-                   username.equals(userDetails.getUsername()) && 
-                   !isTokenExpired(token);
+            return username != null &&
+                    username.equals(userDetails.getUsername()) &&
+                    !isTokenExpired(token);
         } catch (Exception e) {
             return false;
         }
@@ -73,7 +76,8 @@ public class JwtUtil {
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
-        } catch (ExpiredJwtException | MalformedJwtException | SignatureException | UnsupportedJwtException | IllegalArgumentException e) {
+        } catch (ExpiredJwtException | MalformedJwtException | SignatureException | UnsupportedJwtException
+                | IllegalArgumentException e) {
             throw new RuntimeException("Invalid JWT token", e);
         }
     }

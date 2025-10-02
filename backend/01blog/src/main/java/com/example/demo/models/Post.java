@@ -28,7 +28,7 @@ public class Post {
 	private User creator;
 
 	@Column(nullable = false)
-	private String Title;
+	private String title;
 
 	@Column(nullable = false)
 	private String content;
@@ -50,8 +50,8 @@ public class Post {
 
 	public Long getId() { return id; }
 	public void setId(Long id) { this.id = id; }
-	public String getTitle(){return Title;}
-	public void SetTitle(String title){this.Title = title;}
+	public String getTitle() { return title; }
+	public void setTitle(String title) { this.title = title; }
 	public User getCreator() { return creator; }
 	public void setCreator(User creator) { this.creator = creator; }
 	public String getContent() { return content; }
