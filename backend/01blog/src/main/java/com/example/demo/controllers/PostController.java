@@ -26,13 +26,16 @@ public class PostController {
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
+    private final NotificationController notifcontroller;
 
     public PostController(PostRepository postRepository, UserRepository userRepository,
-            SubscriptionRepository subscriptionRepository, NotificationRepository notificationRepository) {
+            SubscriptionRepository subscriptionRepository, NotificationRepository notificationRepository,
+            NotificationController notifcontroller) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.notificationRepository = notificationRepository;
+        this.notifcontroller = notifcontroller;
     }
 
     // ----------------- CREATE -----------------
@@ -49,10 +52,10 @@ public class PostController {
         User currentUser = optionalUser.get();
         post.setCreator(currentUser); // Set the logged-in user as creator
         Post saved = postRepository.save(post);
-        
+
         // Create notifications for all followers
-        createNotificationsForFollowers(currentUser, saved);
-        
+        createNotificationsForFollowers(currentUser, saved, notifcontroller);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -128,20 +131,19 @@ public class PostController {
     }
 
     // ----------------- PRIVATE METHODS -----------------
-    private void createNotificationsForFollowers(User postCreator, Post post) {
+    private void createNotificationsForFollowers(User postCreator, Post post, NotificationController notifcontroller) {
         // Get all followers of the post creator
         List<Subscription> followers = subscriptionRepository.findByFollowed(postCreator);
-        
+
         // Create a notification for each follower
         for (Subscription subscription : followers) {
             Notification notification = new Notification();
             notification.setCreator(postCreator);
             notification.setReceiver(subscription.getFollower());
-            notification.setContent(postCreator.getUsername() + " created a new post: " + 
-                (post.getContent().length() > 50 ? 
-                    post.getContent().substring(0, 50) + "..." : 
-                    post.getContent()));
+            notification.setContent(postCreator.getUsername() + " created a new post: " +
+                    (post.getContent().length() > 50 ? post.getContent().substring(0, 50) + "..." : post.getContent()));
             notificationRepository.save(notification);
+            notifcontroller.sendPostNotification(post.getTitle());
         }
     }
 }
