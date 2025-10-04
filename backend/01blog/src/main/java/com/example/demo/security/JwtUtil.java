@@ -5,7 +5,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.models.User;
@@ -31,10 +30,10 @@ public class JwtUtil {
         return new SecretKeySpec(keyBytes, SignatureAlgorithm.HS256.getJcaName());
     }
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
-                .claim("roles", userDetails.getAuthorities())
+                .setSubject(user.getUsername())
+                .claim("roles", user.getAuthorities())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -49,11 +48,11 @@ public class JwtUtil {
         }
     }
 
-    public boolean validateToken(String token, User userDetails) {
+    public boolean validateToken(String token, User user) {
         try {
             final String username = extractUsername(token);
             return username != null &&
-                    username.equals(userDetails.getUsername()) &&
+                    username.equals(user.getUsername()) &&
                     !isTokenExpired(token);
         } catch (Exception e) {
             return false;

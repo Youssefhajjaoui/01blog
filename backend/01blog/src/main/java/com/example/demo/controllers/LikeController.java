@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,16 +39,19 @@ public class LikeController {
     // Like a post
     @PostMapping("/post/{postId}")
     public ResponseEntity<Like> likePost(@PathVariable Long postId,
-            @AuthenticationPrincipal UserDetails principal) {
-        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User principal) {
+        if (principal == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (optUser.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         Optional<Post> optPost = postRepository.findById(postId);
-        if (optPost.isEmpty()) return ResponseEntity.notFound().build();
+        if (optPost.isEmpty())
+            return ResponseEntity.notFound().build();
 
         User currentUser = optUser.get();
-        
+
         // Check if already liked
         Optional<Like> existingLike = likeRepository.findByCreator_IdAndPost_Id(currentUser.getId(), postId);
         if (existingLike.isPresent()) {
@@ -66,13 +68,15 @@ public class LikeController {
     // Unlike a post
     @DeleteMapping("/post/{postId}")
     public ResponseEntity<Void> unlikePost(@PathVariable Long postId,
-            @AuthenticationPrincipal UserDetails principal) {
-        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User principal) {
+        if (principal == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (optUser.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         User currentUser = optUser.get();
-        
+
         Optional<Like> existingLike = likeRepository.findByCreator_IdAndPost_Id(currentUser.getId(), postId);
         if (existingLike.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Not liked
@@ -98,10 +102,12 @@ public class LikeController {
     // Check if current user liked a post
     @GetMapping("/post/{postId}/liked")
     public ResponseEntity<Boolean> hasUserLikedPost(@PathVariable Long postId,
-            @AuthenticationPrincipal UserDetails principal) {
-        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User principal) {
+        if (principal == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (optUser.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         User currentUser = optUser.get();
         boolean liked = likeRepository.findByCreator_IdAndPost_Id(currentUser.getId(), postId).isPresent();

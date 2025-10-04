@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Entity
 @Table(name = "users")
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
-public class User {
+public class User implements UserDetails {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -163,6 +164,32 @@ public class User {
 
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+	}
+
+	// UserDetails interface methods
+	@Override
+	public String getPassword() {
+		return passwordHash;
+	}
+
+	@Override
+	public boolean isAccountNonExpired() {
+		return true; // Account never expires
+	}
+
+	@Override
+	public boolean isAccountNonLocked() {
+		return !isCurrentlyBanned(); // Account is locked if currently banned
+	}
+
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return true; // Credentials never expire
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return !banned; // User is enabled if not banned
 	}
 
 }

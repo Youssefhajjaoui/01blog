@@ -8,11 +8,9 @@ import com.example.demo.repositories.UserRepository;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.example.demo.security.CustomUserDetailsService;
 import com.example.demo.security.JwtUtil;
 
 import jakarta.servlet.FilterChain;
@@ -52,10 +50,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     return; // stop filter chain here
                 }
 
-                User userDetails = optionalUser.get();
-                if (jwtUtil.validateToken(jwt, userDetails)) {
+                User user = optionalUser.get();
+                if (jwtUtil.validateToken(jwt, user)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
+                            user, null, user.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
