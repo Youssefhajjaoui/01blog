@@ -45,15 +45,12 @@ public class CommentController {
             @AuthenticationPrincipal User principal) {
         if (principal == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         Optional<Post> optPost = postRepository.findById(postId);
         if (optPost.isEmpty())
             return ResponseEntity.notFound().build();
 
-        comment.setCreator(optUser.get());
+        comment.setCreator(principal);
         comment.setPost(optPost.get());
         Comment saved = commentRepository.save(comment);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -72,10 +69,7 @@ public class CommentController {
             @AuthenticationPrincipal User principal) {
         if (principal == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        User currentUser = optUser.get();
+        User currentUser = principal;
 
         Optional<Comment> optComment = commentRepository.findByIdAndCreator_Id(id, currentUser.getId());
         if (optComment.isEmpty())
@@ -93,10 +87,7 @@ public class CommentController {
             @AuthenticationPrincipal User principal) {
         if (principal == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        User currentUser = optUser.get();
+        User currentUser = principal;
 
         Optional<Comment> optComment = commentRepository.findByIdAndCreator_Id(id, currentUser.getId());
         if (optComment.isEmpty())

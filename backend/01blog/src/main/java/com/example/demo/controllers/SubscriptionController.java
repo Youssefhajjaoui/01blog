@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,14 +31,9 @@ public class SubscriptionController {
     }
 
     @PostMapping("/follow/{userId}")
-    public ResponseEntity<String> followUser(@PathVariable Long userId, 
-            @AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<String> followUser(@PathVariable Long userId,
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        Optional<User> currentUserOpt = userRepository.findByUsername(principal.getUsername());
-        if (currentUserOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -48,7 +42,7 @@ public class SubscriptionController {
             return ResponseEntity.notFound().build();
         }
 
-        User currentUser = currentUserOpt.get();
+        User currentUser = principal;
         User userToFollow = userToFollowOpt.get();
 
         // Check if trying to follow self
@@ -71,14 +65,9 @@ public class SubscriptionController {
     }
 
     @DeleteMapping("/unfollow/{userId}")
-    public ResponseEntity<String> unfollowUser(@PathVariable Long userId, 
-            @AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<String> unfollowUser(@PathVariable Long userId,
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        Optional<User> currentUserOpt = userRepository.findByUsername(principal.getUsername());
-        if (currentUserOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -87,12 +76,12 @@ public class SubscriptionController {
             return ResponseEntity.notFound().build();
         }
 
-        User currentUser = currentUserOpt.get();
+        User currentUser = principal;
         User userToUnfollow = userToUnfollowOpt.get();
 
         Optional<Subscription> subscriptionOpt = subscriptionRepository
                 .findByFollowerAndFollowed(currentUser, userToUnfollow);
-        
+
         if (subscriptionOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("Not following this user");
         }
@@ -146,8 +135,8 @@ public class SubscriptionController {
     }
 
     @GetMapping("/is-following/{userId}")
-    public ResponseEntity<Boolean> isFollowing(@PathVariable Long userId, 
-            @AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<Boolean> isFollowing(@PathVariable Long userId,
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -164,7 +153,7 @@ public class SubscriptionController {
 
         boolean isFollowing = subscriptionRepository.existsByFollowerAndFollowed(
                 currentUserOpt.get(), targetUserOpt.get());
-        
+
         return ResponseEntity.ok(isFollowing);
     }
-} 
+}

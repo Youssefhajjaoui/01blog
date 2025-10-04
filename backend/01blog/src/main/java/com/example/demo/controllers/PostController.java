@@ -44,11 +44,8 @@ public class PostController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Optional<User> optionalUser = userRepository.findByUsername(principal.getUsername());
-        if (optionalUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        User currentUser = optionalUser.get();
+
+        User currentUser = principal;
         post.setCreator(currentUser); // Set the logged-in user as creator
         Post saved = postRepository.save(post);
 
@@ -84,11 +81,8 @@ public class PostController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Optional<User> optionalCurrentUser = userRepository.findByUsername(principal.getUsername());
-        if (optionalCurrentUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        User currentUser = optionalCurrentUser.get();
+
+        User currentUser = principal;
 
         Optional<Post> optionalPost = postRepository.findByIdAndCreator_Id(id, currentUser.getId());
         if (optionalPost.isEmpty()) {
@@ -114,11 +108,8 @@ public class PostController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Optional<User> optionalCurrentUser = userRepository.findByUsername(principal.getUsername());
-        if (optionalCurrentUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        User currentUser = optionalCurrentUser.get();
+
+        User currentUser = principal;
 
         Optional<Post> optionalPost = postRepository.findByIdAndCreator_Id(id, currentUser.getId());
         if (optionalPost.isEmpty()) {
