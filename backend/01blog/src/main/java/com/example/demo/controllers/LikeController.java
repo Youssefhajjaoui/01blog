@@ -42,15 +42,12 @@ public class LikeController {
             @AuthenticationPrincipal User principal) {
         if (principal == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         Optional<Post> optPost = postRepository.findById(postId);
         if (optPost.isEmpty())
             return ResponseEntity.notFound().build();
 
-        User currentUser = optUser.get();
+        User currentUser = principal;
 
         // Check if already liked
         Optional<Like> existingLike = likeRepository.findByCreator_IdAndPost_Id(currentUser.getId(), postId);
@@ -71,11 +68,8 @@ public class LikeController {
             @AuthenticationPrincipal User principal) {
         if (principal == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        User currentUser = optUser.get();
+        User currentUser = principal;
 
         Optional<Like> existingLike = likeRepository.findByCreator_IdAndPost_Id(currentUser.getId(), postId);
         if (existingLike.isEmpty()) {
@@ -105,11 +99,8 @@ public class LikeController {
             @AuthenticationPrincipal User principal) {
         if (principal == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        User currentUser = optUser.get();
+        User currentUser = principal;
         boolean liked = likeRepository.findByCreator_IdAndPost_Id(currentUser.getId(), postId).isPresent();
         return ResponseEntity.ok(liked);
     }

@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,15 +41,12 @@ public class ReportController {
 
     @PostMapping
     public ResponseEntity<Report> createReport(@RequestBody Report report,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Optional<User> optionUser = userRepository.findByUsername(principal.getUsername());
-        if (optionUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        User currentUser = optionUser.get();
+
+        User currentUser = principal;
 
         // Validate that the report has a reason
         if (report.getReason() == null || report.getReason().trim().isEmpty()) {
@@ -91,12 +87,12 @@ public class ReportController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Report>> getAllReports(@AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<List<Report>> getAllReports(@AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         Optional<User> optionUser = userRepository.findByUsername(principal.getUsername());
-        if (optionUser.isEmpty() || optionUser.get().getRole() != UserRole.ADMIN) {
+        if (optionUser.isEmpty() || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         List<Report> result = reportRepository.findAll();
@@ -104,75 +100,64 @@ public class ReportController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Report> updateReport(@PathVariable Long id, 
+    public ResponseEntity<Report> updateReport(@PathVariable Long id,
             @RequestBody ReportStatus status,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
-        Optional<User> optionUser = userRepository.findByUsername(principal.getUsername());
-        if (optionUser.isEmpty() || optionUser.get().getRole() != UserRole.ADMIN) {
+
+        User optionUser = principal;
+        if (optionUser == null || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        
+
         Optional<Report> optionalReport = reportRepository.findById(id);
         if (optionalReport.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        
+
         Report report = optionalReport.get();
         report.setStatus(status);
         Report updatedReport = reportRepository.save(report);
-        
+
         return ResponseEntity.ok(updatedReport);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteReport(@PathVariable Long id, 
-            @AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<String> deleteReport(@PathVariable Long id,
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
-        Optional<User> optionUser = userRepository.findByUsername(principal.getUsername());
-        if (optionUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        
-        User currentUser = optionUser.get();
+        User currentUser = principal;
         Optional<Report> optionalReport = reportRepository.findById(id);
-        
+
         if (optionalReport.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        
+
         Report report = optionalReport.get();
-        
+
         // Check if user is the reporter or an admin
-        if (!report.getReporter().getId().equals(currentUser.getId()) && 
-            currentUser.getRole() != UserRole.ADMIN) {
+        if (!report.getReporter().getId().equals(currentUser.getId()) &&
+                currentUser.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        
+
         reportRepository.delete(report);
         return ResponseEntity.ok("Report deleted successfully");
     }
 
     @GetMapping("/my-reports")
-    public ResponseEntity<List<Report>> getMyReports(@AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<List<Report>> getMyReports(@AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
-        Optional<User> optionUser = userRepository.findByUsername(principal.getUsername());
-        if (optionUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        
-        User currentUser = optionUser.get();
+
+        User currentUser = principal;
         List<Report> myReports = reportRepository.findByReporter(currentUser);
-        
+
         return ResponseEntity.ok(myReports);
     }
 }
