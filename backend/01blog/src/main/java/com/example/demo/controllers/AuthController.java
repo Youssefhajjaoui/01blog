@@ -9,7 +9,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -100,20 +99,16 @@ public class AuthController {
                             loginDto.getUsername(),
                             loginDto.getPassword()));
 
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            User user = (User) authentication.getPrincipal();
 
-            // Get user information
-            User user = userRepository.findByUsername(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            // Check if user is banned
+            // Check if user is banned (this should already be checked in CustomUserDetailsService)
             if (user.isCurrentlyBanned()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new AuthResponseDto("Account is banned"));
             }
 
             // Generate token
-            String token = jwtUtil.generateToken(userDetails);
+            String token = jwtUtil.generateToken(user);
 
             return ResponseEntity.ok(new AuthResponseDto(token, user.getUsername(), user.getRole().toString()));
 

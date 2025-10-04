@@ -12,7 +12,6 @@ import com.example.demo.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,7 +40,7 @@ public class PostController {
     // ----------------- CREATE -----------------
     @PostMapping
     public ResponseEntity<Post> createPost(@RequestBody Post post,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -81,7 +80,7 @@ public class PostController {
     @PutMapping("/{id}")
     public ResponseEntity<Post> updatePost(@PathVariable Long id,
             @RequestBody Post postDetails,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

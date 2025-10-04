@@ -26,14 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new RuntimeException("User account is banned");
         }
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getUsername())
-                .password(user.getPasswordHash())
-                .roles(user.getRole().toString())
-                .accountExpired(false)
-                .accountLocked(user.isBanned())
-                .credentialsExpired(false)
-                .disabled(false)
-                .build();
+        // Return the User entity directly since it now implements UserDetails
+        return user;
     }
 }

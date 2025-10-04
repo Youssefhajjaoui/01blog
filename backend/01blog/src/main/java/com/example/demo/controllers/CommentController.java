@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,13 +42,16 @@ public class CommentController {
     @PostMapping("/post/{postId}")
     public ResponseEntity<Comment> createComment(@PathVariable Long postId,
             @RequestBody Comment comment,
-            @AuthenticationPrincipal UserDetails principal) {
-        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User principal) {
+        if (principal == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (optUser.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         Optional<Post> optPost = postRepository.findById(postId);
-        if (optPost.isEmpty()) return ResponseEntity.notFound().build();
+        if (optPost.isEmpty())
+            return ResponseEntity.notFound().build();
 
         comment.setCreator(optUser.get());
         comment.setPost(optPost.get());
@@ -67,14 +69,17 @@ public class CommentController {
     @PutMapping("/{id}")
     public ResponseEntity<Comment> updateComment(@PathVariable Long id,
             @RequestBody Comment details,
-            @AuthenticationPrincipal UserDetails principal) {
-        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User principal) {
+        if (principal == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (optUser.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         User currentUser = optUser.get();
 
         Optional<Comment> optComment = commentRepository.findByIdAndCreator_Id(id, currentUser.getId());
-        if (optComment.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        if (optComment.isEmpty())
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
         Comment comment = optComment.get();
         comment.setContent(details.getContent());
@@ -85,16 +90,19 @@ public class CommentController {
     // Delete own comment
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteComment(@PathVariable Long id,
-            @AuthenticationPrincipal UserDetails principal) {
-        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            @AuthenticationPrincipal User principal) {
+        if (principal == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         Optional<User> optUser = userRepository.findByUsername(principal.getUsername());
-        if (optUser.isEmpty()) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (optUser.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         User currentUser = optUser.get();
 
         Optional<Comment> optComment = commentRepository.findByIdAndCreator_Id(id, currentUser.getId());
-        if (optComment.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        if (optComment.isEmpty())
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
         commentRepository.delete(optComment.get());
         return ResponseEntity.noContent().build();
     }
-} 
+}

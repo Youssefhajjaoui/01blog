@@ -16,8 +16,5 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findAllByOrderByCreatedAtAsc();
 
     // find Reports by users
-    List<Report> findByCreator(User creater);
-    
-    // Find reports by reporter
     List<Report> findByReporter(User reporter);
 }
