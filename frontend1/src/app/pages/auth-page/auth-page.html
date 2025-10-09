@@ -1,0 +1,371 @@
+<div class="auth-container">
+  <!-- Left Side - Hero Section -->
+  <div class="hero-section d-none d-lg-flex">
+    <div class="hero-content">
+      <!-- Logo -->
+      <div class="logo-section mb-4">
+        <div class="logo-icon">
+          <span class="logo-text">01</span>
+        </div>
+        <div class="logo-text-section">
+          <h1 class="logo-title">Blog</h1>
+          <p class="logo-subtitle">Learning Platform</p>
+        </div>
+      </div>
+
+      <!-- Hero Text -->
+      <div class="hero-text mb-5">
+        <h2 class="hero-title">Share Your Learning Journey</h2>
+        <p class="hero-description">
+          Connect with thousands of students worldwide, share knowledge, and grow together in your educational journey.
+        </p>
+      </div>
+
+      <!-- Feature Stats -->
+      <div class="feature-stats">
+        <div class="feature-item mb-4">
+          <div class="feature-icon">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="feature-content">
+            <p class="feature-title">50K+ Students</p>
+            <p class="feature-subtitle">Active learning community</p>
+          </div>
+        </div>
+        <div class="feature-item mb-4">
+          <div class="feature-icon">
+            <i class="bi bi-book-fill"></i>
+          </div>
+          <div class="feature-content">
+            <p class="feature-title">100K+ Posts</p>
+            <p class="feature-subtitle">Knowledge shared daily</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
+          <div class="feature-content">
+            <p class="feature-title">95% Success Rate</p>
+            <p class="feature-subtitle">Students achieving goals</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quote -->
+      <div class="hero-quote">
+        <blockquote class="quote-text">
+          "The best learning happens when students teach each other."
+        </blockquote>
+        <p class="quote-author">— 01Blog Community</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side - Auth Forms -->
+  <div class="auth-forms-section">
+    <div class="auth-forms-container">
+      <!-- Mobile Logo -->
+      <div class="mobile-logo d-lg-none text-center mb-4">
+        <div class="d-flex align-items-center justify-content-center mb-3">
+          <div class="logo-icon">
+            <span class="logo-text">01</span>
+          </div>
+          <span class="logo-title ms-3">Blog</span>
+        </div>
+        <p class="text-muted">
+          Share your learning journey with students worldwide
+        </p>
+      </div>
+
+      <!-- Tabs -->
+      <ul class="nav nav-tabs nav-fill mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button 
+            class="nav-link" 
+            [class.active]="activeTab === 'login'"
+            (click)="setActiveTab('login')"
+            type="button"
+          >
+            Sign In
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button 
+            class="nav-link" 
+            [class.active]="activeTab === 'signup'"
+            (click)="setActiveTab('signup')"
+            type="button"
+          >
+            Sign Up
+          </button>
+        </li>
+      </ul>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Login Form -->
+      <div *ngIf="activeTab === 'login'" class="auth-form">
+        <div class="form-header mb-4">
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-sparkles text-primary me-2"></i>
+            <h3 class="form-title">Welcome back</h3>
+          </div>
+          <p class="form-description">
+            Sign in to your account to continue your learning journey
+          </p>
+        </div>
+
+        <form (ngSubmit)="onLogin()" class="needs-validation" novalidate>
+          <div class="mb-3">
+            <label for="login-email" class="form-label">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-envelope"></i>
+              </span>
+              <input
+                type="email"
+                class="form-control"
+                id="login-email"
+                [(ngModel)]="loginForm.email"
+                name="email"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="login-password" class="form-label">Password</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-lock"></i>
+              </span>
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                class="form-control"
+                id="login-password"
+                [(ngModel)]="loginForm.password"
+                name="password"
+                placeholder="Enter your password"
+                required
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="togglePasswordVisibility()"
+              >
+                <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end mb-4">
+            <button
+              type="button"
+              class="btn btn-link p-0"
+              (click)="setActiveTab('forgot-password')"
+            >
+              Forgot password?
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary w-100 mb-3"
+            [disabled]="isLoading"
+          >
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span *ngIf="!isLoading">Sign In</span>
+            <span *ngIf="isLoading">Signing in...</span>
+            <i *ngIf="!isLoading" class="bi bi-arrow-right ms-2"></i>
+          </button>
+        </form>
+
+        <!-- Demo Accounts -->
+        <div class="demo-accounts p-3 bg-light rounded">
+          <p class="text-center mb-2">
+            <span class="badge bg-outline-secondary">Demo Accounts</span>
+          </p>
+          <p class="text-center small text-muted mb-0">
+            <strong>User:</strong> user@demo.com | <strong>Admin:</strong> admin@01blog.com<br>
+            <strong>Password:</strong> demo123
+          </p>
+        </div>
+      </div>
+
+      <!-- Signup Form -->
+      <div *ngIf="activeTab === 'signup'" class="auth-form">
+        <div class="form-header mb-4">
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-people-fill text-primary me-2"></i>
+            <h3 class="form-title">Create account</h3>
+          </div>
+          <p class="form-description">
+            Join thousands of students sharing their learning experiences
+          </p>
+        </div>
+
+        <form (ngSubmit)="onSignup()" class="needs-validation" novalidate>
+          <div class="mb-3">
+            <label for="signup-name" class="form-label">Full Name</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-person"></i>
+              </span>
+              <input
+                type="text"
+                class="form-control"
+                id="signup-name"
+                [(ngModel)]="signupForm.name"
+                name="name"
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="signup-email" class="form-label">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-envelope"></i>
+              </span>
+              <input
+                type="email"
+                class="form-control"
+                id="signup-email"
+                [(ngModel)]="signupForm.email"
+                name="email"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="signup-password" class="form-label">Password</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-lock"></i>
+              </span>
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                class="form-control"
+                id="signup-password"
+                [(ngModel)]="signupForm.password"
+                name="password"
+                placeholder="Create a password (min. 8 characters)"
+                minlength="8"
+                required
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="togglePasswordVisibility()"
+              >
+                <i [class]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="signup-confirm-password" class="form-label">Confirm Password</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-lock"></i>
+              </span>
+              <input
+                type="password"
+                class="form-control"
+                id="signup-confirm-password"
+                [(ngModel)]="signupForm.confirmPassword"
+                name="confirmPassword"
+                placeholder="Confirm your password"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary w-100 mb-3"
+            [disabled]="isLoading"
+          >
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span *ngIf="!isLoading">Create Account</span>
+            <span *ngIf="isLoading">Creating account...</span>
+            <i *ngIf="!isLoading" class="bi bi-arrow-right ms-2"></i>
+          </button>
+        </form>
+
+        <!-- Welcome Benefits -->
+        <div class="welcome-benefits p-3 bg-primary bg-opacity-10 rounded border border-primary border-opacity-25">
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-sparkles text-primary me-2"></i>
+            <p class="mb-0 fw-medium text-primary">Welcome Benefits</p>
+          </div>
+          <ul class="list-unstyled small text-primary mb-0">
+            <li>• Access to 50K+ student community</li>
+            <li>• Share and discover learning resources</li>
+            <li>• Connect with peers in your field</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Forgot Password Form -->
+      <div *ngIf="activeTab === 'forgot-password'" class="auth-form">
+        <div class="form-header mb-4">
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-lock text-primary me-2"></i>
+            <h3 class="form-title">Reset password</h3>
+          </div>
+          <p class="form-description">
+            Enter your email and we'll send you instructions to reset your password
+          </p>
+        </div>
+
+        <form (ngSubmit)="onForgotPassword()" class="needs-validation" novalidate>
+          <div class="mb-4">
+            <label for="forgot-email" class="form-label">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-envelope"></i>
+              </span>
+              <input
+                type="email"
+                class="form-control"
+                id="forgot-email"
+                [(ngModel)]="forgotPasswordForm.email"
+                name="email"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary w-100 mb-3"
+            [disabled]="isLoading"
+          >
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span *ngIf="!isLoading">Send Reset Instructions</span>
+            <span *ngIf="isLoading">Sending...</span>
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-secondary w-100"
+            (click)="setActiveTab('login')"
+          >
+            Back to Sign In
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

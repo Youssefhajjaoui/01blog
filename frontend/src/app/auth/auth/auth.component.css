@@ -1,0 +1,256 @@
+.auth-page {
+  height: 100vh;
+  min-height: 100vh;
+  display: flex;
+  background: #f8fafc;
+}
+
+/* Left Promotional Section */
+.promotional-section {
+  flex: 2;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%), 
+              url('/assets/background-person.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  height: 100%;
+}
+
+.promotional-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.promo-overlay {
+  position: relative;
+  z-index: 2;
+  padding: 60px 40px;
+  color: white;
+  max-width: 500px;
+  width: 100%;
+  border-radius: 20px;
+  margin: 20px;
+}
+
+.branding {
+  margin-bottom: 40px;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-square {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brand-text h2 {
+  font-size: 25px;
+  font-weight: 800;
+  margin: 0;
+  color: white;
+}
+
+.brand-text p {
+  font-size: 14px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.promo-content h1 {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  margin: 0 0 20px 0;
+  color: white;
+}
+
+.promo-content p {
+  font-size: 18px;
+  line-height: 1.6;
+  margin: 0 0 40px 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-icon {
+  font-size: 24px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+}
+
+.stat-info h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: white;
+}
+
+.stat-info p {
+  font-size: 14px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.quote {
+  margin-top: 40px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quote p {
+  font-style: italic;
+  font-size: 16px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+/* Right Form Section */
+.form-section {
+  flex: 1;
+  display: flex;
+  overflow-y: auto;   
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: white;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 40px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab-button.active {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.tab-button:hover:not(.active) {
+  color: #334155;
+}
+
+.auth-content {
+  width: 100%;
+}
+
+/* Hide promotional section on screens smaller than 1000px */
+@media (max-width: 1000px) {
+  .promotional-section {
+    display: none;
+  }
+
+  .form-section {
+    flex: 1;
+    max-width: 100%;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .auth-page {
+    flex-direction: column;
+  }
+
+  .promotional-section {
+    display: none;
+  }
+
+  .form-section {
+    flex: none;
+    padding: 20px;
+    max-width: 100%;
+  }
+
+  .form-container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .promo-content h1 {
+    font-size: 28px;
+  }
+
+  .brand-text h2 {
+    font-size: 24px;
+  }
+
+  .logo-square {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+}

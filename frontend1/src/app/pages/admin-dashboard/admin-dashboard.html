@@ -1,0 +1,351 @@
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading dashboard...</p>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div *ngIf="!loading" class="admin-dashboard">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="bi bi-shield-check me-2"></i>Admin Dashboard</h2>
+          <div class="text-muted">
+            <i class="bi bi-calendar me-1"></i>
+            {{ getCurrentDate() }}
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+          <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <h4 class="mb-0">{{ stats.totalUsers | number }}</h4>
+                    <p class="mb-0">Total Users</p>
+                  </div>
+                  <div class="align-self-center">
+                    <i class="bi bi-people display-4"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <h4 class="mb-0">{{ stats.totalPosts | number }}</h4>
+                    <p class="mb-0">Total Posts</p>
+                  </div>
+                  <div class="align-self-center">
+                    <i class="bi bi-file-text display-4"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <h4 class="mb-0">{{ stats.totalComments | number }}</h4>
+                    <p class="mb-0">Total Comments</p>
+                  </div>
+                  <div class="align-self-center">
+                    <i class="bi bi-chat display-4"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <h4 class="mb-0">{{ stats.activeUsers | number }}</h4>
+                    <p class="mb-0">Active Users</p>
+                  </div>
+                  <div class="align-self-center">
+                    <i class="bi bi-person-check display-4"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="card">
+          <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs">
+              <li class="nav-item">
+                <button 
+                  class="nav-link" 
+                  [class.active]="activeTab === 'overview'"
+                  (click)="setActiveTab('overview')"
+                >
+                  <i class="bi bi-house me-2"></i>Overview
+                </button>
+              </li>
+              <li class="nav-item">
+                <button 
+                  class="nav-link" 
+                  [class.active]="activeTab === 'users'"
+                  (click)="setActiveTab('users')"
+                >
+                  <i class="bi bi-people me-2"></i>Users
+                </button>
+              </li>
+              <li class="nav-item">
+                <button 
+                  class="nav-link" 
+                  [class.active]="activeTab === 'posts'"
+                  (click)="setActiveTab('posts')"
+                >
+                  <i class="bi bi-file-text me-2"></i>Posts
+                </button>
+              </li>
+              <li class="nav-item">
+                <button 
+                  class="nav-link" 
+                  [class.active]="activeTab === 'reports'"
+                  (click)="setActiveTab('reports')"
+                >
+                  <i class="bi bi-flag me-2"></i>Reports
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div class="card-body">
+            <!-- Overview Tab -->
+            <div *ngIf="activeTab === 'overview'">
+              <div class="row">
+                <div class="col-md-6">
+                  <h5>Recent Users</h5>
+                  <div class="list-group">
+                    <div *ngFor="let user of recentUsers" class="list-group-item d-flex justify-content-between align-items-center">
+                      <div class="d-flex align-items-center">
+                        <img 
+                          [src]="user.avatar" 
+                          [alt]="user.name"
+                          class="rounded-circle me-3"
+                          style="width: 40px; height: 40px; object-fit: cover;"
+                        >
+                        <div>
+                          <h6 class="mb-0">{{ user.name }}</h6>
+                          <small class="text-muted">{{ user.email }}</small>
+                        </div>
+                      </div>
+                      <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                          <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li><button class="dropdown-item" (click)="banUser(user.id)">Ban User</button></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <h5>Recent Posts</h5>
+                  <div class="list-group">
+                    <div *ngFor="let post of recentPosts" class="list-group-item d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="mb-0">{{ post.title }}</h6>
+                        <small class="text-muted">by {{ post.author.name }}</small>
+                      </div>
+                      <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                          <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li><button class="dropdown-item" (click)="deletePost(post.id)">Delete Post</button></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div *ngIf="activeTab === 'users'">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>User Management</h5>
+                <div class="input-group" style="width: 300px;">
+                  <input type="text" class="form-control" placeholder="Search users...">
+                  <button class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Email</th>
+                      <th>Posts</th>
+                      <th>Followers</th>
+                      <th>Joined</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let user of recentUsers">
+                      <td>
+                        <div class="d-flex align-items-center">
+                          <img 
+                            [src]="user.avatar" 
+                            [alt]="user.name"
+                            class="rounded-circle me-2"
+                            style="width: 32px; height: 32px; object-fit: cover;"
+                          >
+                          {{ user.name }}
+                        </div>
+                      </td>
+                      <td>{{ user.email }}</td>
+                      <td>{{ user.posts }}</td>
+                      <td>{{ user.subscribers | number }}</td>
+                      <td>{{ formatDate(user.createdAt!) }}</td>
+                      <td>
+                        <div class="dropdown">
+                          <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i>
+                          </button>
+                          <ul class="dropdown-menu">
+                            <li><button class="dropdown-item">View Profile</button></li>
+                            <li><button class="dropdown-item" (click)="banUser(user.id)">Ban User</button></li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Posts Tab -->
+            <div *ngIf="activeTab === 'posts'">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Post Management</h5>
+                <div class="input-group" style="width: 300px;">
+                  <input type="text" class="form-control" placeholder="Search posts...">
+                  <button class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Author</th>
+                      <th>Likes</th>
+                      <th>Comments</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let post of recentPosts">
+                      <td>{{ post.title }}</td>
+                      <td>{{ post.author.name }}</td>
+                      <td>{{ post.likes }}</td>
+                      <td>{{ post.comments }}</td>
+                      <td>{{ formatDate(post.createdAt) }}</td>
+                      <td>
+                        <div class="dropdown">
+                          <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i>
+                          </button>
+                          <ul class="dropdown-menu">
+                            <li><button class="dropdown-item">View Post</button></li>
+                            <li><button class="dropdown-item" (click)="deletePost(post.id)">Delete Post</button></li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div *ngIf="activeTab === 'reports'">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Content Reports</h5>
+                <div class="btn-group">
+                  <button class="btn btn-outline-primary btn-sm">All</button>
+                  <button class="btn btn-outline-warning btn-sm">Pending</button>
+                  <button class="btn btn-outline-success btn-sm">Resolved</button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Reason</th>
+                      <th>Reporter</th>
+                      <th>Content</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let report of reportedContent">
+                      <td>
+                        <span class="badge bg-info">{{ report.type }}</span>
+                      </td>
+                      <td>{{ report.reason }}</td>
+                      <td>{{ report.reporter }}</td>
+                      <td>{{ report.content }}</td>
+                      <td>
+                        <span class="badge" [class]="getStatusBadgeClass(report.status)">
+                          {{ report.status }}
+                        </span>
+                      </td>
+                      <td>{{ formatDate(report.createdAt) }}</td>
+                      <td>
+                        <div class="btn-group btn-group-sm">
+                          <button 
+                            class="btn btn-success" 
+                            (click)="approveReport(report.id)"
+                            [disabled]="report.status !== 'pending'"
+                          >
+                            <i class="bi bi-check"></i>
+                          </button>
+                          <button 
+                            class="btn btn-secondary" 
+                            (click)="dismissReport(report.id)"
+                            [disabled]="report.status !== 'pending'"
+                          >
+                            <i class="bi bi-x"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,186 @@
+<div class="home-container">
+  <!-- Navigation -->
+  <app-navigation *ngIf="currentUser" [user]="currentUser" [currentPage]="'home'" [notifications]="[]" [showNotifications]="false"
+    (onNavigate)="onNavigate($event)" (onToggleNotifications)="onToggleNotifications()"
+    (onLogout)="onLogout()"></app-navigation>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container py-4">
+      <div class="row">
+        <!-- Main Feed -->
+        <div class="col-lg-8">
+          <!-- Header -->
+          <div
+            class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+            <div class="mb-3 mb-sm-0">
+              <h1 class="h3 mb-1">Welcome back, {{ (currentUser?.name || '').split(' ')[0] }}!</h1>
+              <p class="text-muted mb-0">
+                Discover what your fellow students are learning today
+              </p>
+            </div>
+            <button class="btn btn-primary" (click)="onWritePost()">
+              <i class="bi bi-plus-lg me-2"></i>
+              Write Post
+            </button>
+          </div>
+
+          <!-- Filters and View Toggle -->
+          <div
+            class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+            <div class="d-flex align-items-center mb-3 mb-sm-0">
+              <i class="bi bi-funnel me-2 text-muted"></i>
+              <select class="form-select form-select-sm" [(ngModel)]="filter" style="width: auto;">
+                <option value="all">All Posts</option>
+                <option value="following">Following</option>
+                <option value="trending">Trending</option>
+              </select>
+            </div>
+
+            <div class="btn-group" role="group">
+              <button type="button" class="btn btn-sm" [class.btn-primary]="viewMode === 'list'"
+                [class.btn-outline-primary]="viewMode !== 'list'" (click)="viewMode = 'list'">
+                <i class="bi bi-list"></i>
+              </button>
+              <button type="button" class="btn btn-sm" [class.btn-primary]="viewMode === 'grid'"
+                [class.btn-outline-primary]="viewMode !== 'grid'" (click)="viewMode = 'grid'">
+                <i class="bi bi-grid-3x3-gap"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Posts Feed -->
+          <div *ngIf="loading" class="posts-loading">
+            <div *ngFor="let i of [1,2,3]" class="card mb-4">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <div class="skeleton-avatar me-3"></div>
+                  <div class="skeleton-text">
+                    <div class="skeleton-line mb-1"></div>
+                    <div class="skeleton-line-small"></div>
+                  </div>
+                </div>
+                <div class="skeleton-line mb-2"></div>
+                <div class="skeleton-line mb-2"></div>
+                <div class="skeleton-line-small mb-3"></div>
+                <div class="skeleton-image"></div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!loading && viewMode === 'grid'" class="row">
+            <div *ngFor="let post of filteredPosts" class="col-md-6 mb-4">
+              <app-post-card [post]="post" variant="grid" [currentUserId]="currentUser?.id || ''"
+                (onLike)="onLike($event)" (onComment)="onComment($event)" (onSubscribe)="onSubscribe($event)"
+                (onPostClick)="onPostClick($event)" (onUserClick)="onUserClick($event)" (onReport)="onReport($event)">
+              </app-post-card>
+            </div>
+          </div>
+
+          <div *ngIf="!loading && viewMode === 'list'" class="posts-list">
+            <div *ngFor="let post of filteredPosts" class="mb-4">
+              <app-post-card [post]="post" variant="feed" [currentUserId]="currentUser?.id || ''"
+                (onLike)="onLike($event)" (onComment)="onComment($event)" (onSubscribe)="onSubscribe($event)"
+                (onPostClick)="onPostClick($event)" (onUserClick)="onUserClick($event)" (onReport)="onReport($event)">
+              </app-post-card>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="!loading && filteredPosts.length === 0" class="text-center py-5">
+            <div class="empty-state">
+              <div class="empty-icon mb-4">
+                <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+              </div>
+              <h3 class="mb-2">No posts found</h3>
+              <p class="text-muted mb-4">
+                {{ filter === 'following' ? 'Follow some users to see their posts here' : 'Be the first to share your
+                learning journey!' }}
+              </p>
+              <button class="btn btn-primary" (click)="onWritePost()">
+                <i class="bi bi-plus-lg me-2"></i>
+                Write Your First Post
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="col-lg-4">
+          <div class="sidebar">
+            <!-- Suggested Users -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5 class="card-title mb-0">
+                  <i class="bi bi-people me-2"></i>
+                  Suggested for you
+                </h5>
+              </div>
+              <div class="card-body">
+                <div *ngFor="let user of suggestedUsers" class="d-flex align-items-center justify-content-between mb-3">
+                  <div class="d-flex align-items-center">
+                    <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.name" class="avatar me-3" />
+                    <div *ngIf="!user.avatar"
+                      class="avatar me-3 bg-primary text-white d-flex align-items-center justify-content-center">
+                      {{ user.name.charAt(0) }}
+                    </div>
+                    <div>
+                      <h6 class="mb-0">{{ user.name }}</h6>
+                      <small class="text-muted">{{ user.subscribers.toLocaleString() }} followers</small>
+                    </div>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary">
+                    Follow
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Trending Tags -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5 class="card-title mb-0">
+                  <i class="bi bi-graph-up-arrow me-2"></i>
+                  Trending Topics
+                </h5>
+              </div>
+              <div class="card-body">
+                <div *ngFor="let item of trendingTags.slice(0, 6)"
+                  class="d-flex align-items-center justify-content-between mb-2">
+                  <span class="badge bg-light text-dark">
+                    <i class="bi bi-hash me-1"></i>
+                    {{ item.tag }}
+                  </span>
+                  <small class="text-muted">{{ item.count.toLocaleString() }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title mb-0">Your Impact</h5>
+              </div>
+              <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <span class="text-muted">Posts written</span>
+                  <span class="fw-medium">{{ currentUser?.posts || 0 }}</span>
+                </div>
+                <hr>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <span class="text-muted">Followers</span>
+                  <span class="fw-medium">{{ currentUser?.subscribers?.toLocaleString() || 0 }}</span>
+                </div>
+                <hr>
+                <div class="d-flex align-items-center justify-content-between">
+                  <span class="text-muted">Following</span>
+                  <span class="fw-medium">42</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
