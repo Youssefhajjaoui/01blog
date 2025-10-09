@@ -1,0 +1,76 @@
+<div class="auth-page">
+  <!-- Left Promotional Section -->
+  <div class="promotional-section">
+    <div class="promo-overlay">
+      
+      <!-- Branding -->
+      <div class="branding">
+        <div class="brand-logo">
+          <div class="logo-square">01</div>
+          <div class="brand-text">
+            <h2>Blog</h2>
+            <p>Learning Platform</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="promo-content">
+        <h1>Share Your Learning Journey</h1>
+        <p>Connect with thousands of students worldwide, share knowledge, and grow together in your educational journey.</p>
+
+        <!-- Statistics -->
+        <div class="stats">
+          <div class="stat-item">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <h3>50K+ Students</h3>
+              <p>Active learning community</p>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">📚</div>
+            <div class="stat-info">
+              <h3>100K+ Posts</h3>
+              <p>Knowledge shared daily</p>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">📈</div>
+            <div class="stat-info">
+              <h3>95% Success Rate</h3>
+              <p>Students achieving goals</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Form Section -->
+  <div class="form-section">
+    <div class="form-container">
+      <!-- Toggle Tabs -->
+      <div class="auth-tabs">
+        <button 
+          [class.active]="isLoginMode"
+          (click)="isLoginMode = true"
+          class="tab-button">
+          Sign In
+        </button>
+        <button 
+          [class.active]="!isLoginMode"
+          (click)="isLoginMode = false"
+          class="tab-button">
+          Sign Up
+        </button>
+      </div>
+
+      <!-- Component Toggle -->
+      <div class="auth-content">
+        <app-login *ngIf="isLoginMode"></app-login>
+        <app-signup *ngIf="!isLoginMode"></app-signup>
+      </div>
+    </div>
+  </div>
+</div>
