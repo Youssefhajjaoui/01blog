@@ -30,6 +30,7 @@ export interface User {
 @Injectable({
   providedIn: 'root'
 })
+
 export class AuthService {
   private readonly API_URL = 'http://localhost:9090/api/auth';
   private readonly TOKEN_KEY = 'auth_token';
