@@ -2,6 +2,7 @@ package com.example.demo.controllers;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -101,7 +102,8 @@ public class AuthController {
 
             User user = (User) authentication.getPrincipal();
 
-            // Check if user is banned (this should already be checked in CustomUserDetailsService)
+            // Check if user is banned (this should already be checked in
+            // CustomUserDetailsService)
             if (user.isCurrentlyBanned()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(new AuthResponseDto("Account is banned"));
@@ -136,4 +138,43 @@ public class AuthController {
                     .body(new AuthResponseDto("Logout failed: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/me")
+    public ResponseEntity<User> getUserFromJwt(HttpServletRequest request) {
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String token = authHeader.substring(7);
+
+        // Parse the token
+        String username = jwtUtil.extractUsername(token);
+        System.out.println(username);
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Optional<User> user = userRepository.findByUsername(username);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(user.get());
+    }
+
 }
