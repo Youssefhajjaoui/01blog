@@ -1,7 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, of } from 'rxjs';
+import { tap, catchError, map } from 'rxjs/operators';
 import { Router } from '@angular/router';
+import { isPlatformBrowser } from '@angular/common';
 
 export interface LoginRequest {
   username: string;
@@ -30,7 +32,6 @@ export interface User {
 @Injectable({
   providedIn: 'root'
 })
-
 export class AuthService {
   private readonly API_URL = 'http://localhost:9090/api/auth';
   private readonly TOKEN_KEY = 'auth_token';
@@ -39,22 +40,24 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(
-    private http: HttpClient,
-    private router: Router
-  ) {
-    // Load user from localStorage on service initialization
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private platformId = inject(PLATFORM_ID);
+
+  constructor() {
     this.loadUserFromStorage();
   }
 
+  /** ✅ Create headers (adds Authorization if token exists) */
   private getHeaders(): HttpHeaders {
     const token = this.getToken();
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
+      ...(token && { Authorization: `Bearer ${token}` })
     });
   }
 
+  /** ✅ Login and store token + user */
   login(loginData: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/login`, loginData, {
       headers: this.getHeaders()
@@ -62,25 +65,25 @@ export class AuthService {
       tap(response => {
         if (response.token) {
           this.setToken(response.token);
-          if (response.username && response.role) {
-            const user: User = {
-              username: response.username,
-              email: '', // Not provided in login response
-              role: response.role
-            };
-            this.setUser(user);
-          }
+          const user: User = {
+            username: response.username ?? '',
+            email: '',
+            role: response.role ?? 'USER'
+          };
+          this.setUser(user);
         }
       })
     );
   }
 
+  /** ✅ Register */
   register(registerData: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/register`, registerData, {
       headers: this.getHeaders()
     });
   }
 
+  /** ✅ Logout */
   logout(): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/logout`, {}, {
       headers: this.getHeaders()
@@ -88,57 +91,90 @@ export class AuthService {
       tap(() => {
         this.clearAuth();
         this.router.navigate(['/auth']);
+      }),
+      catchError(() => {
+        this.clearAuth();
+        this.router.navigate(['/auth']);
+        return of({ message: 'Logged out' });
       })
     );
   }
 
-  isAuthenticated(): boolean {
-    return !!this.getToken();
-  }
-
+  /** ✅ SSR-safe token getter */
   getToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
+  /** ✅ Save token */
   private setToken(token: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
     localStorage.setItem(this.TOKEN_KEY, token);
   }
 
+  /** ✅ Save user */
   private setUser(user: User): void {
+    if (!isPlatformBrowser(this.platformId)) return;
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
     this.currentUserSubject.next(user);
   }
 
+  /** ✅ Load user on startup */
   private loadUserFromStorage(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
     const userStr = localStorage.getItem(this.USER_KEY);
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
         this.currentUserSubject.next(user);
-      } catch (error) {
-        console.error('Error parsing user data from localStorage:', error);
+      } catch (e) {
+        console.error('Error parsing user data:', e);
         this.clearAuth();
       }
     }
   }
 
+  /** ✅ Clear token + user */
   private clearAuth(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.currentUserSubject.next(null);
   }
 
+  /** ✅ Get current user */
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
   }
 
+  /** ✅ Check if admin */
   isAdmin(): boolean {
-    const user = this.getCurrentUser();
-    return user?.role === 'ADMIN';
+    return this.currentUserSubject.value?.role === 'ADMIN';
   }
 
-  // Helper method to get username from email (for demo purposes)
+  /** ✅ SSR-safe authentication check */
+  isAuthenticated(): Observable<boolean> {
+    const token = this.getToken();
+    if (!token) return of(false);
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+
+    // Call backend to verify token
+    return this.http.get(`${this.API_URL}/me`, { headers }).pipe(
+      map(() => true), // Token is valid
+      catchError(() => {
+        this.clearAuth();
+        this.router.navigate(['/auth']);
+        return of(false);
+      })
+    );
+  }
+
+  /** ✅ Get username from email helper */
   getUsernameFromEmail(email: string): string {
     return email.split('@')[0];
   }
 }
+ 
