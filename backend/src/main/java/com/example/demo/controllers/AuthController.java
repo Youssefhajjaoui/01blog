@@ -4,10 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,7 +25,9 @@ import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.security.JwtUtil;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 @RestController
@@ -85,53 +88,45 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody UserLoginDto loginDto, BindingResult result) {
-        try {
-            // Check for validation errors
-            if (result.hasErrors()) {
-                Map<String, String> errors = new HashMap<>();
-                result.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
-                return ResponseEntity.badRequest().body(errors);
-            }
+    public ResponseEntity<?> login(@Valid @RequestBody UserLoginDto loginDto,
+            BindingResult result,
+            HttpServletResponse response) {
+        // authenticate user
+        Authentication authentication = authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
+        User user = (User) authentication.getPrincipal();
 
-            // Authenticate user
-            Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginDto.getUsername(),
-                            loginDto.getPassword()));
+        // generate JWT
+        String token = jwtUtil.generateToken(user);
 
-            User user = (User) authentication.getPrincipal();
+        // Create HttpOnly cookie
+        ResponseCookie cookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(false) // Set to true in production with HTTPS
+                .path("/")
+                .maxAge(15 * 60) // 15 minutes
+                .sameSite("Lax")
+                .build();
 
-            // Check if user is banned (this should already be checked in
-            // CustomUserDetailsService)
-            if (user.isCurrentlyBanned()) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new AuthResponseDto("Account is banned"));
-            }
+        response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-            // Generate token
-            String token = jwtUtil.generateToken(user);
-
-            return ResponseEntity.ok(new AuthResponseDto(token, user.getUsername(), user.getRole().toString()));
-
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new AuthResponseDto("Invalid username or password"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new AuthResponseDto("Login failed: " + e.getMessage()));
-        }
+        return ResponseEntity.ok(Map.of("message", "Logged in successfully"));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
+    public ResponseEntity<?> logout(HttpServletResponse response) {
         try {
-            // In a real implementation, you might want to:
-            // 1. Add the token to a blacklist
-            // 2. Store blacklisted tokens in Redis with expiration
-            // 3. Or use a stateful approach with sessions
+            // Clear the JWT cookie
+            ResponseCookie cookie = ResponseCookie.from("jwt", "")
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(0) // Expire immediately
+                    .sameSite("Lax")
+                    .build();
 
-            // For now, just return success - client should remove token
+            response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
             return ResponseEntity.ok(new AuthResponseDto("Logged out successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -141,40 +136,38 @@ public class AuthController {
 
     @PostMapping("/me")
     public ResponseEntity<User> getUserFromJwt(HttpServletRequest request) {
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Get cookies from request
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String token = authHeader.substring(7);
+        // Find the "jwt" cookie
+        String token = null;
+        for (Cookie cookie : cookies) {
+            if ("jwt".equals(cookie.getName())) {
+                token = cookie.getValue();
+                break;
+            }
+        }
 
-        // Parse the token
+        if (token == null || token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Extract username from token
         String username = jwtUtil.extractUsername(token);
-        System.out.println(username);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Optional<User> user = userRepository.findByUsername(username);
-        if (user == null) {
+
+        // Find user in repository
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok(user.get());
-    }
 
+        return ResponseEntity.ok(userOpt.get());
+    }
 }
