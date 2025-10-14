@@ -285,12 +285,20 @@ export class HomePageComponent implements OnInit {
     this.handleLike(postId);
   }
 
-  onSubscribeEvent(userId: string) {
-    this.handleSubscribe(userId);
+  onSubscribeEvent(event: any) {
+    // Try to extract userId from event
+    const userId = event?.userId || event?.detail?.userId || '';
+    if (userId) {
+      this.handleSubscribe(userId);
+    }
   }
 
-  onComment(postId: string) {
-    this.handleComment(postId);
+  onComment(event: any) {
+    // Try to extract postId from event
+    const postId = event?.postId || event?.detail?.postId || '';
+    if (postId) {
+      this.handleComment(postId);
+    }
   }
 
   onPostClick(event: any) {
