@@ -195,6 +195,9 @@ export class HomePageComponent implements OnInit {
   @Input() state: AppState = {};
   @Output() navigateTo = new EventEmitter<{ page: string; data?: any }>();
   @Output() updateState = new EventEmitter<Partial<AppState>>();
+  @Output() userClick = new EventEmitter<string>();
+  @Output() report = new EventEmitter<string>();
+  @Output() postClick = new EventEmitter<Post>();
 
   posts: Post[] = [];
   loading = true;
@@ -290,16 +293,28 @@ export class HomePageComponent implements OnInit {
     this.handleComment(postId);
   }
 
-  onPostClick(post: Post) {
-    this.handlePostClick(post);
+  onPostClick(event: any) {
+    // Try to extract the post object from the event
+    const post = event?.post || event?.detail?.post;
+    if (post) {
+      this.handlePostClick(post);
+    }
   }
 
-  onUserClickEvent(userId: string) {
-    this.handleUserClick(userId);
+  onUserClickEvent(event: any) {
+    // If event is an Event, extract userId from event.target or event.detail
+    const userId = event?.userId || event?.detail?.userId || '';
+    if (userId) {
+      this.handleUserClick(userId);
+    }
   }
 
-  onReport(postId: string) {
-    this.handleReport(postId);
+  onReport(event: any) {
+    // If event is an Event, extract postId from event.target or event.detail
+    const postId = event?.postId || event?.detail?.postId || '';
+    if (postId) {
+      this.handleReport(postId);
+    }
   }
 
   onUserClick(userId: string) {
