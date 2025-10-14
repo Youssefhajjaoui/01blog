@@ -1,3 +1,8 @@
+:root {
+  --third-color: #1B3C53;
+}
+
+
 .auth-page {
   height: 100vh;
   min-height: 100vh;
@@ -8,8 +13,8 @@
 /* Left Promotional Section */
 .promotional-section {
   flex: 2;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%), 
-              url('/assets/background-person.jpg');
+  background: linear-gradient(135deg, rgba(128, 128, 128, 0.6) 0%, rgba(0, 0, 0, 0.6) 100%),
+            url('/assets/background-person.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -193,7 +198,7 @@
 }
 
 .tab-button.active {
-  background: #3b82f6;
+  background: #1B3C53;
   color: white;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }

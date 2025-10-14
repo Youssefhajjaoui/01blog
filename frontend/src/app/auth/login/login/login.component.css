@@ -7,6 +7,7 @@
 }
 
 .form-header h2 {
+  font-family: 'Montserrat', sans-serif;
   font-size: 28px;
   font-weight: 700;
   color: #1e293b;
@@ -118,7 +119,7 @@
 .submit-button {
   width: 100%;
   padding: 16px;
-  background: #3b82f6;
+  background: #1B3C53;
   color: white;
   border: none;
   border-radius: 8px;
