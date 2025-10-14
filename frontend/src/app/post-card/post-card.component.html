@@ -1,0 +1,83 @@
+<div class="post-card" [ngClass]="variant">
+      <div class="post-card-header">
+        <img
+          [src]="post.author.avatar"
+          [alt]="post.author.name"
+          class="post-card-avatar"
+          (click)="userClick.emit({ userId: post.author.id })"
+        />
+        <div>
+          <div class="post-card-author" (click)="userClick.emit({ userId: post.author.id })">
+            {{ post.author.name }}
+          </div>
+          <div class="post-card-date">{{ post.createdAt | date : 'mediumDate' }}</div>
+        </div>
+        <button class="post-card-report" (click)="report.emit({ postId: post.id })" title="Report">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="post-card-body" (click)="postClick.emit({ post: post })">
+        <h2 class="post-card-title">{{ post.title }}</h2>
+        <p class="post-card-excerpt">{{ post.excerpt }}</p>
+        <img
+          *ngIf="post.media && post.media.length"
+          [src]="post.media[0]?.url"
+          [alt]="post.media[0]?.alt"
+          class="post-card-image"
+        />
+        <div class="post-card-tags">
+          <span *ngFor="let tag of post.tags" class="post-card-tag">#{{ tag }}</span>
+        </div>
+      </div>
+      <div class="post-card-footer">
+        <button
+          class="post-card-action"
+          [class.liked]="post.isLiked"
+          (click)="like.emit({ postId: post.id })"
+        >
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 15l7-7 7 7"
+            />
+          </svg>
+          {{ post.likes }}
+        </button>
+        <button class="post-card-action" (click)="comment.emit({ postId: post.id })">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H7a2 2 0 01-2-2V10a2 2 0 012-2h2"
+            />
+          </svg>
+          {{ post.comments }}
+        </button>
+        <button
+          class="post-card-action"
+          [class.subscribed]="post.isSubscribed"
+          (click)="subscribe.emit({ userId: post.author.id })"
+        >
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          {{ post.isSubscribed ? 'Subscribed' : 'Subscribe' }}
+        </button>
+      </div>
+    </div>

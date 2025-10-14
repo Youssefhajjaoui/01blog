@@ -66,7 +66,7 @@
         </div>
 
         <!-- Posts Feed -->
-        <div *ngIf="loading" class="feed-loading">
+        <!-- <div *ngIf="loading" class="feed-loading">
           <div *ngFor="let item of [1,2,3]" class="feed-card feed-card-loading">
             <div class="feed-card-pulse">
               <div class="feed-card-header">
@@ -82,10 +82,10 @@
               <div class="feed-image"></div>
             </div>
           </div>
-        </div>
+        </div> -->
 
-        <div *ngIf="!loading && viewMode === 'grid'" class="feed-grid">
-          <div *ngFor="let post of filteredPosts" class="feed-card">
+        <div  class="feed-grid">
+          <div *ngFor="let post of posts" class="feed-card">
             <app-post-card
               [post]="post"
               [currentUserId]="state.currentUser?.id || ''"

@@ -1,5 +1,8 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PostService } from '../services/post';
+import { AppPostCardComponent } from '../post-card/post-card.component';
 
 // Types
 export interface User {
@@ -187,17 +190,19 @@ const trendingTags = [
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, AppPostCardComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
 })
 export class HomePageComponent implements OnInit {
+  @Input() variant: string = 'feed';
   @Input() state: AppState = {};
   @Output() navigateTo = new EventEmitter<{ page: string; data?: any }>();
   @Output() updateState = new EventEmitter<Partial<AppState>>();
   @Output() userClick = new EventEmitter<string>();
   @Output() report = new EventEmitter<string>();
   @Output() postClick = new EventEmitter<Post>();
+  constructor(private postService: PostService) {}
 
   posts: Post[] = [];
   loading = true;
@@ -210,12 +215,41 @@ export class HomePageComponent implements OnInit {
     this.loadPosts();
   }
 
-  async loadPosts() {
+  loadPosts() {
     this.loading = true;
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    this.posts = mockPosts;
-    this.updateState.emit({ posts: mockPosts, users: mockUsers });
-    this.loading = false;
+    this.postService.getPosts().subscribe({
+      next: (posts) => {
+        this.posts = posts.map((p: any) => ({
+          id: String(p.id),
+          author: {
+            id: String(p.creator.id),
+            name: p.creator.username,
+            email: p.creator.email,
+            avatar: p.creator.image || '',
+            bio: '',
+            role: p.creator.role,
+            subscribers: 0,
+            posts: 0,
+          },
+          title: p.title,
+          content: p.content,
+          excerpt: p.content.slice(0, 100),
+          media: p.mediaUrl ? [{ type: p.mediaType || 'image', url: p.mediaUrl, alt: '' }] : [],
+          tags: [],
+          likes: 0,
+          comments: 0,
+          isLiked: false,
+          isSubscribed: false,
+          createdAt: p.createdAt,
+          visibility: 'public',
+        }));
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+      },
+    });
   }
 
   get filteredPosts(): Post[] {
@@ -281,7 +315,8 @@ export class HomePageComponent implements OnInit {
   }
 
   // Event handlers for template
-  onLike(postId: string) {
+  onLike(event: any) {
+    const postId = event?.postId || event?.detail?.postId || '';
     this.handleLike(postId);
   }
 

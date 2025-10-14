@@ -20,31 +20,22 @@ export class AuthService {
 
   /** Login - backend sets HttpOnly cookie automatically */
   login(username: string, password: string): Observable<User> {
-    return this.http.post<User>(`${this.API_URL}/login`, 
-      { username, password }, 
-      { withCredentials: true }
-    ).pipe(
-      tap(user => this.currentUserSubject.next(user))
-    );
+    return this.http
+      .post<User>(`${this.API_URL}/login`, { username, password }, { withCredentials: true })
+      .pipe(tap((user) => this.currentUserSubject.next(user)));
   }
 
   /** Logout - backend clears cookie */
   logout(): Observable<void> {
-    return this.http.post<void>(`${this.API_URL}/logout`, 
-      {}, 
-      { withCredentials: true }
-    ).pipe(
-      tap(() => this.currentUserSubject.next(null))
-    );
+    return this.http
+      .post<void>(`${this.API_URL}/logout`, {}, { withCredentials: true })
+      .pipe(tap(() => this.currentUserSubject.next(null)));
   }
 
   /** Check authentication by requesting /me */
   checkAuth(): Observable<boolean> {
-    return this.http.post<User>(`${this.API_URL}/me`, 
-      {},
-      { withCredentials: true } 
-    ).pipe(
-      tap(user => this.currentUserSubject.next(user)),
+    return this.http.get<User>(`${this.API_URL}/me`, { withCredentials: true }).pipe(
+      tap((user) => this.currentUserSubject.next(user)),
       map(() => true),
       catchError(() => {
         this.currentUserSubject.next(null);
