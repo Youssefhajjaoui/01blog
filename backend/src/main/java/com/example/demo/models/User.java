@@ -52,6 +52,9 @@ public class User implements UserDetails {
 	@Column
 	private LocalDate birthday;
 
+	@Column
+	private String bio;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private UserRole role = UserRole.USER;
@@ -66,6 +69,15 @@ public class User implements UserDetails {
 	private LocalDateTime createdAt = LocalDateTime.now();
 
 	public User() {
+
+	}
+
+	public User(String username, String email, String password, String photo, String bio) {
+		this.username = username;
+		this.email = email;
+		this.passwordHash = password;
+		this.image = photo;
+		this.bio = bio;
 	}
 
 	// Constructor for registration
@@ -190,6 +202,10 @@ public class User implements UserDetails {
 	@Override
 	public boolean isEnabled() {
 		return !banned; // User is enabled if not banned
+	}
+
+	public String getBio() {
+		return this.bio;
 	}
 
 }

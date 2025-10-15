@@ -1,10 +1,12 @@
 -- Create users table
-CREATE TABLE users (
+CREATE TABLE users
+(
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(150) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     image VARCHAR(255),
+    bio VARCHAR(1000),
     birthday DATE,
     role VARCHAR(50) NOT NULL DEFAULT 'USER',
     banned BOOLEAN NOT NULL DEFAULT FALSE,
@@ -13,20 +15,24 @@ CREATE TABLE users (
 );
 
 -- Create posts table
-CREATE TABLE posts (
+CREATE TABLE posts
+(
     id BIGSERIAL PRIMARY KEY,
     creator_id BIGINT NOT NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     media_url VARCHAR(255),
     media_type VARCHAR(50),
+    tags TEXT[],                            -- ✅ String[] equivalent in SQL
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP,
     CONSTRAINT fk_posts_creator FOREIGN KEY (creator_id) REFERENCES users(id)
 );
 
+
 -- Create comments table
-CREATE TABLE comments (
+CREATE TABLE comments
+(
     id BIGSERIAL PRIMARY KEY,
     content TEXT NOT NULL,
     creator_id BIGINT NOT NULL,
@@ -37,7 +43,8 @@ CREATE TABLE comments (
 );
 
 -- Create likes table
-CREATE TABLE likes (
+CREATE TABLE likes
+(
     id BIGSERIAL PRIMARY KEY,
     creator_id BIGINT NOT NULL,
     post_id BIGINT NOT NULL,
@@ -48,7 +55,8 @@ CREATE TABLE likes (
 );
 
 -- Create subscriptions table
-CREATE TABLE subscriptions (
+CREATE TABLE subscriptions
+(
     id BIGSERIAL PRIMARY KEY,
     follower_id BIGINT NOT NULL,
     followed_id BIGINT NOT NULL,
@@ -59,7 +67,8 @@ CREATE TABLE subscriptions (
 );
 
 -- Create notifications table
-CREATE TABLE notifications (
+CREATE TABLE notifications
+(
     id BIGSERIAL PRIMARY KEY,
     creator_id BIGINT NOT NULL,
     receiver_id BIGINT NOT NULL,
@@ -71,7 +80,8 @@ CREATE TABLE notifications (
 );
 
 -- Create reports table
-CREATE TABLE reports (
+CREATE TABLE reports
+(
     id BIGSERIAL PRIMARY KEY,
     reporter_id BIGINT NOT NULL,
     reported_user_id BIGINT,

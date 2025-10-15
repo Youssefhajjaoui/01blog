@@ -6,6 +6,8 @@ import java.util.Optional;
 import com.example.demo.models.*;
 import com.example.demo.repositories.UserRepository;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -15,6 +17,7 @@ import com.example.demo.security.JwtUtil;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -33,11 +36,36 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain)
             throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
+        String path = request.getRequestURI();
+        if (path.startsWith("/api/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Invalid token or user does not exist\"}");
+            return;
+        }
+        // Find the "jwt" cookie
+        String token = null;
+        for (Cookie cookie : cookies) {
+            if ("jwt".equals(cookie.getName())) {
+                token = cookie.getValue();
+                break;
+            }
+        }
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String jwt = authHeader.substring(7);
-            String username = jwtUtil.extractUsername(jwt);
+        if (token == null || token.isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Invalid token or user does not exist\"}");
+            return;
+        }
+
+        if (token != null && !token.isEmpty()) {
+            String username = jwtUtil.extractUsername(token);
 
             if (username != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -51,7 +79,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
 
                 User user = optionalUser.get();
-                if (jwtUtil.validateToken(jwt, user)) {
+                if (jwtUtil.validateToken(token, user)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             user, null, user.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authToken);

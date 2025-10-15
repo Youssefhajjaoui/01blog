@@ -1,5 +1,8 @@
 package com.example.demo.controllers;
 
+import com.example.demo.dtos.MediaDto;
+import com.example.demo.dtos.PostDto;
+import com.example.demo.dtos.Userdto;
 import com.example.demo.models.Notification;
 import com.example.demo.models.Post;
 import com.example.demo.models.Subscription;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/posts")
@@ -56,9 +60,14 @@ public class PostController {
     }
 
     // ----------------- READ -----------------
+    // @GetMapping
+    // public List<Post> getAllPosts() {
+    // return postRepository.findAll();
+    // }
+
     @GetMapping
-    public List<Post> getAllPosts() {
-        return postRepository.findAll();
+    public List<PostDto> getAllPosts() {
+        return postRepository.findAll().stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
@@ -135,5 +144,43 @@ public class PostController {
             notificationRepository.save(notification);
             notifcontroller.sendPostNotification(post.getTitle());
         }
+    }
+
+    private PostDto mapToDto(Post post) {
+        PostDto dto = new PostDto();
+        dto.setId(post.getId().toString());
+        dto.setAuthor(mapUserToDto(post.getCreator()));
+        dto.setTitle(post.getTitle());
+        dto.setContent(post.getContent());
+        dto.setExcerpt(
+                post.getContent().length() > 100 ? post.getContent().substring(0, 100) + "..." : post.getContent());
+        dto.setMedia(post.getMediaUrl() != null
+                ? List.of(new MediaDto(post.getMediaType().name(), post.getMediaUrl(), post.getTitle()))
+                : List.of());
+        dto.setTags(post.getTags());
+        dto.setLikes(post.getLikes() != null ? post.getLikes().size() : 0); // Request likes from backend
+        dto.setComments(post.getComments() != null ? post.getComments().size() : 0); // Request comments from backend
+        dto.setLiked(false); // Set based on current user if needed
+        dto.setSubscribed(false); // Set based on current user if needed
+        dto.setCreatedAt(post.getCreatedAt().toString());
+        dto.setVisibility("public"); // Or your logic
+        return dto;
+    }
+
+    private Userdto mapUserToDto(User user) {
+        Userdto dto = new Userdto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setAvatar(
+                user.getImage() != null ? user.getImage() : "https://ui-avatars.com/api/?name=" + user.getUsername());
+        dto.setBio(user.getBio() != null ? user.getBio() : "");
+        dto.setRole(user.getRole());
+        // If you have a way to count subscribers and posts, set them here:
+        // dto.setSubscribers(user.getSubscribers() != null ?
+        // user.getSubscribers().size() : 0); // Or your logic
+        // dto.setPosts(user.getPosts() != null ? user.getPosts().size() : 0); // Or
+        // your logic
+        return dto;
     }
 }
