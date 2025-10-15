@@ -84,7 +84,7 @@
           </div>
         </div> 
 
-        <div  class="feed-grid">
+        <div *ngIf="viewMode === 'grid'"  class="feed-grid">
           <div *ngFor="let post of filteredPosts" class="feed-card">
             <app-post-card
               [post]="post"
