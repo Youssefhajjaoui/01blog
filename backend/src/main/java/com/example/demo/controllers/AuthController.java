@@ -1,5 +1,9 @@
 package com.example.demo.controllers;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -13,14 +17,17 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.dtos.AuthResponseDto;
 import com.example.demo.dtos.UserLoginDto;
-import com.example.demo.dtos.UserRegistrationDto;
+import com.example.demo.dtos.Userdto;
 import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.security.JwtUtil;
@@ -48,33 +55,47 @@ public class AuthController {
         this.authManager = authManager;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationDto userDto, BindingResult result) {
+    @PostMapping(value = "/register", consumes = { "multipart/form-data" })
+    public ResponseEntity<?> register(
+            @RequestPart("user") @Valid Userdto userDto,
+            @RequestPart(value = "photo", required = false) MultipartFile photo,
+            BindingResult result) {
+
         try {
-            // Check for validation errors
             if (result.hasErrors()) {
                 Map<String, String> errors = new HashMap<>();
                 result.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
                 return ResponseEntity.badRequest().body(errors);
             }
 
-            // Check if username already exists
             if (userRepository.existsByUsername(userDto.getUsername())) {
-                return ResponseEntity.badRequest()
-                        .body(new AuthResponseDto("Username already exists"));
+                return ResponseEntity.badRequest().body(new AuthResponseDto("Username already exists"));
             }
 
-            // Check if email already exists
             if (userRepository.existsByEmail(userDto.getEmail())) {
-                return ResponseEntity.badRequest()
-                        .body(new AuthResponseDto("Email already exists"));
+                return ResponseEntity.badRequest().body(new AuthResponseDto("Email already exists"));
             }
 
-            // Create new user
+            // ✅ Save photo file if provided
+            String photoPath = null;
+            if (photo != null && !photo.isEmpty()) {
+                String uploadDir = "uploads/";
+                String filename = System.currentTimeMillis() + "_" + photo.getOriginalFilename();
+                File directory = new File(uploadDir);
+                if (!directory.exists())
+                    directory.mkdirs();
+                Path filePath = Paths.get(uploadDir, filename);
+                Files.write(filePath, photo.getBytes());
+                photoPath = filePath.toString();
+            }
+
+            // ✅ Create user with photo path and bio
             User user = new User(
                     userDto.getUsername(),
                     userDto.getEmail(),
-                    passwordEncoder.encode(userDto.getPassword()));
+                    passwordEncoder.encode(userDto.getPassword()),
+                    photoPath,
+                    userDto.getBio());
 
             userRepository.save(user);
 
@@ -113,7 +134,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Logged in successfully"));
     }
 
-    @PostMapping("/logout")
+    @GetMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         try {
             // Clear the JWT cookie
@@ -122,7 +143,6 @@ public class AuthController {
                     .secure(false)
                     .path("/")
                     .maxAge(0) // Expire immediately
-                    .sameSite("Lax")
                     .build();
 
             response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -134,8 +154,16 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/me")
+    @GetMapping("/me")
     public ResponseEntity<User> getUserFromJwt(HttpServletRequest request) {
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
         // Get cookies from request
         Cookie[] cookies = request.getCookies();
 
@@ -151,7 +179,7 @@ public class AuthController {
                 break;
             }
         }
-
+        System.out.println(token);
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

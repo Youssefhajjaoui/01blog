@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
+// import {mapBackendPostToFrontend} from '' // FIX: Provide correct path or remove if not available
 // import { Post } from '../models/post.model'; // your Post interface
 
 export interface Author {
@@ -44,35 +45,36 @@ export class PostService {
   constructor(private http: HttpClient) {}
 
   getPosts(): Observable<Post[]> {
-    return this.http.get<any[]>(`${this.apiUrl}`, { withCredentials: true }).pipe(
-      map((posts: any) =>
-        posts.map((p: any) => ({
-          id: String(p.id),
-          author: {
-            id: String(p.creator.id),
-            name: p.creator.username,
-            email: p.creator.email,
-            avatar: p.creator.image || '',
-            bio: '',
-            role: p.creator.role,
-            subscribers: 0,
-            posts: 0,
-          },
-          title: p.title,
-          content: p.content,
-          excerpt: p.content.slice(0, 100), // optional
-          media: p.mediaUrl ? [{ type: p.mediaType || 'image', url: p.mediaUrl, alt: '' }] : [],
-          tags: [],
-          likes: 0,
-          comments: 0,
-          isLiked: false,
-          isSubscribed: false,
-          createdAt: p.createdAt,
-          visibility: 'public',
-        }))
-      )
-    );
+    return this.http
+      .get<any[]>(`${this.apiUrl}`, { withCredentials: true })
+      .pipe(map((posts) => posts.map(mapBackendPostToFrontend)));
   }
 
   // Optional: like, subscribe, report methods can also go here
+}
+function mapBackendPostToFrontend(raw: any): Post {
+  return {
+    id: raw.id,
+    author: {
+      id: String(raw.author.id),
+      name: raw.author.username, // Map 'username' to 'name'
+      email: raw.author.email,
+      avatar: raw.author.avatar || raw.author.avatr, // Handle typo
+      bio: raw.author.bio,
+      role: raw.author.role,
+      subscribers: raw.author.subscribers || 0,
+      posts: raw.author.posts || 0,
+    },
+    title: raw.title,
+    content: raw.content,
+    excerpt: raw.excerpt,
+    media: raw.media,
+    tags: raw.tags,
+    likes: raw.likes,
+    comments: raw.comments,
+    isLiked: raw.liked,
+    isSubscribed: raw.subscribed,
+    createdAt: raw.createdAt,
+    visibility: raw.visibility,
+  };
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PostService } from '../services/post';
@@ -39,106 +39,6 @@ export interface AppState {
   showReportModal?: boolean;
   reportTarget?: { type: string; id: string };
 }
-
-// Mock data
-const mockPosts: Post[] = [
-  {
-    id: '1',
-    author: {
-      id: '2',
-      name: 'Alex Rivera',
-      email: 'alex@example.com',
-      avatar:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      bio: 'Full-stack developer and CS student',
-      role: 'user',
-      subscribers: 856,
-      posts: 24,
-    },
-    title: "Understanding React Hooks: A Beginner's Guide",
-    content: 'React Hooks have revolutionized how we write React components...',
-    excerpt:
-      "Learn the fundamentals of React Hooks and how they can simplify your component logic. We'll cover useState, useEffect, and custom hooks.",
-    media: [
-      {
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1576444356170-66073046b1bc?w=1080',
-        alt: 'React code on screen',
-      },
-    ],
-    tags: ['react', 'javascript', 'webdev', 'hooks'],
-    likes: 142,
-    comments: 28,
-    isLiked: false,
-    isSubscribed: false,
-    createdAt: '2024-01-15T10:30:00Z',
-    visibility: 'public',
-  },
-  {
-    id: '2',
-    author: {
-      id: '3',
-      name: 'Maya Patel',
-      email: 'maya@example.com',
-      avatar:
-        'https://images.unsplash.com/photo-1494790108755-2616b332c0a2?w=150&h=150&fit=crop&crop=face',
-      bio: 'Data Science student at MIT',
-      role: 'user',
-      subscribers: 1230,
-      posts: 67,
-    },
-    title: 'My Journey from Zero to Machine Learning Engineer',
-    content: 'Six months ago, I knew nothing about machine learning...',
-    excerpt:
-      'A personal story about transitioning from web development to machine learning, including the resources and projects that helped me along the way.',
-    media: [
-      {
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1753613648137-602c669cbe07?w=1080',
-        alt: 'Students learning',
-      },
-    ],
-    tags: ['machinelearning', 'python', 'career', 'journey'],
-    likes: 89,
-    comments: 15,
-    isLiked: true,
-    isSubscribed: true,
-    createdAt: '2024-01-14T15:45:00Z',
-    visibility: 'public',
-  },
-  {
-    id: '3',
-    author: {
-      id: '4',
-      name: 'Jordan Kim',
-      email: 'jordan@example.com',
-      avatar:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      bio: 'CS Senior at Stanford, iOS enthusiast',
-      role: 'user',
-      subscribers: 445,
-      posts: 31,
-    },
-    title: 'Building My First iOS App: Lessons Learned',
-    content: 'After months of learning Swift and iOS development...',
-    excerpt:
-      'Key takeaways from developing my first iOS application, including common pitfalls and helpful resources for beginners.',
-    media: [
-      {
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1649451844813-3130d6f42f8a?w=1080',
-        alt: 'Programming tutorial',
-      },
-    ],
-    tags: ['ios', 'swift', 'mobile', 'beginner'],
-    likes: 67,
-    comments: 12,
-    isLiked: false,
-    isSubscribed: false,
-    createdAt: '2024-01-13T09:20:00Z',
-    visibility: 'public',
-  },
-];
 
 const mockUsers: User[] = [
   {
@@ -202,7 +102,7 @@ export class HomePageComponent implements OnInit {
   @Output() userClick = new EventEmitter<string>();
   @Output() report = new EventEmitter<string>();
   @Output() postClick = new EventEmitter<Post>();
-  constructor(private postService: PostService) {}
+  constructor(private postService: PostService, private cd: ChangeDetectorRef) {}
 
   posts: Post[] = [];
   loading = true;
@@ -219,32 +119,12 @@ export class HomePageComponent implements OnInit {
     this.loading = true;
     this.postService.getPosts().subscribe({
       next: (posts) => {
-        this.posts = posts.map((p: any) => ({
-          id: String(p.id),
-          author: {
-            id: String(p.creator.id),
-            name: p.creator.username,
-            email: p.creator.email,
-            avatar: p.creator.image || '',
-            bio: '',
-            role: p.creator.role,
-            subscribers: 0,
-            posts: 0,
-          },
-          title: p.title,
-          content: p.content,
-          excerpt: p.content.slice(0, 100),
-          media: p.mediaUrl ? [{ type: p.mediaType || 'image', url: p.mediaUrl, alt: '' }] : [],
-          tags: [],
-          likes: 0,
-          comments: 0,
-          isLiked: false,
-          isSubscribed: false,
-          createdAt: p.createdAt,
-          visibility: 'public',
-        }));
+        console.log('Fetched posts:', posts);
+        this.posts = posts;
         this.loading = false;
+        this.cd.detectChanges(); // 👈 ensures Angular updates the DOM
       },
+
       error: (err) => {
         console.error(err);
         this.loading = false;
