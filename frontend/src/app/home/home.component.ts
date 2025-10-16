@@ -110,9 +110,28 @@ export class HomePageComponent implements OnInit {
   viewMode: 'list' | 'grid' = 'list';
   mockUsers = mockUsers;
   trendingTags = trendingTags;
+  searchQuery = '';
+  currentPage = 'home';
+  currentUser: User | null = null;
 
   ngOnInit() {
     this.loadPosts();
+    // Set current user from state if available
+    if (this.state.currentUser) {
+      this.currentUser = this.state.currentUser;
+    } else {
+      // Fallback to mock user for display
+      this.currentUser = {
+        id: '1',
+        name: 'Current User',
+        email: 'user@example.com',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user',
+        bio: 'Student',
+        role: 'user',
+        subscribers: 0,
+        posts: 0
+      };
+    }
   }
 
   loadPosts() {

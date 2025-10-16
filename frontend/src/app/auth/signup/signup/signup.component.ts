@@ -20,7 +20,7 @@ export class Signup {
   isLoading = false;
   errorMessage = '';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router) { }
 
   async onSubmit() {
     this.isLoading = true;
@@ -62,7 +62,7 @@ export class Signup {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Signup failed. Please try again.');
       }
-      
+
       const data = await response.json();
       console.log('Signup successful:', data);
 

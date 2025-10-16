@@ -55,13 +55,25 @@ public class AuthController {
         this.authManager = authManager;
     }
 
-    @PostMapping(value = "/register", consumes = { "multipart/form-data" })
+    @PostMapping(value = "/register", consumes = { "multipart/form-data", "application/json" })
     public ResponseEntity<?> register(
-            @RequestPart("user") @Valid Userdto userDto,
+            @RequestPart(value = "user", required = false) @Valid Userdto userDtoFromMultipart,
             @RequestPart(value = "photo", required = false) MultipartFile photo,
+            @RequestBody(required = false) @Valid Userdto userDtoFromJson,
             BindingResult result) {
 
         try {
+            // Determine which DTO to use based on content type
+            Userdto userDto;
+            if (userDtoFromMultipart != null) {
+                userDto = userDtoFromMultipart;
+            } else if (userDtoFromJson != null) {
+                userDto = userDtoFromJson;
+            } else {
+                return ResponseEntity.badRequest().body(new AuthResponseDto("User data is required"));
+            }
+
+
             if (result.hasErrors()) {
                 Map<String, String> errors = new HashMap<>();
                 result.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
@@ -76,7 +88,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(new AuthResponseDto("Email already exists"));
             }
 
-            // ✅ Save photo file if provided
+            // ✅ Save photo file if provided (only for multipart requests)
             String photoPath = null;
             if (photo != null && !photo.isEmpty()) {
                 String uploadDir = "uploads/";
