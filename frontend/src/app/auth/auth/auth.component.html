@@ -2,7 +2,6 @@
   <!-- Left Promotional Section -->
   <div class="promotional-section">
     <div class="promo-overlay">
-      
       <!-- Branding -->
       <div class="branding">
         <div class="brand-logo">
@@ -16,33 +15,24 @@
 
       <!-- Main Content -->
       <div class="promo-content">
-        <h1>Share Your Learning Journey</h1>
-        <p>Connect with thousands of students worldwide, share knowledge, and grow together in your educational journey.</p>
+        <h1>
+          Share Your<br />
+          <span class="highlight">Learning Journey</span>
+        </h1>
+        <p>Connect with thousands of students worldwide, share knowledge, and grow together in your educational journey.
+        </p>
+      </div>
 
-        <!-- Statistics -->
-        <div class="stats">
-          <div class="stat-item">
-            <div class="stat-icon">👥</div>
-            <div class="stat-info">
-              <h3>50K+ Students</h3>
-              <p>Active learning community</p>
-            </div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-icon">📚</div>
-            <div class="stat-info">
-              <h3>100K+ Posts</h3>
-              <p>Knowledge shared daily</p>
-            </div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-icon">📈</div>
-            <div class="stat-info">
-              <h3>95% Success Rate</h3>
-              <p>Students achieving goals</p>
-            </div>
-          </div>
-        </div>
+      <!-- Quote -->
+      <div class="quote">
+        <svg class="quote-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+        <blockquote>
+          "The best learning happens when students teach each other."
+        </blockquote>
+        <p>— 01Blog Community</p>
       </div>
     </div>
   </div>
@@ -50,18 +40,23 @@
   <!-- Right Form Section -->
   <div class="form-section">
     <div class="form-container">
+      <!-- Mobile Logo -->
+      <div class="mobile-logo">
+        <div class="brand-logo" style="justify-content: center; margin-bottom: 16px;">
+          <div class="logo-square">01</div>
+          <span style="font-weight: 700; font-size: 32px; color: var(--primary);">Blog</span>
+        </div>
+        <p style="color: var(--muted-foreground); font-size: 18px;">
+          Share your learning journey with students worldwide
+        </p>
+      </div>
+
       <!-- Toggle Tabs -->
       <div class="auth-tabs">
-        <button 
-          [class.active]="isLoginMode"
-          (click)="isLoginMode = true"
-          class="tab-button">
+        <button [class.active]="isLoginMode" (click)="isLoginMode = true" class="tab-button">
           Sign In
         </button>
-        <button 
-          [class.active]="!isLoginMode"
-          (click)="isLoginMode = false"
-          class="tab-button">
+        <button [class.active]="!isLoginMode" (click)="isLoginMode = false" class="tab-button">
           Sign Up
         </button>
       </div>

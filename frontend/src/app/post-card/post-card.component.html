@@ -1,83 +1,151 @@
-<div class="post-card" [ngClass]="variant">
-      <div class="post-card-header">
-        <img
-          [src]="post.author.avatar"
-          [alt]="post.author.name"
-          class="post-card-avatar"
-          (click)="userClick.emit({ userId: post.author.id })"
-        />
-        <div>
-          <div class="post-card-author" (click)="userClick.emit({ userId: post.author.id })">
-            {{ post.author.name }}
-          </div>
-          <div class="post-card-date">{{ post.createdAt | date : 'mediumDate' }}</div>
-        </div>
-        <button class="post-card-report" (click)="report.emit({ postId: post.id })" title="Report">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" stroke-width="2" />
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8v4m0 4h.01"
-            />
-          </svg>
-        </button>
+<!-- Grid Variant -->
+<div *ngIf="variant === 'grid'" class="card card-grid" (click)="handlePostClick()">
+  <!-- Media -->
+  <div *ngIf="post.media && post.media[0]" class="card-media-grid">
+    <img [src]="post.media[0].url" [alt]="post.media[0].alt || post.title" class="media-image" />
+    <div class="media-overlay"></div>
+  </div>
+
+  <div class="card-content-grid">
+    <!-- Author Info -->
+    <div class="author-row-grid">
+      <div class="avatar-wrapper-sm" (click)="handleUserClick($event)">
+        <img *ngIf="post.author.avatar" [src]="post.author.avatar" [alt]="post.author.name" class="avatar-sm" />
+        <span *ngIf="!post.author.avatar" class="avatar-fallback-sm">{{getInitials(post.author.name)}}</span>
       </div>
-      <div class="post-card-body" (click)="postClick.emit({ post: post })">
-        <h2 class="post-card-title">{{ post.title }}</h2>
-        <p class="post-card-excerpt">{{ post.excerpt }}</p>
-        <img
-          *ngIf="post.media && post.media.length"
-          [src]="post.media[0]?.url"
-          [alt]="post.media[0]?.alt"
-          class="post-card-image"
-        />
-        <div class="post-card-tags">
-          <span *ngFor="let tag of post.tags" class="post-card-tag">#{{ tag }}</span>
-        </div>
+      <span class="author-name-sm">{{post.author.name}}</span>
+    </div>
+
+    <!-- Content -->
+    <h3 class="card-title-grid">{{post.title}}</h3>
+    <p class="card-excerpt-grid">{{post.excerpt}}</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="card-footer-grid">
+    <div class="action-group">
+      <div class="action-item" (click)="handleLike($event)" [class.liked]="localLiked">
+        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" [class.filled]="localLiked">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+        <span>{{localLikes}}</span>
       </div>
-      <div class="post-card-footer">
-        <button
-          class="post-card-action"
-          [class.liked]="post.isLiked"
-          (click)="like.emit({ postId: post.id })"
-        >
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 15l7-7 7 7"
-            />
-          </svg>
-          {{ post.likes }}
-        </button>
-        <button class="post-card-action" (click)="comment.emit({ postId: post.id })">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M17 8h2a2 2 0 012 2v8a2 2 0 01-2 2H7a2 2 0 01-2-2V10a2 2 0 012-2h2"
-            />
-          </svg>
-          {{ post.comments }}
-        </button>
-        <button
-          class="post-card-action"
-          [class.subscribed]="post.isSubscribed"
-          (click)="subscribe.emit({ userId: post.author.id })"
-        >
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          {{ post.isSubscribed ? 'Subscribed' : 'Subscribe' }}
-        </button>
+      <div class="action-item" (click)="handleComment($event)">
+        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <span>{{post.comments}}</span>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Feed Variant (Default) -->
+<div *ngIf="variant === 'feed'" class="card card-feed" (click)="handlePostClick()">
+  <div class="card-content">
+    <!-- Author Header -->
+    <div class="author-header">
+      <div class="author-info">
+        <div class="avatar-wrapper" (click)="handleUserClick($event)">
+          <img *ngIf="post.author.avatar" [src]="post.author.avatar" [alt]="post.author.name" class="avatar" />
+          <span *ngIf="!post.author.avatar" class="avatar-fallback">{{getInitials(post.author.name)}}</span>
+        </div>
+        <div class="author-details">
+          <div class="author-top">
+            <span class="author-name" (click)="handleUserClick($event)">{{post.author.name}}</span>
+            <button *ngIf="!isOwner" class="follow-btn" [class.following]="localSubscribed" (click)="handleSubscribe($event)">
+              <svg class="follow-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              {{localSubscribed ? 'Following' : 'Follow'}}
+            </button>
+          </div>
+          <p class="author-date">{{formatDate(post.createdAt)}}</p>
+        </div>
+      </div>
+
+      <!-- Menu Button -->
+      <div class="menu-wrapper">
+        <button class="menu-btn" (click)="showMenu = !showMenu; $event.stopPropagation()">
+          <svg class="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+          </svg>
+        </button>
+        <div *ngIf="showMenu" class="menu-dropdown">
+          <button class="menu-item" (click)="handleShare($event)">
+            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            Share
+          </button>
+          <button class="menu-item" (click)="$event.stopPropagation()">
+            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+            Save
+          </button>
+          <button *ngIf="!isOwner" class="menu-item menu-item-danger" (click)="handleReport($event)">
+            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+            </svg>
+            Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-section">
+      <h2 class="content-title">{{post.title}}</h2>
+      <p class="content-excerpt">{{post.excerpt}}</p>
+
+      <!-- Tags -->
+      <div *ngIf="post.tags && post.tags.length > 0" class="tags-row">
+        <span *ngFor="let tag of post.tags.slice(0, 5)" class="tag-badge" (click)="$event.stopPropagation()">
+          #{{tag}}
+        </span>
+        <span *ngIf="post.tags.length > 5" class="tag-more" (click)="$event.stopPropagation()">
+          +{{post.tags.length - 5}} more
+        </span>
+      </div>
+    </div>
+
+    <!-- Media -->
+    <div *ngIf="post.media && post.media.length > 0" class="media-section">
+      <div *ngIf="post.media.length === 1" class="media-single">
+        <img [src]="post.media[0].url" [alt]="post.media[0].alt || post.title" class="media-image-single" />
+      </div>
+      <div *ngIf="post.media.length > 1" class="media-grid">
+        <div *ngFor="let media of post.media.slice(0, 4); let i = index" class="media-grid-item">
+          <img [src]="media.url" [alt]="media.alt || post.title + ' ' + (i + 1)" class="media-image-grid" />
+          <div *ngIf="i === 3 && post.media!.length > 4" class="media-overlay-count">
+            <span>+{{post.media!.length - 4}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions Footer -->
+  <div class="card-actions">
+    <div class="actions-left">
+      <button class="action-btn" [class.liked]="localLiked" (click)="handleLike($event)">
+        <svg class="action-icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24" [class.filled]="localLiked">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+        <span class="action-label">{{localLikes}}</span>
+      </button>
+      <button class="action-btn" (click)="handleComment($event)">
+        <svg class="action-icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <span class="action-label">{{post.comments}}</span>
+      </button>
+    </div>
+    <button class="action-btn action-btn-share" (click)="handleShare($event)">
+      <svg class="action-icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+      </svg>
+    </button>
+  </div>
+</div>

@@ -1,20 +1,16 @@
-:root {
-  --third-color: #1B3C53;
-}
-
-
 .auth-page {
   height: 100vh;
   min-height: 100vh;
   display: flex;
-  background: #f8fafc;
+  background: var(--background);
+  overflow: hidden;
 }
 
 /* Left Promotional Section */
 .promotional-section {
-  flex: 2;
-  background: linear-gradient(135deg, rgba(128, 128, 128, 0.6) 0%, rgba(0, 0, 0, 0.6) 100%),
-            url('/assets/background-person.jpg');
+  flex: 1;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%),
+    url('/assets/background-person.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -24,8 +20,10 @@
   justify-content: center;
   overflow: hidden;
   height: 100%;
+  padding: 48px;
 }
 
+/* Background Blur Effect */
 .promotional-section::before {
   content: '';
   position: absolute;
@@ -33,188 +31,233 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.1) 1px, transparent 0);
+  background-size: 40px 40px;
   opacity: 0.3;
+}
+
+/* Gradient Orbs */
+.promotional-section::after {
+  content: '';
+  position: absolute;
+  top: 80px;
+  right: 80px;
+  width: 384px;
+  height: 384px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  filter: blur(80px);
 }
 
 .promo-overlay {
   position: relative;
   z-index: 2;
-  padding: 60px 40px;
+  padding: 0;
   color: white;
-  max-width: 500px;
+  max-width: 540px;
   width: 100%;
-  border-radius: 20px;
-  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
 }
 
+/* Branding */
 .branding {
-  margin-bottom: 40px;
+  margin-bottom: 0;
 }
 
 .brand-logo {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  margin-bottom: 32px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.brand-logo:hover {
+  opacity: 0.9;
 }
 
 .logo-square {
-  width: 48px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  width: 64px;
+  height: 64px;
+  background: var(--primary);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: bold;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-foreground);
+  box-shadow: 0 10px 25px -5px rgba(92, 126, 143, 0.2);
+  transition: all 0.3s;
+}
+
+.brand-logo:hover .logo-square {
+  box-shadow: 0 20px 25px -5px rgba(92, 126, 143, 0.3);
 }
 
 .brand-text h2 {
-  font-size: 25px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 700;
   margin: 0;
   color: white;
 }
 
 .brand-text p {
-  font-size: 14px;
+  font-size: 13px;
   margin: 0;
   color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
+  font-weight: 400;
 }
 
+/* Promo Content */
 .promo-content h1 {
-  font-size: 30px;
-  font-weight: 600;
-  line-height: 1.1;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
   margin: 0 0 20px 0;
   color: white;
 }
 
-.promo-content p {
-  font-size: 18px;
-  line-height: 1.6;
-  margin: 0 0 40px 0;
-  color: rgba(255, 255, 255, 0.9);
+.promo-content h1 .highlight {
+  color: rgba(255, 255, 255, 0.95);
 }
 
+.promo-content>p {
+  font-size: 17px;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 480px;
+}
+
+/* Statistics Grid */
 .stats {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  display: none;
 }
 
 .stat-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 20px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: none;
 }
 
 .stat-icon {
-  font-size: 24px;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  display: none;
 }
 
-.stat-info h3 {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-  color: white;
-}
-
-.stat-info p {
-  font-size: 14px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.8);
+.stat-info {
+  display: none;
 }
 
 .quote {
-  margin-top: 40px;
+  margin-top: 8px;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
   border-radius: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.quote-icon {
+  width: 28px;
+  height: 28px;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.quote blockquote {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: white;
+  line-height: 1.5;
 }
 
 .quote p {
-  font-style: italic;
-  font-size: 16px;
+  font-size: 13px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
-  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Right Form Section */
 .form-section {
   flex: 1;
   display: flex;
-  overflow-y: auto;   
+  overflow-y: auto;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-  background: white;
+  padding: 32px;
+  background: var(--background);
 }
 
 .form-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
+/* Mobile Logo */
+.mobile-logo {
+  display: none;
+  text-align: center;
+}
+
+/* Auth Tabs */
 .auth-tabs {
-  display: flex;
+  display: flex !important;
   gap: 0;
-  margin-bottom: 40px;
-  background: #f1f5f9;
-  padding: 4px;
+  background: rgba(209, 218, 224, 0.5);
+  padding: 6px;
   border-radius: 8px;
+  width: 100%;
+  margin-bottom: 0;
+  min-height: 48px;
+  border: 2px solid rgba(92, 126, 143, 0.2);
 }
 
 .tab-button {
   flex: 1;
-  padding: 12px 24px;
+  padding: 10px 24px;
   border: none;
   background: transparent;
   border-radius: 6px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
+  position: relative;
+  z-index: 10;
 }
 
 .tab-button.active {
-  background: #1B3C53;
-  color: white;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 6px -1px rgba(92, 126, 143, 0.2);
 }
 
 .tab-button:hover:not(.active) {
-  color: #334155;
+  background: rgba(209, 218, 224, 0.5);
 }
 
 .auth-content {
   width: 100%;
+  flex: 1;
 }
 
-/* Hide promotional section on screens smaller than 1000px */
-@media (max-width: 1000px) {
+/* Responsive */
+@media (max-width: 1024px) {
   .promotional-section {
     display: none;
+  }
+
+  .mobile-logo {
+    display: block !important;
   }
 
   .form-section {
@@ -223,20 +266,13 @@
   }
 }
 
-/* Mobile Responsive */
 @media (max-width: 768px) {
+  .form-section {
+    padding: 24px 20px;
+  }
+
   .auth-page {
     flex-direction: column;
-  }
-
-  .promotional-section {
-    display: none;
-  }
-
-  .form-section {
-    flex: none;
-    padding: 20px;
-    max-width: 100%;
   }
 
   .form-container {
@@ -245,17 +281,60 @@
 }
 
 @media (max-width: 480px) {
-  .promo-content h1 {
-    font-size: 28px;
+  .form-section {
+    padding: 20px 16px;
   }
 
-  .brand-text h2 {
-    font-size: 24px;
+  .form-container {
+    max-width: 100%;
+  }
+}
+
+/* Scale adjustments for smaller promotional section */
+@media (max-width: 1400px) {
+  .promotional-section {
+    padding: 32px;
+  }
+
+  .promo-overlay {
+    max-width: 480px;
+    gap: 32px;
+  }
+
+  .promo-content h1 {
+    font-size: 36px;
   }
 
   .logo-square {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+  }
+
+  .brand-text h2 {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .promo-overlay {
+    max-width: 420px;
+    gap: 28px;
+  }
+
+  .promo-content h1 {
+    font-size: 32px;
+  }
+
+  .promo-content>p {
     font-size: 16px;
+  }
+
+  .stats {
+    gap: 12px;
+  }
+
+  .stat-item {
+    padding: 12px;
   }
 }
