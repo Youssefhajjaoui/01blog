@@ -174,7 +174,7 @@ export class PostCreate implements OnInit {
       try {
         // Upload file if selected
         let mediaUrl = '';
-        let mediaType = '';
+        let mediaType = null;
 
         if (this.selectedFile) {
           const uploadedUrl = await this.uploadFile();
@@ -189,7 +189,7 @@ export class PostCreate implements OnInit {
           title: this.postForm.value.title,
           content: this.postForm.value.content,
           tags: this.postForm.value.tags ? this.postForm.value.tags.split(',').map((tag: string) => tag.trim()) : [],
-          mediaUrl: mediaUrl,
+          mediaUrl: mediaUrl || null,
           mediaType: mediaType
         };
 
