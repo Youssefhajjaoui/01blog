@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -30,6 +32,7 @@ import com.example.demo.dtos.UserLoginDto;
 import com.example.demo.dtos.Userdto;
 import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
+import com.example.demo.services.FileStorageService;
 import com.example.demo.security.JwtUtil;
 
 import jakarta.servlet.http.Cookie;
@@ -44,41 +47,34 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authManager;
+    private final ObjectMapper objectMapper;
+    private final FileStorageService fileStorageService;
 
     public AuthController(UserRepository repo,
             PasswordEncoder encoder,
             JwtUtil jwtUtil,
-            AuthenticationManager authManager) {
+            AuthenticationManager authManager,
+            ObjectMapper objectMapper,
+            FileStorageService fileStorageService) {
         this.userRepository = repo;
         this.passwordEncoder = encoder;
         this.jwtUtil = jwtUtil;
         this.authManager = authManager;
+        this.objectMapper = objectMapper;
+        this.fileStorageService = fileStorageService;
     }
 
-    @PostMapping(value = "/register", consumes = { "multipart/form-data", "application/json" })
-    public ResponseEntity<?> register(
-            @RequestPart(value = "user", required = false) @Valid Userdto userDtoFromMultipart,
-            @RequestPart(value = "photo", required = false) MultipartFile photo,
-            @RequestBody(required = false) @Valid Userdto userDtoFromJson,
-            BindingResult result) {
+    @PostMapping(value = "/register")
+    public ResponseEntity<?> register(@RequestBody @Valid Userdto userDto, BindingResult result) {
 
         try {
-            // Determine which DTO to use based on content type
-            Userdto userDto;
-            if (userDtoFromMultipart != null) {
-                userDto = userDtoFromMultipart;
-            } else if (userDtoFromJson != null) {
-                userDto = userDtoFromJson;
-            } else {
-                return ResponseEntity.badRequest().body(new AuthResponseDto("User data is required"));
-            }
-
-
             if (result.hasErrors()) {
                 Map<String, String> errors = new HashMap<>();
                 result.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
                 return ResponseEntity.badRequest().body(errors);
             }
+
+
 
             if (userRepository.existsByUsername(userDto.getUsername())) {
                 return ResponseEntity.badRequest().body(new AuthResponseDto("Username already exists"));
@@ -88,17 +84,17 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(new AuthResponseDto("Email already exists"));
             }
 
-            // ✅ Save photo file if provided (only for multipart requests)
+            // ✅ Save avatar from base64 if provided
             String photoPath = null;
-            if (photo != null && !photo.isEmpty()) {
-                String uploadDir = "uploads/";
-                String filename = System.currentTimeMillis() + "_" + photo.getOriginalFilename();
-                File directory = new File(uploadDir);
-                if (!directory.exists())
-                    directory.mkdirs();
-                Path filePath = Paths.get(uploadDir, filename);
-                Files.write(filePath, photo.getBytes());
-                photoPath = filePath.toString();
+            if (userDto.getAvatar() != null && !userDto.getAvatar().isEmpty()) {
+                try {
+                    // Use FileStorageService to save the image
+                    String avatarUrl = fileStorageService.saveBase64Image(userDto.getAvatar(), "avatar");
+                    // Store the relative path for database (remove base URL)
+                    photoPath = avatarUrl.replace(fileStorageService.getBaseUrl(), "");
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(new AuthResponseDto("Invalid avatar data: " + e.getMessage()));
+                }
             }
 
             // ✅ Create user with photo path and bio

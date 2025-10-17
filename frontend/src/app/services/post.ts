@@ -42,12 +42,16 @@ export interface Post {
 export class PostService {
   private apiUrl = 'http://localhost:9090/posts'; // replace with your backend URL
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getPosts(): Observable<Post[]> {
     return this.http
       .get<any[]>(`${this.apiUrl}`, { withCredentials: true })
       .pipe(map((posts) => posts.map(mapBackendPostToFrontend)));
+  }
+
+  createPost(postData: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}`, postData, { withCredentials: true });
   }
 
   // Optional: like, subscribe, report methods can also go here

@@ -1,0 +1,38 @@
+# Production Docker Configuration for File Storage
+
+## Option 1: Local Storage with Volume Mount
+# This keeps files persistent across container restarts
+FROM openjdk:17-jdk-slim
+COPY target/01blog-0.0.1-SNAPSHOT.jar app.jar
+EXPOSE 9090
+# Create volume mount point for uploads
+VOLUME ["/app/uploads"]
+CMD ["java", "-jar", "app.jar"]
+
+# Docker run command:
+# docker run -p 9090:9090 -v /host/uploads:/app/uploads -e FILE_STORAGE_TYPE=local -e FILE_STORAGE_LOCAL_PATH=/app/uploads/ your-app
+
+## Option 2: AWS S3 Storage
+# Requires AWS credentials and S3 bucket
+# docker run -p 9090:9090 \
+#   -e FILE_STORAGE_TYPE=s3 \
+#   -e FILE_STORAGE_S3_BUCKET=your-bucket-name \
+#   -e FILE_STORAGE_S3_REGION=us-east-1 \
+#   -e AWS_ACCESS_KEY_ID=your-access-key \
+#   -e AWS_SECRET_ACCESS_KEY=your-secret-key \
+#   -e FILE_STORAGE_BASE_URL=https://your-bucket-name.s3.amazonaws.com/uploads/ \
+#   your-app
+
+## Option 3: Google Cloud Storage
+# docker run -p 9090:9090 \
+#   -e FILE_STORAGE_TYPE=gcs \
+#   -e GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json \
+#   -e FILE_STORAGE_BASE_URL=https://storage.googleapis.com/your-bucket/uploads/ \
+#   your-app
+
+## Option 4: Azure Blob Storage
+# docker run -p 9090:9090 \
+#   -e FILE_STORAGE_TYPE=azure \
+#   -e AZURE_STORAGE_CONNECTION_STRING=your-connection-string \
+#   -e FILE_STORAGE_BASE_URL=https://yourstorageaccount.blob.core.windows.net/uploads/ \
+#   your-app

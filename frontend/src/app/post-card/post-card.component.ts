@@ -93,4 +93,17 @@ export class AppPostCardComponent {
   getInitials(name: string): string {
     return name.charAt(0).toUpperCase();
   }
+
+  getAvatarUrl(avatar: string): string {
+    if (!avatar) return '';
+
+    // If avatar is already a full URL, return as is
+    if (avatar.startsWith('http')) {
+      return avatar;
+    }
+
+    // If avatar is just a filename, construct the full URL
+    const filename = avatar.split('/').pop();
+    return `http://localhost:9090/api/files/uploads/${filename}`;
+  }
 }
