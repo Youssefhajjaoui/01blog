@@ -18,8 +18,8 @@
         <label for="username">Username</label>
         <div class="input-wrapper">
           <img src="assets/user.png" alt="User" class="logo-img">
-          <input type="text" id="username" name="username" [(ngModel)]="username" placeholder="Choose a username"
-            required autocomplete="username" />
+          <input type="text" id="username" name="username" [(ngModel)]="username"
+            placeholder="Choose a username (3-50 characters)" required autocomplete="username" />
         </div>
       </div>
 
@@ -55,6 +55,35 @@
             <img [src]="showConfirmPassword ? 'assets/view.png' : 'assets/hidden.png'" alt="Toggle password visibility"
               class="view-img" />
           </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bio">Bio (Optional)</label>
+        <div class="input-wrapper">
+          <textarea id="bio" name="bio" [(ngModel)]="bio" placeholder="Tell us about yourself..." rows="3"
+            class="bio-textarea"></textarea>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="avatar">Profile Picture (Optional)</label>
+        <div class="avatar-upload-section">
+          <div class="avatar-preview" *ngIf="avatarPreview">
+            <img [src]="avatarPreview" alt="Avatar preview" class="avatar-image">
+            <button type="button" class="remove-avatar" (click)="removeAvatar()">×</button>
+          </div>
+          <div class="avatar-upload" *ngIf="!avatarPreview">
+            <input type="file" id="avatar" name="avatar" accept="image/*" (change)="onAvatarSelected($event)"
+              class="avatar-input">
+            <label for="avatar" class="avatar-label">
+              <!-- <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="upload-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg> -->
+              <!-- <span>Upload Photo</span> -->
+               <img  src="assets/more.png" alt="upload image" class="add-avatar">
+            </label>
+          </div>
         </div>
       </div>
 

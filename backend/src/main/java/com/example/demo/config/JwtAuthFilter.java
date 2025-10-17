@@ -37,7 +37,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (path.startsWith("/api/auth/") || path.startsWith("/posts")) {
+        String method = request.getMethod();
+        
+        // Allow GET requests to posts without authentication
+        if (path.startsWith("/api/auth/") || 
+            path.startsWith("/api/files/uploads/") ||
+            (path.startsWith("/posts") && "GET".equals(method))) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -45,7 +50,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (cookies == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Invalid token or user does not exist\"}");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource111111111111\"}");
             return;
         }
         // Find the "jwt" cookie
@@ -60,7 +65,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (token == null || token.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Invalid token or user does not exist\"}");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource22222222222\"}");
             return;
         }
 
@@ -74,7 +79,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 if (optionalUser.isEmpty()) {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
-                    response.getWriter().write("{\"error\": \"Invalid token or user does not exist\"}");
+                    response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource333333333\"}");
                     return; // stop filter chain here
                 }
 

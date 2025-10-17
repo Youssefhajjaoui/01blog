@@ -4,9 +4,13 @@ import { Observable, BehaviorSubject, of } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 
 export interface User {
+  id: number;
   username: string;
   email: string;
   role: string;
+  image?: string;
+  bio?: string;
+  createdAt: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -16,7 +20,7 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   /** Login - backend sets HttpOnly cookie automatically */
   login(username: string, password: string): Observable<User> {

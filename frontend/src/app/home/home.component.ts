@@ -1,8 +1,11 @@
 import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { PostService } from '../services/post';
 import { AppPostCardComponent } from '../post-card/post-card.component';
+import { AuthService, User as AuthUser } from '../services/auth.service';
+import { NavbarComponent } from '../components/navbar/navbar.component';
 
 // Types
 export interface User {
@@ -90,7 +93,7 @@ const trendingTags = [
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppPostCardComponent],
+  imports: [CommonModule, FormsModule, AppPostCardComponent, NavbarComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
 })
@@ -102,7 +105,12 @@ export class HomePageComponent implements OnInit {
   @Output() userClick = new EventEmitter<string>();
   @Output() report = new EventEmitter<string>();
   @Output() postClick = new EventEmitter<Post>();
-  constructor(private postService: PostService, private cd: ChangeDetectorRef) {}
+  constructor(
+    private postService: PostService,
+    private cd: ChangeDetectorRef,
+    private authService: AuthService,
+    private router: Router
+  ) { }
 
   posts: Post[] = [];
   loading = true;
@@ -113,9 +121,14 @@ export class HomePageComponent implements OnInit {
   searchQuery = '';
   currentPage = 'home';
   currentUser: User | null = null;
+  authUser: AuthUser | null = null;
 
   ngOnInit() {
     this.loadPosts();
+    // Get authenticated user
+    this.authService.currentUser$.subscribe(user => {
+      this.authUser = user;
+    });
     // Set current user from state if available
     if (this.state.currentUser) {
       this.currentUser = this.state.currentUser;
@@ -168,14 +181,25 @@ export class HomePageComponent implements OnInit {
     return this.state.currentUser?.name?.split(' ')[0] || 'User';
   }
 
+  getAvatarUrl(): string {
+    if (this.authUser?.image) {
+      // If user has uploaded avatar, use the backend API endpoint
+      // Extract filename from the full path (e.g., "uploads/filename.jpg" -> "filename.jpg")
+      const filename = this.authUser.image.split('/').pop();
+      return `http://localhost:9090/api/files/uploads/${filename}`;
+    }
+    // Fallback to generated avatar
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${this.authUser?.username || 'user'}`;
+  }
+
   handleLike(postId: string) {
     this.posts = this.posts.map((post) =>
       post.id === postId
         ? {
-            ...post,
-            isLiked: !post.isLiked,
-            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-          }
+          ...post,
+          isLiked: !post.isLiked,
+          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+        }
         : post
     );
   }
@@ -259,7 +283,11 @@ export class HomePageComponent implements OnInit {
     }
   }
 
-  onUserClick(userId: string) {
+  onUserClick() {
+    // Implement user menu functionality
+  }
+
+  onUserProfileClick(userId: string) {
     this.handleUserClick(userId);
   }
 
@@ -268,6 +296,19 @@ export class HomePageComponent implements OnInit {
   }
 
   onNavigate(page: string) {
-    this.navigateTo.emit({ page });
+    if (page === 'editor') {
+      this.router.navigate(['/create-post']);
+    } else {
+      this.navigateTo.emit({ page });
+    }
+  }
+
+  onSearchChange(query: string) {
+    this.searchQuery = query;
+    // Implement search functionality
+  }
+
+  onNotificationClick() {
+    // Implement notification functionality
   }
 }

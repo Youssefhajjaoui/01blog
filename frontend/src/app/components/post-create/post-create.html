@@ -1,1 +1,172 @@
-<p>post-create works!</p>
+<!-- Navigation Bar -->
+<app-navbar [currentPage]="'editor'" [searchQuery]="''" (searchChange)="onSearchChange($event)"
+    (notificationClick)="onNotificationClick()" (userClick)="onUserClick()" (navigate)="onNavigate($event.page)">
+</app-navbar>
+
+<div class="post-create-layout">
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <div class="post-create-container">
+            <!-- Header -->
+            <div class="post-create-header">
+                <div class="header-content">
+                    <h1>Write a Post</h1>
+                    <p class="header-subtitle">Share your learning journey with the community.</p>
+                    <div *ngIf="draftLoaded" class="draft-loaded-indicator">
+                        <span class="draft-icon">📝</span>
+                        <span class="draft-text">Draft restored from previous session</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn-save-draft" (click)="saveDraft()" [disabled]="isSubmitting">
+                        Save Draft
+                    </button>
+                    <button type="submit" form="postForm" class="btn-publish"
+                        [disabled]="postForm.invalid || isSubmitting">
+                        <svg class="publish-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                        </svg>
+                        {{ isSubmitting ? 'Publishing...' : 'Publish' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Tabs -->
+            <div class="content-tabs">
+                <button class="tab-button" [class.active]="!showPreview" (click)="showPreview = false">
+                    Write
+                </button>
+                <button class="tab-button" [class.active]="showPreview" (click)="showPreview = true">
+                    Preview
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form [formGroup]="postForm" id="postForm" (ngSubmit)="onSubmit()" class="post-form">
+                <!-- Title Field -->
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" formControlName="title"
+                        placeholder="Write an engaging title for your post..." class="form-input title-input"
+                        [class.error]="postForm.get('title')?.invalid && postForm.get('title')?.touched"
+                        maxlength="100" />
+                    <div class="character-counter">
+                        {{ postForm.get('title')?.value?.length || 0 }}/100 characters
+                    </div>
+                    <div *ngIf="postForm.get('title')?.invalid && postForm.get('title')?.touched" class="error-message">
+                        <span *ngIf="postForm.get('title')?.errors?.['required']">Title is required</span>
+                        <span *ngIf="postForm.get('title')?.errors?.['minlength']">Title must be at least 3
+                            characters</span>
+                    </div>
+                </div>
+
+                <!-- Content Field -->
+                <div class="form-group">
+                    <label for="content">Content *</label>
+                    <div class="content-editor-container">
+                        <!-- Write Tab -->
+                        <div class="write-section" [class.hidden]="showPreview">
+                            <textarea id="content" formControlName="content"
+                                placeholder="Share your learning experience, insights, or tutorial..."
+                                class="content-textarea" (input)="onTextareaInput($event)"
+                                [class.error]="postForm.get('content')?.invalid && postForm.get('content')?.touched"
+                                maxlength="5000"></textarea>
+                            <div class="character-counter">
+                                {{ postForm.get('content')?.value?.length || 0 }}/5000 characters
+                            </div>
+                        </div>
+
+                        <!-- Preview Tab -->
+                        <div class="preview-section" [class.hidden]="!showPreview">
+                            <div class="content-preview" [innerHTML]="markdownContent | markdown"></div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="postForm.get('content')?.invalid && postForm.get('content')?.touched"
+                        class="error-message">
+                        <span *ngIf="postForm.get('content')?.errors?.['required']">Content is required</span>
+                        <span *ngIf="postForm.get('content')?.errors?.['minlength']">Content must be at least 10
+                            characters</span>
+                    </div>
+                </div>
+
+                <!-- Media Upload -->
+                <div class="form-group">
+                    <label for="media">Media</label>
+                    <div class="media-upload-container">
+                        <input type="file" id="media" accept="image/*,video/*" (change)="onFileSelected($event)"
+                            class="file-input" />
+                        <div class="upload-area" [class.has-file]="previewUrl">
+                            <div *ngIf="!previewUrl" class="upload-placeholder">
+                                <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <button type="button" class="upload-btn" (click)="triggerFileInput()">
+                                    Upload Media
+                                </button>
+                                <p class="upload-hint">Support images and videos up to 5MB each.</p>
+                            </div>
+                            <div *ngIf="previewUrl" class="preview-container">
+                                <img [src]="previewUrl" alt="Preview" class="preview-image"
+                                    *ngIf="selectedFile?.type?.startsWith('image/')">
+                                <video [src]="previewUrl" controls class="preview-video"
+                                    *ngIf="selectedFile?.type?.startsWith('video/')"></video>
+                                <button type="button" class="remove-media-btn" (click)="removeImage()">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="sidebar">
+        <!-- Tags -->
+        <div class="sidebar-card">
+            <h3>Tags</h3>
+            <div class="tags-input-container">
+                <input type="text" [(ngModel)]="tagsInput" placeholder="e.g. react" class="tags-input"
+                    (keydown.enter)="onTagKeydown($event)" />
+                <button type="button" class="add-tag-btn" (click)="addTagFromInput()">#</button>
+            </div>
+            <div class="tags-counter">{{ getTagsCount() }}/10 tags • Press Enter to add</div>
+            <div class="tags-display" *ngIf="getTagsArray().length > 0">
+                <span *ngFor="let tag of getTagsArray()" class="tag-item">
+                    {{ tag }}
+                    <button type="button" class="remove-tag" (click)="removeTag(tag)">×</button>
+                </span>
+            </div>
+        </div>
+
+        <!-- Writing Tips -->
+        <div class="sidebar-card">
+            <h3>Writing Tips</h3>
+            <div class="tips-list">
+                <div class="tip-item">
+                    <span class="tip-icon">✨</span>
+                    <span>Write an engaging title that clearly describes your content</span>
+                </div>
+                <div class="tip-item">
+                    <span class="tip-icon">📸</span>
+                    <span>Add images or videos to make your post more engaging</span>
+                </div>
+                <div class="tip-item">
+                    <span class="tip-icon">🏷️</span>
+                    <span>Use relevant tags to help others discover your content</span>
+                </div>
+                <div class="tip-item">
+                    <span class="tip-icon">📝</span>
+                    <span>Break up long text with paragraphs for better readability</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

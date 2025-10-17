@@ -54,7 +54,7 @@ public class Userdto {
         this.username = username;
     }
 
-    public String getAvatr() {
+    public String getAvatar() {
         return this.avatar;
     }
 
