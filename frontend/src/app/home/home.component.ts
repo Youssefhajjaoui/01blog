@@ -6,6 +6,7 @@ import { PostService } from '../services/post';
 import { AppPostCardComponent } from '../post-card/post-card.component';
 import { AuthService, User as AuthUser } from '../services/auth.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
+import { SuggestionsService, UserSuggestion } from '../services/suggestions.service';
 
 // Types
 export interface User {
@@ -15,7 +16,8 @@ export interface User {
   avatar: string;
   bio: string;
   role: string;
-  subscribers: number;
+  followers: number;
+  following: number;
   posts: number;
 }
 
@@ -42,42 +44,6 @@ export interface AppState {
   showReportModal?: boolean;
   reportTarget?: { type: string; id: string };
 }
-
-const mockUsers: User[] = [
-  {
-    id: '5',
-    name: 'Emma Chen',
-    email: 'emma@example.com',
-    avatar:
-      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-    bio: 'Frontend developer sharing design tips',
-    role: 'user',
-    subscribers: 2100,
-    posts: 89,
-  },
-  {
-    id: '6',
-    name: 'David Rodriguez',
-    email: 'david@example.com',
-    avatar:
-      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    bio: 'Backend engineer and mentor',
-    role: 'user',
-    subscribers: 1680,
-    posts: 156,
-  },
-  {
-    id: '7',
-    name: 'Lisa Wang',
-    email: 'lisa@example.com',
-    avatar:
-      'https://images.unsplash.com/photo-1494790108755-2616b332c0a2?w=150&h=150&fit=crop&crop=face',
-    bio: 'DevOps student and open source contributor',
-    role: 'user',
-    subscribers: 934,
-    posts: 73,
-  },
-];
 
 const trendingTags = [
   { tag: 'react', count: 1450 },
@@ -109,41 +75,35 @@ export class HomePageComponent implements OnInit {
     private postService: PostService,
     private cd: ChangeDetectorRef,
     private authService: AuthService,
-    private router: Router
-  ) { }
+    private router: Router,
+    private suggestionsService: SuggestionsService
+  ) {}
 
   posts: Post[] = [];
   loading = true;
   filter: 'all' | 'following' | 'trending' = 'all';
   viewMode: 'list' | 'grid' = 'list';
-  mockUsers = mockUsers;
+  mockUsers = [];
   trendingTags = trendingTags;
   searchQuery = '';
   currentPage = 'home';
   currentUser: User | null = null;
   authUser: AuthUser | null = null;
+  suggestedUsers: UserSuggestion[] = [];
+  suggestionsLoading = false;
 
   ngOnInit() {
     this.loadPosts();
+    this.loadSuggestions();
     // Get authenticated user
-    this.authService.currentUser$.subscribe(user => {
+    this.authService.currentUser$.subscribe((user) => {
       this.authUser = user;
     });
     // Set current user from state if available
     if (this.state.currentUser) {
       this.currentUser = this.state.currentUser;
     } else {
-      // Fallback to mock user for display
-      this.currentUser = {
-        id: '1',
-        name: 'Current User',
-        email: 'user@example.com',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=user',
-        bio: 'Student',
-        role: 'user',
-        subscribers: 0,
-        posts: 0
-      };
+      this.router.navigate(["/auth"]);
     }
   }
 
@@ -160,6 +120,35 @@ export class HomePageComponent implements OnInit {
       error: (err) => {
         console.error(err);
         this.loading = false;
+      },
+    });
+  }
+
+  loadSuggestions() {
+    this.suggestionsLoading = true;
+    this.suggestionsService.getSuggestedUsers().subscribe({
+      next: (suggestions) => {
+        console.log('Fetched suggestions:', suggestions);
+        this.suggestedUsers = suggestions;
+        this.suggestionsLoading = false;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading suggestions:', err);
+        // this.suggestionsLoading = false;
+        // // Fallback to mock users if API fails
+        // this.suggestedUsers = this.mockUsers.map(user => ({
+        //   id: parseInt(user.id),
+        //   username: user.name,
+        //   email: user.email,
+        //   image: user.avatar,
+        //   bio: user.bio,
+        //   role: user.role,
+        //   followerCount: user.subscribers,
+        //   postCount: user.posts,
+        //   suggestionScore: user.subscribers + user.posts
+        // }));
+        // this.cd.detectChanges();
       },
     });
   }
@@ -192,14 +181,24 @@ export class HomePageComponent implements OnInit {
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${this.authUser?.username || 'user'}`;
   }
 
+  getSuggestedUserAvatarUrl(user: UserSuggestion): string {
+    if (user.image) {
+      // If user has uploaded avatar, use the backend API endpoint
+      const filename = user.image.split('/').pop();
+      return `http://localhost:9090/api/files/uploads/${filename}`;
+    }
+    // Fallback to generated avatar
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`;
+  }
+
   handleLike(postId: string) {
     this.posts = this.posts.map((post) =>
       post.id === postId
         ? {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-        }
+            ...post,
+            isLiked: !post.isLiked,
+            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+          }
         : post
     );
   }
@@ -223,7 +222,7 @@ export class HomePageComponent implements OnInit {
 
   handleUserClick(userId: string) {
     const user =
-      this.mockUsers.find((u) => u.id === userId) ||
+      // this.mockUsers.find((u) => u.id === userId) ||
       this.posts.find((p) => p.author.id === userId)?.author;
     if (user) {
       this.navigateTo.emit({ page: 'profile', data: { user } });

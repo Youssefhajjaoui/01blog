@@ -32,8 +32,13 @@ import com.example.demo.dtos.UserLoginDto;
 import com.example.demo.dtos.Userdto;
 import com.example.demo.models.User;
 import com.example.demo.repositories.UserRepository;
+import com.example.demo.repositories.PostRepository;
+import com.example.demo.repositories.SubscriptionRepository;
 import com.example.demo.services.FileStorageService;
 import com.example.demo.security.JwtUtil;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,19 +54,25 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final ObjectMapper objectMapper;
     private final FileStorageService fileStorageService;
+    private final PostRepository postRepository;
+    private final SubscriptionRepository subscriptionRepository;
 
     public AuthController(UserRepository repo,
             PasswordEncoder encoder,
             JwtUtil jwtUtil,
             AuthenticationManager authManager,
             ObjectMapper objectMapper,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            PostRepository postRepository,
+            SubscriptionRepository subscriptionRepository) {
         this.userRepository = repo;
         this.passwordEncoder = encoder;
         this.jwtUtil = jwtUtil;
         this.authManager = authManager;
         this.objectMapper = objectMapper;
         this.fileStorageService = fileStorageService;
+        this.postRepository = postRepository;
+        this.subscriptionRepository = subscriptionRepository;
     }
 
     @PostMapping(value = "/register")
@@ -73,8 +84,6 @@ public class AuthController {
                 result.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
                 return ResponseEntity.badRequest().body(errors);
             }
-
-
 
             if (userRepository.existsByUsername(userDto.getUsername())) {
                 return ResponseEntity.badRequest().body(new AuthResponseDto("Username already exists"));
@@ -93,7 +102,8 @@ public class AuthController {
                     // Store the relative path for database (remove base URL)
                     photoPath = avatarUrl.replace(fileStorageService.getBaseUrl(), "");
                 } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(new AuthResponseDto("Invalid avatar data: " + e.getMessage()));
+                    return ResponseEntity.badRequest()
+                            .body(new AuthResponseDto("Invalid avatar data: " + e.getMessage()));
                 }
             }
 
@@ -163,15 +173,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> getUserFromJwt(HttpServletRequest request) {
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
+    public ResponseEntity<Userdto> getUserFromJwt(HttpServletRequest request) {
         // Get cookies from request
         Cookie[] cookies = request.getCookies();
 
@@ -203,7 +205,13 @@ public class AuthController {
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        User user = userOpt.get();
 
-        return ResponseEntity.ok(userOpt.get());
+        Userdto res = new Userdto(user.getUsername(), user.getEmail(), user.getPasswordHash(), user.getImage(),
+                user.getBio());
+        res.setFollowers(subscriptionRepository.findByFollowed(user).size());
+        res.setFollowing(subscriptionRepository.findByFollower(user).size());
+        res.setPosts(postRepository.findByCreator(user).size());
+        return ResponseEntity.ok(res);
     }
 }
