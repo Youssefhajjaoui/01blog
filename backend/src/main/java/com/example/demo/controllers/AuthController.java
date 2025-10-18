@@ -209,6 +209,9 @@ public class AuthController {
 
         Userdto res = new Userdto(user.getUsername(), user.getEmail(), user.getPasswordHash(), user.getImage(),
                 user.getBio());
+                res.setId(user.getId());
+                res.setRole(user.getRole());
+                
         res.setFollowers(subscriptionRepository.findByFollowed(user).size());
         res.setFollowing(subscriptionRepository.findByFollower(user).size());
         res.setPosts(postRepository.findByCreator(user).size());

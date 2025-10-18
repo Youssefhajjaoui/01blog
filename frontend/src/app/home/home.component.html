@@ -209,19 +209,20 @@
             <div class="stat-list">
               <div class="stat-item">
                 <span class="stat-label">Posts written</span>
-                <span class="stat-value">{{state.currentUser?.posts || 0}}</span>
+                <span class="stat-value">{{currentUser?.posts || 0}}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Followers</span>
-                <span class="stat-value">{{state.currentUser?.subscribers?.toLocaleString() || 0}}</span>
+                <span class="stat-value">{{currentUser?.followers?.toLocaleString() || 0}}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Following</span>
-                <span class="stat-value"></span>
+                <span class="stat-value">{{currentUser?.following?.toLocaleString() || 0}}</span>
               </div>
             </div>
           </div>
         </div>
+
       </aside>
     </div>
   </div>

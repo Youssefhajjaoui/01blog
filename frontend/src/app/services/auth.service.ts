@@ -8,9 +8,12 @@ export interface User {
   username: string;
   email: string;
   role: string;
-  image?: string;
+  avatar?: string;
   bio?: string;
   createdAt: string;
+  followers: number;
+  following: number;
+  posts: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -20,13 +23,18 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   /** Login - backend sets HttpOnly cookie automatically */
-  login(username: string, password: string): Observable<User> {
+  login(username: string, password: string): Observable<any> {
     return this.http
-      .post<User>(`${this.API_URL}/login`, { username, password }, { withCredentials: true })
-      .pipe(tap((user) => this.currentUserSubject.next(user)));
+      .post<any>(`${this.API_URL}/login`, { username, password }, { withCredentials: true })
+      .pipe(
+        tap(() => {
+          // After successful login, fetch user data with statistics
+          this.checkAuth().subscribe();
+        })
+      );
   }
 
   /** Logout - backend clears cookie */
