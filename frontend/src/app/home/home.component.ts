@@ -98,12 +98,34 @@ export class HomePageComponent implements OnInit {
     // Get authenticated user
     this.authService.currentUser$.subscribe((user) => {
       this.authUser = user;
+      console.log('Current user:', user);
+      
+      // Update state.currentUser with authUser data including statistics
+      if (user) {
+        this.currentUser = {
+          id: user.id.toString(),
+          name: user.username,
+          email: user.email,
+          avatar: user.avatar || '',
+          bio: user.bio || '',
+          role: user.role,
+          followers: user.followers,
+          following: user.following,
+          posts: user.posts
+        };
+        
+        // Update the state to trigger template updates
+        this.updateState.emit({ currentUser: this.currentUser });
+      }
+      
+      this.cd.detectChanges();
     });
+    
     // Set current user from state if available
     if (this.state.currentUser) {
       this.currentUser = this.state.currentUser;
     } else {
-      this.router.navigate(["/auth"]);
+      // this.router.navigate(["/auth"]);
     }
   }
 
@@ -171,10 +193,10 @@ export class HomePageComponent implements OnInit {
   }
 
   getAvatarUrl(): string {
-    if (this.authUser?.image) {
+    if (this.authUser?.avatar) {
       // If user has uploaded avatar, use the backend API endpoint
       // Extract filename from the full path (e.g., "uploads/filename.jpg" -> "filename.jpg")
-      const filename = this.authUser.image.split('/').pop();
+      const filename = this.authUser.avatar.split('/').pop();
       return `http://localhost:9090/api/files/uploads/${filename}`;
     }
     // Fallback to generated avatar

@@ -23,15 +23,6 @@ export class SuggestionsService {
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 
-  //   getSuggestedUsers(): Observable<UserSuggestion[]> {
-  //     const token = this.authService.getToken();
-  //     const headers = new HttpHeaders({
-  //       Authorization: `Bearer ${token}`,
-  //       'Content-Type': 'application/json',
-  //     });
-
-  //     return this.http.get<UserSuggestion[]>(`${this.apiUrl}/auth/suggestions`, { headers });
-  //   }
   getSuggestedUsers(): Observable<UserSuggestion[]> {
     return this.http.get<any[]>(`${this.apiUrl}/suggestions/users`, { withCredentials: true });
   }

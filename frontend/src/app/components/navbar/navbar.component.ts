@@ -182,9 +182,9 @@ export class NavbarComponent {
 
   getAvatarUrl(): string {
     const currentUser = this.authService.getCurrentUser();
-    if (currentUser?.image) {
+    if (currentUser?.avatar) {
       // If user has uploaded avatar, use the backend API endpoint
-      const filename = currentUser.image.split('/').pop();
+      const filename = currentUser.avatar.split('/').pop();
       return `http://localhost:9090/api/files/uploads/${filename}`;
     }
     // Fallback to generated avatar

@@ -41,6 +41,7 @@ public class Userdto {
         this.email = email;
         this.password = password;
         this.bio = bio;
+        this.avatar = photo;
     }
 
     // Getters and setters
