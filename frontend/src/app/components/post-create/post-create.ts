@@ -213,7 +213,7 @@ export class PostCreate implements OnInit {
   removeImage() {
     this.selectedFile = null;
     this.previewUrl = null;
-    this.postForm.patchValue({ mediaUrl: '', mediaType: '' });
+    this.postForm.patchValue({ mediaUrl: null, mediaType: null });
   }
 
   saveDraft() {

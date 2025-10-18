@@ -2,6 +2,8 @@ package com.example.demo.dtos;
 
 import com.example.demo.models.UserRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -22,9 +24,13 @@ public class Userdto {
     private UserRole role;
 
     @NotBlank(message = "Password is required")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
-    // ✅ New fields
+    private int following;
+    private int followers;
+    private int posts;
+
     private String bio;
 
     public Userdto() {
@@ -40,6 +46,30 @@ public class Userdto {
     // Getters and setters
     public Long getId() {
         return id;
+    }
+
+    public int getFollowers() {
+        return this.followers;
+    }
+
+    public int getFollowing() {
+        return this.following;
+    }
+
+    public int getPosts() {
+        return this.posts;
+    }
+
+    public void setFollowers(int followers) {
+        this.followers = followers;
+    }
+
+    public void setFollowing(int following) {
+        this.following = following;
+    }
+
+    public void setPosts(int posts) {
+        this.posts = posts;
     }
 
     public void setId(Long id) {

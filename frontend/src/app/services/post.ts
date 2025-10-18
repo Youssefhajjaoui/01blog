@@ -11,7 +11,8 @@ export interface Author {
   avatar: string;
   bio: string;
   role: string;
-  subscribers: number;
+  followers: number;
+  following: number;
   posts: number;
 }
 
@@ -42,7 +43,7 @@ export interface Post {
 export class PostService {
   private apiUrl = 'http://localhost:9090/posts'; // replace with your backend URL
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   getPosts(): Observable<Post[]> {
     return this.http
@@ -66,7 +67,8 @@ function mapBackendPostToFrontend(raw: any): Post {
       avatar: raw.author.avatar || raw.author.avatr, // Handle typo
       bio: raw.author.bio,
       role: raw.author.role,
-      subscribers: raw.author.subscribers || 0,
+      followers: raw.author.followers || 0,
+      following: raw.author.following || 0,
       posts: raw.author.posts || 0,
     },
     title: raw.title,

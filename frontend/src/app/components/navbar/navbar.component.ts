@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -59,10 +59,45 @@ import { AuthService } from '../../services/auth.service';
               </svg>
             </button>
 
-            <!-- User Avatar -->
-            <button class="user-avatar-btn" (click)="onUserClick()">
-              <img [src]="getAvatarUrl()" [alt]="getCurrentUser()?.username || 'User'" class="nav-avatar" />
-            </button>
+            <!-- User Avatar with Dropdown -->
+            <div class="user-dropdown-container">
+              <button class="user-avatar-btn" (click)="toggleUserDropdown()">
+                <img [src]="getAvatarUrl()" [alt]="getCurrentUser()?.username || 'User'" class="nav-avatar" />
+              </button>
+              
+              <!-- User Dropdown Menu -->
+              <div class="user-dropdown" [class.show]="showUserDropdown">
+                <!-- User Info Header -->
+                <div class="user-dropdown-header">
+                  <div class="user-info">
+                    <div class="user-name">{{ getCurrentUser()?.username || 'User' }}</div>
+                    <div class="user-email">{{ getCurrentUser()?.email || 'user@example.com' }}</div>
+                  </div>
+                </div>
+                
+                <!-- Dropdown Divider -->
+                <div class="dropdown-divider"></div>
+                
+                <!-- Dropdown Menu Items -->
+                <div class="dropdown-menu">
+                  <button class="dropdown-item" (click)="onProfileClick()">
+                    <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Profile
+                  </button>
+                  
+                  <button class="dropdown-item sign-out" (click)="onSignOutClick()">
+                    <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -79,10 +114,22 @@ export class NavbarComponent {
   @Output() userClick = new EventEmitter<void>();
   @Output() navigate = new EventEmitter<{ page: string }>();
 
+  showUserDropdown = false;
+
   constructor(
     private router: Router,
     private authService: AuthService
   ) { }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event) {
+    const target = event.target as HTMLElement;
+    const dropdownContainer = target.closest('.user-dropdown-container');
+
+    if (!dropdownContainer && this.showUserDropdown) {
+      this.closeUserDropdown();
+    }
+  }
 
   navigateToHome() {
     this.router.navigate(['/']);
@@ -106,6 +153,27 @@ export class NavbarComponent {
 
   onUserClick() {
     this.userClick.emit();
+  }
+
+  toggleUserDropdown() {
+    this.showUserDropdown = !this.showUserDropdown;
+  }
+
+  closeUserDropdown() {
+    this.showUserDropdown = false;
+  }
+
+  onProfileClick() {
+    this.closeUserDropdown();
+    // Navigate to profile page or emit event
+    this.navigate.emit({ page: 'profile' });
+  }
+
+  onSignOutClick() {
+    this.closeUserDropdown();
+    // Handle sign out
+    this.authService.logout();
+    this.router.navigate(['/auth']);
   }
 
   getCurrentUser() {
