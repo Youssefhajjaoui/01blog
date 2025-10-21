@@ -2,48 +2,13 @@ import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { PostService } from '../services/post';
+import { PostService } from '../services/post.service';
 import { AppPostCardComponent } from '../post-card/post-card.component';
-import { AuthService, User as AuthUser } from '../services/auth.service';
+import { AuthService } from '../services/auth.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
-import { SuggestionsService, UserSuggestion } from '../services/suggestions.service';
-
-// Types
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  bio: string;
-  role: string;
-  followers: number;
-  following: number;
-  posts: number;
-}
-
-export interface Post {
-  id: string;
-  author: User;
-  title: string;
-  content: string;
-  excerpt: string;
-  media?: { type: string; url: string; alt: string }[];
-  tags: string[];
-  likes: number;
-  comments: number;
-  isLiked: boolean;
-  isSubscribed: boolean;
-  createdAt: string;
-  visibility: string;
-}
-
-export interface AppState {
-  currentUser?: User;
-  posts?: Post[];
-  users?: User[];
-  showReportModal?: boolean;
-  reportTarget?: { type: string; id: string };
-}
+import { SuggestionsService } from '../services/suggestions.service';
+import { User, Post, AppState, UserSuggestion } from '../models';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 const trendingTags = [
   { tag: 'react', count: 1450 },
@@ -76,8 +41,9 @@ export class HomePageComponent implements OnInit {
     private cd: ChangeDetectorRef,
     private authService: AuthService,
     private router: Router,
-    private suggestionsService: SuggestionsService
-  ) {}
+    private suggestionsService: SuggestionsService,
+    private snackBar: MatSnackBar
+  ) { }
 
   posts: Post[] = [];
   loading = true;
@@ -88,7 +54,7 @@ export class HomePageComponent implements OnInit {
   searchQuery = '';
   currentPage = 'home';
   currentUser: User | null = null;
-  authUser: AuthUser | null = null;
+  authUser: User | null = null;
   suggestedUsers: UserSuggestion[] = [];
   suggestionsLoading = false;
 
@@ -99,33 +65,38 @@ export class HomePageComponent implements OnInit {
     this.authService.currentUser$.subscribe((user) => {
       this.authUser = user;
       console.log('Current user:', user);
-      
+
       // Update state.currentUser with authUser data including statistics
       if (user) {
-        this.currentUser = {
-          id: user.id.toString(),
-          name: user.username,
-          email: user.email,
-          avatar: user.avatar || '',
-          bio: user.bio || '',
-          role: user.role,
-          followers: user.followers,
-          following: user.following,
-          posts: user.posts
-        };
-        
+        this.currentUser = user;
+
         // Update the state to trigger template updates
         this.updateState.emit({ currentUser: this.currentUser });
       }
-      
+
       this.cd.detectChanges();
     });
-    
+
     // Set current user from state if available
     if (this.state.currentUser) {
       this.currentUser = this.state.currentUser;
     } else {
       // this.router.navigate(["/auth"]);
+    }
+  }
+  onPostDeleted(postId: number) {
+    this.posts = this.posts.filter((p) => p.id !== postId);
+    this.cd.detectChanges();
+    this.snackBar.open('Post deleted', 'Close', { duration: 2000 });
+  }
+
+  onPostUpdated(updatedPost: Post) {
+    // Find and update the post in the posts array
+    const index = this.posts.findIndex(p => p.id === updatedPost.id);
+    if (index !== -1) {
+      this.posts[index] = updatedPost;
+      this.cd.detectChanges();
+      this.snackBar.open('Post updated successfully', 'Close', { duration: 2000 });
     }
   }
 
@@ -189,7 +160,7 @@ export class HomePageComponent implements OnInit {
   }
 
   getFirstName(): string {
-    return this.state.currentUser?.name?.split(' ')[0] || 'User';
+    return this.state.currentUser?.username?.split(' ')[0] || 'User';
   }
 
   getAvatarUrl(): string {
@@ -215,24 +186,24 @@ export class HomePageComponent implements OnInit {
 
   handleLike(postId: string) {
     this.posts = this.posts.map((post) =>
-      post.id === postId
+      post.id === Number(postId)
         ? {
-            ...post,
-            isLiked: !post.isLiked,
-            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-          }
+          ...post,
+          isLiked: !post.isLiked,
+          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+        }
         : post
     );
   }
 
   handleSubscribe(userId: string) {
     this.posts = this.posts.map((post) =>
-      post.author.id === userId ? { ...post, isSubscribed: !post.isSubscribed } : post
+      post.author.id === Number(userId) ? { ...post, isSubscribed: !post.isSubscribed } : post
     );
   }
 
   handleComment(postId: string) {
-    const post = this.posts.find((p) => p.id === postId);
+    const post = this.posts.find((p) => p.id === Number(postId));
     if (post) {
       this.navigateTo.emit({ page: 'post', data: { post } });
     }
@@ -243,18 +214,14 @@ export class HomePageComponent implements OnInit {
   }
 
   handleUserClick(userId: string) {
-    const user =
-      // this.mockUsers.find((u) => u.id === userId) ||
-      this.posts.find((p) => p.author.id === userId)?.author;
-    if (user) {
-      this.navigateTo.emit({ page: 'profile', data: { user } });
-    }
+    // Navigate to profile page - could be current user or other user
+    this.router.navigate(['/profile']);
   }
 
   handleReport(postId: string) {
     this.updateState.emit({
       showReportModal: true,
-      reportTarget: { type: 'post', id: postId },
+      reportTarget: { type: 'post', id: Number(postId) },
     });
   }
 
@@ -319,6 +286,8 @@ export class HomePageComponent implements OnInit {
   onNavigate(page: string) {
     if (page === 'editor') {
       this.router.navigate(['/create-post']);
+    } else if (page === 'profile') {
+      this.router.navigate(['/profile']);
     } else {
       this.navigateTo.emit({ page });
     }

@@ -94,6 +94,10 @@ public class User implements UserDetails {
 		return id;
 	}
 
+	public void setBio(String bio) {
+		this.bio = bio;
+	}
+
 	public void setId(Long id) {
 		this.id = id;
 	}

@@ -160,4 +160,48 @@ public class ReportController {
 
         return ResponseEntity.ok(myReports);
     }
+
+    // Convenience endpoint for reporting posts
+    @PostMapping("/posts/{postId}")
+    public ResponseEntity<java.util.Map<String, Object>> reportPost(@PathVariable Long postId,
+            @RequestBody Report reportDetails,
+            @AuthenticationPrincipal User principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User currentUser = principal;
+
+        // Validate that the post exists
+        Optional<Post> optionalPost = postRepository.findById(postId);
+        if (optionalPost.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Validate that the report has a reason
+        if (reportDetails.getReason() == null || reportDetails.getReason().trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Create the report
+        Report report = new Report();
+        report.setReporter(currentUser);
+        report.setReportedPost(optionalPost.get());
+        report.setReason(reportDetails.getReason());
+        report.setDescription(reportDetails.getDescription());
+        report.setStatus(ReportStatus.PENDING);
+        report.setCreatedAt(java.time.LocalDateTime.now());
+
+        // Save the report
+        Report savedReport = reportRepository.save(report);
+
+        // Return a simple response instead of the full Report entity
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("id", savedReport.getId());
+        response.put("status", savedReport.getStatus().toString());
+        response.put("message", "Report submitted successfully");
+        response.put("createdAt", savedReport.getCreatedAt().toString());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
 }

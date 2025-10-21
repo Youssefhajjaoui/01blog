@@ -2,19 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
-
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-  avatar?: string;
-  bio?: string;
-  createdAt: string;
-  followers: number;
-  following: number;
-  posts: number;
-}
+import { User, LoginRequest, RegisterRequest } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -26,12 +14,22 @@ export class AuthService {
   constructor(private http: HttpClient) {}
 
   /** Login - backend sets HttpOnly cookie automatically */
-  login(username: string, password: string): Observable<any> {
+  login(loginData: LoginRequest): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/login`, loginData, { withCredentials: true }).pipe(
+      tap(() => {
+        // After successful login, fetch user data with statistics
+        this.checkAuth().subscribe();
+      })
+    );
+  }
+
+  /** Register new user */
+  register(registerData: RegisterRequest): Observable<any> {
     return this.http
-      .post<any>(`${this.API_URL}/login`, { username, password }, { withCredentials: true })
+      .post<any>(`${this.API_URL}/register`, registerData, { withCredentials: true })
       .pipe(
         tap(() => {
-          // After successful login, fetch user data with statistics
+          // After successful registration, fetch user data
           this.checkAuth().subscribe();
         })
       );

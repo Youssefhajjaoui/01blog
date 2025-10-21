@@ -1,10 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { PostService } from '../../services/post';
+import { PostService } from '../../services/post.service';
 import { MarkdownPipe } from '../../pipes/markdown.pipe';
 import { NavbarComponent } from '../navbar/navbar.component';
 
@@ -12,7 +18,7 @@ import { NavbarComponent } from '../navbar/navbar.component';
   selector: 'app-post-create',
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MarkdownPipe, NavbarComponent],
   templateUrl: './post-create.html',
-  styleUrl: './post-create.css'
+  styleUrl: './post-create.css',
 })
 export class PostCreate implements OnInit {
   postForm: FormGroup;
@@ -29,6 +35,7 @@ export class PostCreate implements OnInit {
     private http: HttpClient,
     public router: Router,
     private authService: AuthService,
+    private cd: ChangeDetectorRef,
     private postService: PostService
   ) {
     this.postForm = this.fb.group({
@@ -36,7 +43,7 @@ export class PostCreate implements OnInit {
       content: ['', [Validators.required, Validators.minLength(10)]],
       tags: [''],
       mediaUrl: [''],
-      mediaType: ['']
+      mediaType: [''],
     });
   }
 
@@ -118,15 +125,21 @@ export class PostCreate implements OnInit {
 
           console.log('Uploading file for user:', currentUser.username);
 
-          const response = await this.http.post<any>('http://localhost:9090/api/files/upload', {
-            base64Data: base64Data,
-            filename: this.selectedFile?.name || 'image'
-          }, {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }).toPromise();
+          const response = await this.http
+            .post<any>(
+              'http://localhost:9090/api/files/upload',
+              {
+                base64Data: base64Data,
+                filename: this.selectedFile?.name || 'image',
+              },
+              {
+                withCredentials: true,
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              }
+            )
+            .toPromise();
 
           console.log('Upload successful:', response);
           resolve(response.url);
@@ -188,9 +201,11 @@ export class PostCreate implements OnInit {
         const postData = {
           title: this.postForm.value.title,
           content: this.postForm.value.content,
-          tags: this.postForm.value.tags ? this.postForm.value.tags.split(',').map((tag: string) => tag.trim()) : [],
+          tags: this.postForm.value.tags
+            ? this.postForm.value.tags.split(',').map((tag: string) => tag.trim())
+            : [],
           mediaUrl: mediaUrl || null,
-          mediaType: mediaType
+          mediaType: mediaType,
         };
 
         // Create post
@@ -200,7 +215,6 @@ export class PostCreate implements OnInit {
 
         // Redirect to home page or post detail
         this.router.navigate(['/']);
-
       } catch (error) {
         console.error('Error creating post:', error);
         alert('Failed to create post. Please try again.');
@@ -222,7 +236,7 @@ export class PostCreate implements OnInit {
       title: this.postForm.get('title')?.value || '',
       content: this.postForm.get('content')?.value || '',
       tags: this.getTagsArray(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     try {
@@ -255,13 +269,18 @@ export class PostCreate implements OnInit {
 
   removeTag(tagToRemove: string) {
     const currentTags = this.getTagsArray();
-    const updatedTags = currentTags.filter(tag => tag !== tagToRemove);
+    const updatedTags = currentTags.filter((tag) => tag !== tagToRemove);
     this.postForm.patchValue({ tags: updatedTags.join(',') });
   }
 
   getTagsArray(): string[] {
     const tagsValue = this.postForm.get('tags')?.value || '';
-    return tagsValue ? tagsValue.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag) : [];
+    return tagsValue
+      ? tagsValue
+          .split(',')
+          .map((tag: string) => tag.trim())
+          .filter((tag: string) => tag)
+      : [];
   }
 
   getTagsCount(): number {

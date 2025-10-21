@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import com.example.demo.models.Post;
 import com.example.demo.models.Report;
+import com.example.demo.models.ReportStatus;
 import com.example.demo.models.User;
 
 @Repository
@@ -17,4 +18,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     // find Reports by users
     List<Report> findByReporter(User reporter);
+    
+    // Count reports by status
+    long countByStatus(ReportStatus status);
 }

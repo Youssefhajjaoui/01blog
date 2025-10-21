@@ -24,9 +24,9 @@ public class FileStorageService {
     private String baseUrl;
 
     /**
-     * Save base64 image data to storage
-     * @param base64Data Base64 encoded image data
-     * @param filename Desired filename (without extension)
+     * Save base64 file data to storage
+     * @param base64Data Base64 encoded file data
+     * @param filename Original filename with extension
      * @return Full URL to access the stored file
      */
     public String saveBase64Image(String base64Data, String filename) throws IOException {
@@ -36,20 +36,30 @@ public class FileStorageService {
         }
 
         // Decode base64 to bytes
-        byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+        byte[] fileBytes = Base64.getDecoder().decode(base64Data);
 
-        // Generate unique filename
-        String uniqueFilename = System.currentTimeMillis() + "_" + filename + ".jpg";
+        // Extract file extension from original filename
+        String fileExtension = "";
+        if (filename != null && filename.contains(".")) {
+            fileExtension = filename.substring(filename.lastIndexOf("."));
+        } else {
+            // Default to .jpg if no extension found (for backward compatibility)
+            fileExtension = ".jpg";
+        }
+
+        // Generate unique filename preserving original extension
+        String baseFilename = filename != null ? filename.replaceAll("\\.[^.]*$", "") : "file";
+        String uniqueFilename = System.currentTimeMillis() + "_" + baseFilename + fileExtension;
         
         switch (storageType.toLowerCase()) {
             case "local":
-                return saveToLocal(imageBytes, uniqueFilename);
+                return saveToLocal(fileBytes, uniqueFilename);
             case "s3":
-                return saveToS3(imageBytes, uniqueFilename);
+                return saveToS3(fileBytes, uniqueFilename);
             case "gcs":
-                return saveToGCS(imageBytes, uniqueFilename);
+                return saveToGCS(fileBytes, uniqueFilename);
             case "azure":
-                return saveToAzure(imageBytes, uniqueFilename);
+                return saveToAzure(fileBytes, uniqueFilename);
             default:
                 throw new IllegalArgumentException("Unsupported storage type: " + storageType);
         }

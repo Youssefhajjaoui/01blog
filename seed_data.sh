@@ -1,138 +1,118 @@
 #!/bin/bash
+# =====================================================
+# PostgreSQL Dummy Data Seeder for BlogDB
+# =====================================================
 
-# Enhanced Data Seeding Script for 01Blog
-# This script will populate the database with realistic data for testing suggestions and trending features
+DB_CONTAINER="blogdb"
+DB_USER="admin"
+DB_PASS="pass"
+DB_NAME="postgres"
+NUM_USERS=20
+NUM_POSTS=50
+NUM_COMMENTS=100
+NUM_LIKES=80
+NUM_SUBSCRIPTIONS=40
+NUM_NOTIFICATIONS=30
+NUM_REPORTS=15
 
-echo "🌱 Starting Enhanced Data Seeding for 01Blog..."
-echo "================================================"
+echo "🚀 Starting data seeding into container: $DB_CONTAINER"
 
-# Check if PostgreSQL is running
-if ! pg_isready -h localhost -p 5432 -U admin; then
-    echo "❌ PostgreSQL is not running. Please start PostgreSQL first."
-    exit 1
-fi
+# Helper: run SQL inside the container
+run_sql() {
+  docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "$1"
+}
 
-# Check if database exists
-if ! psql -h localhost -U admin -d blogdb -c "SELECT 1;" > /dev/null 2>&1; then
-    echo "❌ Database 'blogdb' does not exist. Please create it first."
-    exit 1
-fi
+# -----------------------------------------------------
+# 1. USERS
+# -----------------------------------------------------
+echo "🧍 Creating $NUM_USERS users..."
+for i in $(seq 1 $NUM_USERS); do
+  username="user$i"
+  email="user$i@example.com"
+  password_hash="hashed_password_$i"
+  image="https://picsum.photos/seed/$i/200"
+  bio="This is the bio of $username."
+  role=$([ $i -eq 1 ] && echo "ADMIN" || echo "USER")
+  run_sql "INSERT INTO users (username, email, password_hash, image, bio, role) 
+           VALUES ('$username', '$email', '$password_hash', '$image', '$bio', '$role');"
+done
 
-echo "✅ Database connection verified"
+# -----------------------------------------------------
+# 2. POSTS
+# -----------------------------------------------------
+echo "📝 Creating $NUM_POSTS posts..."
+for i in $(seq 1 $NUM_POSTS); do
+  creator_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  title="Post Title $i"
+  content="This is a dummy post content number $i created by user $creator_id."
+  media_url="https://picsum.photos/seed/post$i/600"
+  media_type="image/jpeg"
+  tags="{tag$i,example,blog}"
+  run_sql "INSERT INTO posts (creator_id, title, content, media_url, media_type, tags)
+           VALUES ($creator_id, '$title', '$content', '$media_url', '$media_type', '$tags');"
+done
 
-# Option 1: Use SQL script
-echo ""
-echo "📊 Option 1: Using SQL Script (Recommended)"
-echo "This will create:"
-echo "  - 500 users with realistic profiles"
-echo "  - 2000 posts with trending tags"
-echo "  - 5000 comments"
-echo "  - 8000 likes"
-echo "  - 2000 subscriptions"
-echo "  - 1000 notifications"
-echo ""
+# -----------------------------------------------------
+# 3. COMMENTS
+# -----------------------------------------------------
+echo "💬 Creating $NUM_COMMENTS comments..."
+for i in $(seq 1 $NUM_COMMENTS); do
+  creator_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  post_id=$(( (RANDOM % NUM_POSTS) + 1 ))
+  content="This is comment $i by user $creator_id on post $post_id."
+  run_sql "INSERT INTO comments (content, creator_id, post_id)
+           VALUES ('$content', $creator_id, $post_id);"
+done
 
-read -p "Do you want to proceed with SQL seeding? (y/n): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "🔄 Running SQL seeding script..."
-    
-    # Run the enhanced SQL script
-    psql -h localhost -U admin -d blogdb -f enhanced_fake_data.sql
-    
-    if [ $? -eq 0 ]; then
-        echo "✅ SQL seeding completed successfully!"
-    else
-        echo "❌ SQL seeding failed. Please check the error messages above."
-        exit 1
-    fi
-fi
+# -----------------------------------------------------
+# 4. LIKES
+# -----------------------------------------------------
+echo "❤️ Creating $NUM_LIKES likes..."
+for i in $(seq 1 $NUM_LIKES); do
+  creator_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  post_id=$(( (RANDOM % NUM_POSTS) + 1 ))
+  run_sql "INSERT INTO likes (creator_id, post_id)
+           VALUES ($creator_id, $post_id)
+           ON CONFLICT DO NOTHING;"
+done
 
-# Option 2: Use Spring Boot application
-echo ""
-echo "🚀 Option 2: Using Spring Boot Application"
-echo "This will use the DataSeederService to create data programmatically."
-echo ""
+# -----------------------------------------------------
+# 5. SUBSCRIPTIONS
+# -----------------------------------------------------
+echo "👥 Creating $NUM_SUBSCRIPTIONS subscriptions..."
+for i in $(seq 1 $NUM_SUBSCRIPTIONS); do
+  follower_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  followed_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  if [ "$follower_id" -ne "$followed_id" ]; then
+    run_sql "INSERT INTO subscriptions (follower_id, followed_id)
+             VALUES ($follower_id, $followed_id)
+             ON CONFLICT DO NOTHING;"
+  fi
+done
 
-read -p "Do you want to run Spring Boot seeding? (y/n): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "🔄 Starting Spring Boot application for seeding..."
-    
-    # Navigate to backend directory
-    cd backend
-    
-    # Run Spring Boot application
-    mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=seeding"
-    
-    if [ $? -eq 0 ]; then
-        echo "✅ Spring Boot seeding completed successfully!"
-    else
-        echo "❌ Spring Boot seeding failed. Please check the error messages above."
-        exit 1
-    fi
-    
-    cd ..
-fi
+# -----------------------------------------------------
+# 6. NOTIFICATIONS
+# -----------------------------------------------------
+echo "🔔 Creating $NUM_NOTIFICATIONS notifications..."
+for i in $(seq 1 $NUM_NOTIFICATIONS); do
+  creator_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  receiver_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  content="Notification $i from user $creator_id to user $receiver_id."
+  run_sql "INSERT INTO notifications (creator_id, receiver_id, content)
+           VALUES ($creator_id, $receiver_id, '$content');"
+done
 
-# Show final statistics
-echo ""
-echo "📊 Final Database Statistics:"
-echo "============================="
+# -----------------------------------------------------
+# 7. REPORTS
+# -----------------------------------------------------
+echo "🚨 Creating $NUM_REPORTS reports..."
+for i in $(seq 1 $NUM_REPORTS); do
+  reporter_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  reported_user_id=$(( (RANDOM % NUM_USERS) + 1 ))
+  reported_post_id=$(( (RANDOM % NUM_POSTS) + 1 ))
+  reason="Report reason number $i"
+  run_sql "INSERT INTO reports (reporter_id, reported_user_id, reported_post_id, reason)
+           VALUES ($reporter_id, $reported_user_id, $reported_post_id, '$reason');"
+done
 
-psql -h localhost -U admin -d blogdb -c "
-SELECT 
-    'Users' as table_name, COUNT(*) as count FROM users
-UNION ALL
-SELECT 
-    'Posts' as table_name, COUNT(*) as count FROM posts
-UNION ALL
-SELECT 
-    'Comments' as table_name, COUNT(*) as count FROM comments
-UNION ALL
-SELECT 
-    'Likes' as table_name, COUNT(*) as count FROM likes
-UNION ALL
-SELECT 
-    'Subscriptions' as table_name, COUNT(*) as count FROM subscriptions
-UNION ALL
-SELECT 
-    'Notifications' as table_name, COUNT(*) as count FROM notifications
-ORDER BY table_name;
-"
-
-echo ""
-echo "🔥 Top Trending Tags:"
-echo "===================="
-
-psql -h localhost -U admin -d blogdb -c "
-WITH tag_counts AS (
-    SELECT 
-        unnest(tags) as tag,
-        COUNT(*) as post_count
-    FROM posts 
-    WHERE created_at > NOW() - INTERVAL '7 days'
-    GROUP BY unnest(tags)
-)
-SELECT 
-    '#' || tag as trending_tag,
-    post_count as posts_last_week
-FROM tag_counts 
-ORDER BY post_count DESC 
-LIMIT 10;
-"
-
-echo ""
-echo "✅ Data seeding completed successfully!"
-echo "🎯 You now have a rich dataset for testing suggestions and trending features."
-echo ""
-echo "📝 Next steps:"
-echo "  1. Start your Spring Boot application"
-echo "  2. Test the suggestion endpoints:"
-echo "     - GET /api/suggestions/trending-tags"
-echo "     - GET /api/suggestions/posts"
-echo "     - GET /api/suggestions/users"
-echo "     - GET /api/suggestions/feed"
-echo "  3. Implement frontend components to display suggestions"
-echo ""
-echo "🚀 Happy coding!"
+echo "✅ Seeding completed successfully!"

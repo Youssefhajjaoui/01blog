@@ -36,6 +36,9 @@ public class Report {
 	@Column(nullable = false)
 	private String reason;
 
+	@Column(length = 1000)
+	private String description;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private ReportStatus status = ReportStatus.PENDING;
@@ -55,6 +58,8 @@ public class Report {
 	public void setReportedPost(Post reportedPost) { this.reportedPost = reportedPost; }
 	public String getReason() { return reason; }
 	public void setReason(String reason) { this.reason = reason; }
+	public String getDescription() { return description; }
+	public void setDescription(String description) { this.description = description; }
 	public ReportStatus getStatus() { return status; }
 	public void setStatus(ReportStatus status) { this.status = status; }
 	public LocalDateTime getCreatedAt() { return createdAt; }

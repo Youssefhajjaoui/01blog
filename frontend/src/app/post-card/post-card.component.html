@@ -2,7 +2,14 @@
 <div *ngIf="variant === 'grid'" class="card card-grid" (click)="handlePostClick()">
   <!-- Media -->
   <div *ngIf="post.media && post.media[0]" class="card-media-grid">
-    <img [src]="post.media[0].url" [alt]="post.media[0].alt || post.title" class="media-image" />
+    <!-- Image -->
+    <img *ngIf="post.media[0].type === 'IMAGE'" [src]="post.media[0].url" [alt]="post.media[0].alt || post.title"
+      class="media-image" />
+    <!-- Video -->
+    <video *ngIf="post.media[0].type === 'VIDEO'" [src]="post.media[0].url" class="media-video" controls
+      preload="metadata">
+      <p>Your browser doesn't support HTML5 video.</p>
+    </video>
     <div class="media-overlay"></div>
   </div>
 
@@ -10,11 +17,11 @@
     <!-- Author Info -->
     <div class="author-row-grid">
       <div class="avatar-wrapper-sm" (click)="handleUserClick($event)">
-        <img *ngIf="post.author.avatar" [src]="getAvatarUrl(post.author.avatar)" [alt]="post.author.name"
+        <img *ngIf="post.author.avatar" [src]="getAvatarUrl(post.author.avatar)" [alt]="post.author.username"
           class="avatar-sm" />
-        <span *ngIf="!post.author.avatar" class="avatar-fallback-sm">{{getInitials(post.author.name)}}</span>
+        <span *ngIf="!post.author.avatar" class="avatar-fallback-sm">{{getInitials(post.author.username)}}</span>
       </div>
-      <span class="author-name-sm">{{post.author.name}}</span>
+      <span class="author-name-sm">{{post.author.username}}</span>
     </div>
 
     <!-- Content -->
@@ -44,19 +51,19 @@
 </div>
 
 <!-- Feed Variant (Default) -->
-<div *ngIf="variant === 'feed'" class="card card-feed" (click)="handlePostClick()">
+<div *ngIf="variant === 'feed'" class="card card-feed" [class.edit-mode]="editMode" (click)="handlePostClick()">
   <div class="card-content">
     <!-- Author Header -->
     <div class="author-header">
       <div class="author-info">
         <div class="avatar-wrapper" (click)="handleUserClick($event)">
-          <img *ngIf="post.author.avatar" [src]="getAvatarUrl(post.author.avatar)" [alt]="post.author.name"
+          <img *ngIf="post.author.avatar" [src]="getAvatarUrl(post.author.avatar)" [alt]="post.author.username"
             class="avatar" />
-          <span *ngIf="!post.author.avatar" class="avatar-fallback">{{getInitials(post.author.name)}}</span>
+          <span *ngIf="!post.author.avatar" class="avatar-fallback">{{getInitials(post.author.username)}}</span>
         </div>
         <div class="author-details">
           <div class="author-top">
-            <span class="author-name" (click)="handleUserClick($event)">{{post.author.name}}</span>
+            <span class="author-name" (click)="handleUserClick($event)">{{post.author.username}}</span>
             <button *ngIf="!isOwner" class="follow-btn" [class.following]="localSubscribed"
               (click)="handleSubscribe($event)">
               <svg class="follow-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,20 +86,37 @@
           </svg>
         </button>
         <div *ngIf="showMenu" class="menu-dropdown">
-          <button class="menu-item" (click)="handleShare($event)">
+          <button *ngIf="isOwner" class="menu-item menu-item-danger" (click)="handleDelete($event)">
             <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            Share
+            Delete
           </button>
-          <button class="menu-item" (click)="$event.stopPropagation()">
+          <button *ngIf="isOwner && !editMode" class="menu-item" (click)="handleEdit($event)">
             <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            Save
+            Edit
           </button>
+
+          <!-- Show Save/Cancel when editing -->
+          <div *ngIf="editMode" class="menu-dropdown-actions">
+            <button class="menu-item menu-item-success" (click)="saveEdit($event)">
+              <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Save
+            </button>
+            <button class="menu-item menu-item-danger" (click)="cancelEdit($event)">
+              <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </button>
+          </div>
+
           <button *ngIf="!isOwner" class="menu-item menu-item-danger" (click)="handleReport($event)">
             <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -104,30 +128,332 @@
       </div>
     </div>
 
-    <!-- Content -->
-    <div class="content-section">
-      <h2 class="content-title">{{post.title}}</h2>
-      <p class="content-excerpt">{{post.excerpt}}</p>
+    <!-- Report Modal -->
+    <div *ngIf="showReportModal" class="report-modal-overlay" (click)="closeReportModal($event)">
+      <div class="report-modal" (click)="$event.stopPropagation()">
+        <div class="report-modal-header">
+          <h3 class="report-modal-title">
+            <svg class="report-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Report Post
+          </h3>
+          <button class="close-button" (click)="closeReportModal($event)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-      <!-- Tags -->
-      <div *ngIf="post.tags && post.tags.length > 0" class="tags-row">
-        <span *ngFor="let tag of post.tags.slice(0, 5)" class="tag-badge" (click)="$event.stopPropagation()">
-          #{{tag}}
-        </span>
-        <span *ngIf="post.tags.length > 5" class="tag-more" (click)="$event.stopPropagation()">
-          +{{post.tags.length - 5}} more
-        </span>
+        <div class="report-modal-content">
+          <p class="report-description">
+            Please select a reason for reporting this post. Our team will review your report.
+          </p>
+
+          <div class="report-reasons">
+            <label *ngFor="let reason of reportReasons" class="report-reason-item"
+              [class.selected]="selectedReason === reason.value">
+              <input type="radio" name="reportReason" [value]="reason.value" [(ngModel)]="selectedReason"
+                class="report-radio" />
+              <div class="reason-content">
+                <div class="reason-icon" [innerHTML]="reason.icon"></div>
+                <div class="reason-text">
+                  <span class="reason-title">{{ reason.label }}</span>
+                  <span class="reason-subtitle">{{ reason.description }}</span>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div class="report-details">
+            <label class="details-label">Additional details (optional)</label>
+            <textarea class="details-textarea" [(ngModel)]="reportDetails"
+              placeholder="Provide more information about why you're reporting this post..." rows="4"></textarea>
+          </div>
+        </div>
+
+        <div class="report-modal-footer">
+          <button class="btn-cancel" (click)="closeReportModal($event)">
+            Cancel
+          </button>
+          <button class="btn-submit-report" (click)="submitReport($event)"
+            [disabled]="!selectedReason || submittingReport">
+            <svg *ngIf="!submittingReport" class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <svg *ngIf="submittingReport" class="btn-icon spinner" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {{ submittingReport ? 'Submitting...' : 'Submit Report' }}
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- Comment Modal -->
+    <div *ngIf="showCommentModal" class="comment-modal-overlay" (click)="closeCommentModal($event)">
+      <div class="comment-modal" (click)="$event.stopPropagation()">
+        <div class="comment-modal-header">
+          <h3 class="comment-modal-title">
+            <svg class="comment-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Comments
+          </h3>
+          <button class="close-button" (click)="closeCommentModal($event)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="comment-modal-content">
+          <!-- New Comment Form -->
+          <div class="new-comment-section">
+            <div class="comment-form">
+              <textarea class="comment-textarea" [(ngModel)]="newCommentContent" placeholder="Write a comment..."
+                rows="3" [disabled]="submittingComment"></textarea>
+              <div class="comment-form-actions">
+                <span *ngIf="commentError" class="comment-error">{{ commentError }}</span>
+                <button class="btn-submit-comment" (click)="submitComment($event)"
+                  [disabled]="!newCommentContent.trim() || submittingComment">
+                  <svg *ngIf="!submittingComment" class="btn-icon" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  <svg *ngIf="submittingComment" class="btn-icon spinner" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {{ submittingComment ? 'Posting...' : 'Post Comment' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comments List -->
+          <div class="comments-section">
+            <div *ngIf="loadingComments" class="loading-comments">
+              <svg class="spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Loading comments...</span>
+            </div>
+
+            <div *ngIf="!loadingComments && comments.length === 0" class="no-comments">
+              <svg class="no-comments-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <p>No comments yet. Be the first to comment!</p>
+            </div>
+
+            <div *ngIf="!loadingComments && comments.length > 0" class="comments-list">
+              <div *ngFor="let comment of comments" class="comment-item">
+                <div class="comment-avatar">
+                  <img *ngIf="comment.author.avatar" [src]="getAvatarUrl(comment.author.avatar)"
+                    [alt]="comment.author.username" class="avatar" />
+                  <span *ngIf="!comment.author.avatar"
+                    class="avatar-fallback">{{getInitials(comment.author.username)}}</span>
+                </div>
+                <div class="comment-content">
+                  <div class="comment-header">
+                    <span class="comment-author">{{ comment.author.username }}</span>
+                    <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
+                    <div *ngIf="isCommentOwner(comment)" class="comment-actions">
+                      <button *ngIf="editingCommentId !== comment.id" class="comment-edit-btn"
+                        (click)="startEditComment(comment, $event)" title="Edit comment">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button *ngIf="editingCommentId !== comment.id" class="comment-delete-btn"
+                        (click)="deleteComment(comment.id, $event)" title="Delete comment">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Normal comment display -->
+                  <p *ngIf="editingCommentId !== comment.id" class="comment-text">{{ comment.content }}</p>
+
+                  <!-- Edit mode -->
+                  <div *ngIf="editingCommentId === comment.id" class="comment-edit-mode">
+                    <textarea class="comment-edit-textarea" [(ngModel)]="editingCommentContent"
+                      placeholder="Edit your comment..." rows="2"></textarea>
+                    <div class="comment-edit-actions">
+                      <span *ngIf="commentError" class="comment-error">{{ commentError }}</span>
+                      <div class="comment-edit-buttons">
+                        <button class="btn-cancel-edit" (click)="cancelEditComment($event)">
+                          Cancel
+                        </button>
+                        <button class="btn-save-edit" (click)="updateComment($event)"
+                          [disabled]="!editingCommentContent.trim() || updatingComment">
+                          <svg *ngIf="!updatingComment" class="btn-icon" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <svg *ngIf="updatingComment" class="btn-icon spinner" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          {{ updatingComment ? 'Saving...' : 'Save' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-section">
+      <!-- Title -->
+      <ng-container *ngIf="!editMode; else editFields">
+        <h2 class="content-title">{{post.title}}</h2>
+        <p class="content-excerpt">{{post.excerpt}}</p>
+      </ng-container>
+
+      <ng-template #editFields>
+        <input type="text" class="edit-input title-input" [(ngModel)]="editablePost.title" placeholder="Post title"
+          (click)="$event.stopPropagation()" />
+        <textarea class="edit-textarea excerpt-input" [(ngModel)]="editablePost.content" placeholder="Post content"
+          (click)="$event.stopPropagation()"></textarea>
+
+        <!-- Media editing section -->
+        <div class="edit-media-section" (click)="$event.stopPropagation()">
+          <!-- Original media from post creation -->
+          <div *ngIf="originalMediaUrl" class="original-media-section">
+            <div class="media-section-header">
+              <span class="media-label">
+                <svg class="icon-original" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                Original Media
+              </span>
+              <div class="media-actions">
+                <button type="button" class="btn-keep-original"
+                  [class.active]="editablePost.mediaUrl === originalMediaUrl" (click)="keepOriginalMedia($event)"
+                  title="Keep original media">
+                  <svg class="icon-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Keep Original
+                </button>
+                <button type="button" class="btn-remove-all" (click)="removeAllMedia($event)" title="Remove all media">
+                  <svg class="icon-remove" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Remove All
+                </button>
+              </div>
+            </div>
+            <div class="original-media-preview">
+              <img *ngIf="originalMediaType === 'IMAGE'" [src]="originalMediaUrl" class="media-preview-img"
+                alt="Original media" />
+              <video *ngIf="originalMediaType === 'VIDEO'" [src]="originalMediaUrl" class="media-preview-video"
+                controls></video>
+              <audio *ngIf="originalMediaType === 'AUDIO'" [src]="originalMediaUrl" class="media-preview-audio"
+                controls></audio>
+            </div>
+          </div>
+
+          <!-- Currently selected/uploaded media (if different from original) -->
+          <div *ngIf="editablePost.mediaUrl && editablePost.mediaUrl !== originalMediaUrl" class="new-media-section">
+            <div class="media-section-header">
+              <span class="media-label">
+                <svg class="icon-new" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                New Upload (will replace original)
+              </span>
+              <button type="button" class="btn-remove-new" (click)="removeNewMedia($event)" title="Cancel this upload">
+                <svg class="icon-remove" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancel
+              </button>
+            </div>
+            <div class="new-media-preview">
+              <img *ngIf="editablePost.mediaType === 'IMAGE'" [src]="editablePost.mediaUrl" class="media-preview-img"
+                alt="New media" />
+              <video *ngIf="editablePost.mediaType === 'VIDEO'" [src]="editablePost.mediaUrl"
+                class="media-preview-video" controls></video>
+              <audio *ngIf="editablePost.mediaType === 'AUDIO'" [src]="editablePost.mediaUrl"
+                class="media-preview-audio" controls></audio>
+            </div>
+          </div>
+
+          <!-- No media state -->
+          <div *ngIf="!editablePost.mediaUrl && !originalMediaUrl" class="no-media-state">
+            <svg class="icon-no-media" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p class="no-media-text">No media attached</p>
+          </div>
+
+          <!-- Upload button -->
+          <div class="upload-media-section">
+            <label class="upload-label">
+              <input type="file" #fileInput class="file-input" accept="image/*,video/*,audio/*"
+                (change)="onFileSelected($event)" />
+              <div class="upload-button">
+                <svg class="icon-upload" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>{{ originalMediaUrl ? 'Upload New Media' : 'Upload Media' }}</span>
+              </div>
+            </label>
+            <span *ngIf="uploadingMedia" class="upload-status">Uploading...</span>
+            <span *ngIf="uploadError" class="upload-error">{{ uploadError }}</span>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+
 
     <!-- Media -->
     <div *ngIf="post.media && post.media.length > 0" class="media-section">
       <div *ngIf="post.media.length === 1" class="media-single">
-        <img [src]="post.media[0].url" [alt]="post.media[0].alt || post.title" class="media-image-single" />
+        <!-- Image -->
+        <img *ngIf="post.media[0].type === 'IMAGE'" [src]="post.media[0].url" [alt]="post.media[0].alt || post.title"
+          class="media-image-single" />
+        <!-- Video -->
+        <video *ngIf="post.media[0].type === 'VIDEO'" [src]="post.media[0].url" class="media-video-single" controls
+          preload="metadata">
+          <p>Your browser doesn't support HTML5 video.</p>
+        </video>
       </div>
       <div *ngIf="post.media.length > 1" class="media-grid">
         <div *ngFor="let media of post.media.slice(0, 4); let i = index" class="media-grid-item">
-          <img [src]="media.url" [alt]="media.alt || post.title + ' ' + (i + 1)" class="media-image-grid" />
+          <!-- Image -->
+          <img *ngIf="media.type === 'IMAGE'" [src]="media.url" [alt]="media.alt || post.title + ' ' + (i + 1)"
+            class="media-image-grid" />
+          <!-- Video -->
+          <video *ngIf="media.type === 'VIDEO'" [src]="media.url" class="media-video-grid" controls preload="metadata">
+            <p>Your browser doesn't support HTML5 video.</p>
+          </video>
           <div *ngIf="i === 3 && post.media!.length > 4" class="media-overlay-count">
             <span>+{{post.media!.length - 4}}</span>
           </div>

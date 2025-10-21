@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.dtos.CommentDto;
+import com.example.demo.dtos.Userdto;
+import com.example.demo.dtos.UpdateCommentRequest;
 import com.example.demo.models.Comment;
 import com.example.demo.models.Post;
 import com.example.demo.models.User;
@@ -40,7 +43,7 @@ public class CommentController {
 
     // Create comment on a post
     @PostMapping("/post/{postId}")
-    public ResponseEntity<Comment> createComment(@PathVariable Long postId,
+    public ResponseEntity<CommentDto> createComment(@PathVariable Long postId,
             @RequestBody Comment comment,
             @AuthenticationPrincipal User principal) {
         if (principal == null)
@@ -53,19 +56,29 @@ public class CommentController {
         comment.setCreator(principal);
         comment.setPost(optPost.get());
         Comment saved = commentRepository.save(comment);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        
+        // Convert to DTO
+        CommentDto commentDto = convertToDTO(saved);
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(commentDto);
     }
 
     // List comments for a post
     @GetMapping("/post/{postId}")
-    public List<Comment> getCommentsForPost(@PathVariable Long postId) {
-        return commentRepository.findByPost_Id(postId);
+    public ResponseEntity<List<CommentDto>> getCommentsForPost(@PathVariable Long postId) {
+        List<Comment> comments = commentRepository.findByPost_Id(postId);
+        
+        List<CommentDto> commentDtos = comments.stream()
+            .map(this::convertToDTO)
+            .collect(java.util.stream.Collectors.toList());
+            
+        return ResponseEntity.ok(commentDtos);
     }
 
     // Update own comment
     @PutMapping("/{id}")
-    public ResponseEntity<Comment> updateComment(@PathVariable Long id,
-            @RequestBody Comment details,
+    public ResponseEntity<CommentDto> updateComment(@PathVariable Long id,
+            @RequestBody UpdateCommentRequest updateRequest,
             @AuthenticationPrincipal User principal) {
         if (principal == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -76,9 +89,17 @@ public class CommentController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
         Comment comment = optComment.get();
-        comment.setContent(details.getContent());
+        comment.setContent(updateRequest.getContent());
         Comment saved = commentRepository.save(comment);
-        return ResponseEntity.ok(saved);
+        
+        // Convert to DTO
+        CommentDto commentDto = convertToDTO(saved);
+        
+        System.out.println("CommentController: Returning CommentDto: " + commentDto);
+        System.out.println("CommentController: CommentDto ID: " + commentDto.getId());
+        System.out.println("CommentController: CommentDto Content: " + commentDto.getContent());
+        
+        return ResponseEntity.ok(commentDto);
     }
 
     // Delete own comment
@@ -95,5 +116,20 @@ public class CommentController {
 
         commentRepository.delete(optComment.get());
         return ResponseEntity.noContent().build();
+    }
+
+    // Helper method to convert Comment entity to CommentDto
+    private CommentDto convertToDTO(Comment comment) {
+        Userdto authorDto = new Userdto();
+        authorDto.setId(comment.getCreator().getId());
+        authorDto.setUsername(comment.getCreator().getUsername());
+        authorDto.setAvatar(comment.getCreator().getImage());
+        
+        return new CommentDto(
+            comment.getId(),
+            comment.getContent(),
+            comment.getCreatedAt(),
+            authorDto
+        );
     }
 }
