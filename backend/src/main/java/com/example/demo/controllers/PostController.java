@@ -19,7 +19,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -163,6 +166,39 @@ public class PostController {
 
         postRepository.delete(optionalPost.get());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/tags")
+    public ResponseEntity<Map<String, Object>> getTags(@AuthenticationPrincipal User principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<Post> posts = postRepository.findAll();
+
+        // Count how many posts have each tag
+        Map<String, Long> tagCounts = posts.stream()
+                .filter(post -> post.getTags() != null)
+                .flatMap(post -> post.getTags().stream().distinct())
+                .collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
+
+        // Sort and take at least 5
+        List<Map.Entry<String, Long>> sorted = tagCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(Math.max(5, tagCounts.size()))
+                .collect(Collectors.toList());
+
+        // Convert to array format [{tag, count}, ...]
+        List<Map<String, Object>> trendingTags = sorted.stream()
+                .map(entry -> Map.<String, Object>of(
+                        "tag", entry.getKey(),
+                        "count", entry.getValue()))
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("trendingTags", trendingTags);
+
+        return ResponseEntity.ok(response);
     }
 
     // ----------------- PRIVATE METHODS -----------------

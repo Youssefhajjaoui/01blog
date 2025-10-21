@@ -43,7 +43,7 @@ export class HomePageComponent implements OnInit {
     private router: Router,
     private suggestionsService: SuggestionsService,
     private snackBar: MatSnackBar
-  ) { }
+  ) {}
 
   posts: Post[] = [];
   loading = true;
@@ -60,6 +60,10 @@ export class HomePageComponent implements OnInit {
 
   ngOnInit() {
     this.loadPosts();
+    this.postService.getTrending().subscribe((tags) => {
+      this.trendingTags = tags.trendingTags;
+      this.cd.detectChanges();
+    });
     this.loadSuggestions();
     // Get authenticated user
     this.authService.currentUser$.subscribe((user) => {
@@ -92,7 +96,7 @@ export class HomePageComponent implements OnInit {
 
   onPostUpdated(updatedPost: Post) {
     // Find and update the post in the posts array
-    const index = this.posts.findIndex(p => p.id === updatedPost.id);
+    const index = this.posts.findIndex((p) => p.id === updatedPost.id);
     if (index !== -1) {
       this.posts[index] = updatedPost;
       this.cd.detectChanges();
@@ -188,10 +192,10 @@ export class HomePageComponent implements OnInit {
     this.posts = this.posts.map((post) =>
       post.id === Number(postId)
         ? {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-        }
+            ...post,
+            isLiked: !post.isLiked,
+            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+          }
         : post
     );
   }

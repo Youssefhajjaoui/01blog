@@ -15,7 +15,7 @@ import {
 export class PostService {
   private apiUrl = 'http://localhost:9090'; // replace with your backend URL
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   getPosts(): Observable<Post[]> {
     return this.http
@@ -50,7 +50,11 @@ export class PostService {
   }
 
   likePost(postId: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/likes/post/${postId}`, {}, { withCredentials: true });
+    return this.http.post<void>(
+      `${this.apiUrl}/likes/post/${postId}`,
+      {},
+      { withCredentials: true }
+    );
   }
 
   unlikePost(postId: number): Observable<void> {
@@ -58,37 +62,47 @@ export class PostService {
   }
 
   getComments(postId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/comments/post/${postId}`, { withCredentials: true });
-  }
-
-  createComment(commentData: CreateCommentRequest): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/comments/post/${commentData.postId}`, {
-      content: commentData.content
-    }, {
+    return this.http.get<any[]>(`${this.apiUrl}/comments/post/${postId}`, {
       withCredentials: true,
     });
   }
 
+  createComment(commentData: CreateCommentRequest): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/comments/post/${commentData.postId}`,
+      {
+        content: commentData.content,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+  }
+
   deleteComment(commentId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/comments/${commentId}`, { withCredentials: true });
+    return this.http.delete<void>(`${this.apiUrl}/comments/${commentId}`, {
+      withCredentials: true,
+    });
   }
 
   updateComment(commentId: number, updateData: { content: string }): Observable<any> {
     console.log('PostService: Updating comment', commentId, 'with data:', updateData);
     console.log('PostService: Making PUT request to:', `${this.apiUrl}/comments/${commentId}`);
 
-    return this.http.put<any>(`${this.apiUrl}/comments/${commentId}`, updateData, {
-      withCredentials: true
-    }).pipe(
-      timeout(10000), // 10 second timeout
-      catchError(error => {
-        console.error('PostService: Update comment error:', error);
-        console.error('PostService: Error status:', error.status);
-        console.error('PostService: Error message:', error.message);
-        console.error('PostService: Error body:', error.error);
-        throw error;
+    return this.http
+      .put<any>(`${this.apiUrl}/comments/${commentId}`, updateData, {
+        withCredentials: true,
       })
-    );
+      .pipe(
+        timeout(10000), // 10 second timeout
+        catchError((error) => {
+          console.error('PostService: Update comment error:', error);
+          console.error('PostService: Error status:', error.status);
+          console.error('PostService: Error message:', error.message);
+          console.error('PostService: Error body:', error.error);
+          throw error;
+        })
+      );
   }
 
   uploadFile(formData: FormData): Observable<any> {
@@ -106,6 +120,10 @@ export class PostService {
       },
       { withCredentials: true }
     );
+  }
+
+  getTrending(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/posts/tags`, { withCredentials: true });
   }
 }
 function mapBackendPostToFrontend(raw: any): Post {
