@@ -7,6 +7,8 @@ import com.example.demo.models.Notification;
 import com.example.demo.models.Post;
 import com.example.demo.models.Subscription;
 import com.example.demo.models.User;
+import com.example.demo.models.MediaType;
+import com.example.demo.repositories.LikeRepository;
 import com.example.demo.repositories.NotificationRepository;
 import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.SubscriptionRepository;
@@ -30,15 +32,17 @@ public class PostController {
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationController notifcontroller;
+    private final LikeRepository likeRepository;
 
     public PostController(PostRepository postRepository, UserRepository userRepository,
             SubscriptionRepository subscriptionRepository, NotificationRepository notificationRepository,
-            NotificationController notifcontroller) {
+            NotificationController notifcontroller, LikeRepository likerepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.notificationRepository = notificationRepository;
         this.notifcontroller = notifcontroller;
+        this.likeRepository = likerepository;
     }
 
     // ----------------- CREATE -----------------
@@ -51,6 +55,23 @@ public class PostController {
 
         User currentUser = principal;
         post.setCreator(currentUser); // Set the logged-in user as creator
+
+        // Auto-determine media type based on file extension if not set
+        if (post.getMediaUrl() != null && post.getMediaType() == null) {
+            String mediaUrl = post.getMediaUrl();
+            String lowerUrl = mediaUrl.toLowerCase();
+
+            if (lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".webm") ||
+                    lowerUrl.endsWith(".avi") || lowerUrl.endsWith(".mov") ||
+                    lowerUrl.endsWith(".mkv") || lowerUrl.endsWith(".flv")) {
+                post.setMediaType(MediaType.VIDEO);
+            } else if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg") ||
+                    lowerUrl.endsWith(".png") || lowerUrl.endsWith(".gif") ||
+                    lowerUrl.endsWith(".webp") || lowerUrl.endsWith(".svg")) {
+                post.setMediaType(MediaType.IMAGE);
+            }
+        }
+
         Post saved = postRepository.save(post);
 
         // Create notifications for all followers
@@ -59,15 +80,9 @@ public class PostController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    // ----------------- READ -----------------
-    // @GetMapping
-    // public List<Post> getAllPosts() {
-    // return postRepository.findAll();
-    // }
-
     @GetMapping
-    public List<PostDto> getAllPosts() {
-        return postRepository.findAll().stream().map(this::mapToDto).collect(Collectors.toList());
+    public List<PostDto> getAllPosts(@AuthenticationPrincipal User principale) {
+        return postRepository.findAll().stream().map(post -> mapToDto(post, principale)).collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
@@ -90,7 +105,7 @@ public class PostController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-
+        System.out.println(postDetails);
         User currentUser = principal;
 
         Optional<Post> optionalPost = postRepository.findByIdAndCreator_Id(id, currentUser.getId());
@@ -101,9 +116,30 @@ public class PostController {
 
         Post post = optionalPost.get();
 
-        post.setContent(postDetails.getContent());
-        post.setMediaUrl(postDetails.getMediaUrl());
-        post.setMediaType(postDetails.getMediaType());
+        // Update all fields that can be modified
+        if (postDetails.getTitle() != null) {
+            post.setTitle(postDetails.getTitle());
+        }
+        if (postDetails.getContent() != null) {
+            post.setContent(postDetails.getContent());
+        }
+        if (postDetails.getTags() != null) {
+            post.setTags(postDetails.getTags());
+        }
+        // Handle media URL - allow empty string to clear media
+        if (postDetails.getMediaUrl() != null) {
+            if (postDetails.getMediaUrl().isEmpty()) {
+                post.setMediaUrl(null);
+                post.setMediaType(null);
+            } else {
+                post.setMediaUrl(postDetails.getMediaUrl());
+            }
+        }
+        // Only update media type if mediaUrl is not being cleared
+        if (postDetails.getMediaType() != null
+                && (postDetails.getMediaUrl() == null || !postDetails.getMediaUrl().isEmpty())) {
+            post.setMediaType(postDetails.getMediaType());
+        }
         post.setUpdatedAt(java.time.LocalDateTime.now());
 
         Post updated = postRepository.save(post);
@@ -146,7 +182,7 @@ public class PostController {
         }
     }
 
-    private PostDto mapToDto(Post post) {
+    private PostDto mapToDto(Post post, User principale) {
         PostDto dto = new PostDto();
         dto.setId(post.getId().toString());
         dto.setAuthor(mapUserToDto(post.getCreator()));
@@ -160,8 +196,9 @@ public class PostController {
         dto.setTags(post.getTags());
         dto.setLikes(post.getLikes() != null ? post.getLikes().size() : 0); // Request likes from backend
         dto.setComments(post.getComments() != null ? post.getComments().size() : 0); // Request comments from backend
-        dto.setLiked(false); // Set based on current user if needed
-        dto.setSubscribed(false); // Set based on current user if needed
+        dto.setLiked(likeRepository.findByCreator_IdAndPost_Id(principale.getId(), post.getId()).orElse(null) != null); // Set
+        dto.setSubscribed(
+                subscriptionRepository.findByFollowerAndFollowed(principale, post.getCreator()).orElse(null) != null); // Set
         dto.setCreatedAt(post.getCreatedAt().toString());
         dto.setVisibility("public"); // Or your logic
         return dto;

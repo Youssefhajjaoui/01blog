@@ -38,11 +38,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String path = request.getRequestURI();
         String method = request.getMethod();
-        
+
         // Allow GET requests to posts without authentication
-        if (path.startsWith("/api/auth/") || 
-            path.startsWith("/api/files/uploads/") ||
-            (path.startsWith("/posts") && "GET".equals(method))) {
+        if (path.startsWith("/api/auth/") ||
+                path.startsWith("/api/files/uploads/")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -50,7 +49,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (cookies == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource111111111111\"}");
+            response.getWriter().write(
+                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource111111111111\"}");
             return;
         }
         // Find the "jwt" cookie
@@ -65,7 +65,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (token == null || token.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource22222222222\"}");
+            response.getWriter().write(
+                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource22222222222\"}");
             return;
         }
 
@@ -79,7 +80,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 if (optionalUser.isEmpty()) {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
-                    response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource333333333\"}");
+                    response.getWriter().write(
+                            "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource333333333\"}");
                     return; // stop filter chain here
                 }
 

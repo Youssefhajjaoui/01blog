@@ -8,102 +8,8 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-navbar',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: `
-    <!-- Navigation Bar -->
-    <header class="navbar">
-      <div class="nav-container">
-        <div class="nav-content">
-          <!-- Logo -->
-          <button class="logo-btn" (click)="navigateToHome()">
-            <div class="logo-icon">
-              <span class="logo-text">01</span>
-            </div>
-            <span class="logo-name">Blog</span>
-          </button>
-
-          <!-- Desktop Navigation Links -->
-          <div class="nav-links">
-            <button class="nav-link" [class.active]="currentPage === 'home'" (click)="navigateToHome()">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              Home
-            </button>
-            <button class="nav-link" [class.active]="currentPage === 'editor'" (click)="navigateToEditor()">
-              <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Write
-            </button>
-          </div>
-
-          <!-- Search Bar -->
-          <div class="search-container">
-            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input type="search" class="search-input" placeholder="Search posts, users, tags..."
-              [(ngModel)]="searchQuery" (input)="onSearchChange($event)" />
-          </div>
-
-          <!-- Right Side Actions -->
-          <div class="nav-actions">
-            <!-- Notifications -->
-            <button class="nav-action-btn" (click)="onNotificationClick()">
-              <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
-
-            <!-- User Avatar with Dropdown -->
-            <div class="user-dropdown-container">
-              <button class="user-avatar-btn" (click)="toggleUserDropdown()">
-                <img [src]="getAvatarUrl()" [alt]="getCurrentUser()?.username || 'User'" class="nav-avatar" />
-              </button>
-              
-              <!-- User Dropdown Menu -->
-              <div class="user-dropdown" [class.show]="showUserDropdown">
-                <!-- User Info Header -->
-                <div class="user-dropdown-header">
-                  <div class="user-info">
-                    <div class="user-name">{{ getCurrentUser()?.username || 'User' }}</div>
-                    <div class="user-email">{{ getCurrentUser()?.email || 'user@example.com' }}</div>
-                  </div>
-                </div>
-                
-                <!-- Dropdown Divider -->
-                <div class="dropdown-divider"></div>
-                
-                <!-- Dropdown Menu Items -->
-                <div class="dropdown-menu">
-                  <button class="dropdown-item" (click)="onProfileClick()">
-                    <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Profile
-                  </button>
-                  
-                  <button class="dropdown-item sign-out" (click)="onSignOutClick()">
-                    <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sign out
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-  `,
-  styleUrls: ['./navbar.component.css']
+  templateUrl: './navbar.component.html',
+  styleUrls: ['./navbar.component.css'],
 })
 export class NavbarComponent {
   @Input() currentPage: string = '';
@@ -116,10 +22,7 @@ export class NavbarComponent {
 
   showUserDropdown = false;
 
-  constructor(
-    private router: Router,
-    private authService: AuthService
-  ) { }
+  constructor(private router: Router, private authService: AuthService) {}
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event) {
@@ -139,6 +42,11 @@ export class NavbarComponent {
   navigateToEditor() {
     this.router.navigate(['/create-post']);
     this.navigate.emit({ page: 'editor' });
+  }
+
+  navigateToAdmin() {
+    this.router.navigate(['/admin']);
+    this.navigate.emit({ page: 'admin' });
   }
 
   onSearchChange(event: Event) {
@@ -165,7 +73,8 @@ export class NavbarComponent {
 
   onProfileClick() {
     this.closeUserDropdown();
-    // Navigate to profile page or emit event
+    // Navigate to profile page
+    this.router.navigate(['/profile']);
     this.navigate.emit({ page: 'profile' });
   }
 
@@ -189,5 +98,9 @@ export class NavbarComponent {
     }
     // Fallback to generated avatar
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username || 'user'}`;
+  }
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
   }
 }

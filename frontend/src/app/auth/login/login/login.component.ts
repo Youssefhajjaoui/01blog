@@ -20,14 +20,14 @@ export class Login {
   errorMessage = '';
 
   // 👇 inject AuthService properly (you forgot `private`)
-  constructor(private router: Router, private authService: AuthService) {}
+  constructor(private router: Router, private authService: AuthService) { }
 
   onSubmit() {
     this.isLoading = true;
     this.errorMessage = '';
 
     if (this.username && this.password) {
-      this.authService.login( this.username ,  this.password).subscribe({
+      this.authService.login({ username: this.username, password: this.password }).subscribe({
         next: (res) => {
           console.log('Login success', res);
           // Optionally navigate somewhere
