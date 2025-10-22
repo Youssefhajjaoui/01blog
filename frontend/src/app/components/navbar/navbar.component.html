@@ -42,7 +42,69 @@
                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input type="search" class="search-input" placeholder="Search posts, users, tags..."
-                    [(ngModel)]="searchQuery" (input)="onSearchChange($event)" />
+                    [(ngModel)]="searchQuery" (input)="onSearchChange($event)" (focus)="onSearchInputFocus()"
+                    (blur)="onSearchInputBlur()" />
+
+                <!-- Search Suggestions Dropdown -->
+                <div class="search-suggestions" [class.show]="showSuggestions" (click)="$event.stopPropagation()">
+                    <!-- Loading State -->
+                    <div *ngIf="isLoadingSuggestions" class="suggestion-loading">
+                        <div class="loading-spinner"></div>
+                        <span>Searching...</span>
+                    </div>
+
+                    <!-- Suggestions List -->
+                    <div *ngIf="!isLoadingSuggestions && suggestions.length > 0" class="suggestions-list">
+                        <div *ngFor="let suggestion of suggestions" class="suggestion-item"
+                            (click)="onSuggestionClick(suggestion)">
+                            <div class="suggestion-content">
+                                <!-- User Avatar -->
+                                <div class="suggestion-avatar" *ngIf="suggestion.type === 'user'">
+                                    <img [src]="getUserAvatarUrl(suggestion)" [alt]="suggestion.username"
+                                        class="avatar-img" />
+                                </div>
+
+                                <!-- User Icon for non-user suggestions -->
+                                <div class="suggestion-icon" *ngIf="suggestion.type !== 'user'">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                        *ngIf="suggestion.type === 'post'">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                        *ngIf="suggestion.type === 'tag'">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                    </svg>
+                                </div>
+
+                                <!-- Suggestion Text -->
+                                <div class="suggestion-text">
+                                    <div class="suggestion-title">{{ suggestion.displayText }}</div>
+                                    <div class="suggestion-subtitle" *ngIf="suggestion.subtitle">{{ suggestion.subtitle
+                                        }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Suggestion Type Badge -->
+                            <div class="suggestion-type">
+                                <span class="type-badge" [class]="'type-' + suggestion.type">
+                                    {{ suggestion.type }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- No Results -->
+                    <div *ngIf="!isLoadingSuggestions && suggestions.length === 0 && searchQuery.length >= 2"
+                        class="no-results">
+                        <svg class="no-results-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <span>No users found for "{{ searchQuery }}"</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Right Side Actions -->

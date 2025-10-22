@@ -117,7 +117,7 @@ export class UserService {
      */
     getUserProfile(userId: number): Observable<UserProfile> {
         this.loadingSubject.next(true);
-        return this.http.get<UserProfile>(`${this.API_URL}/users/${userId}`)
+        return this.http.get<UserProfile>(`${this.API_URL}/users/${userId}`, { withCredentials: true })
             .pipe(
                 tap(() => this.loadingSubject.next(false)),
                 catchError(error => {
@@ -254,8 +254,9 @@ export class UserService {
      * Search users by username
      */
     searchUsers(query: string): Observable<User[]> {
-        return this.http.get<User[]>(`${this.API_URL}/users/search`, {
-            params: { q: query }
+        return this.http.get<User[]>(`${this.API_URL}/suggestions/search`, {
+            params: { q: query },
+            withCredentials: true
         });
     }
 
