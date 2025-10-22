@@ -1,4 +1,13 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  HostListener,
+  ChangeDetectorRef,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,6 +16,7 @@ import {
   SearchSuggestionsService,
   SearchSuggestion,
 } from '../../services/search-suggestions.service';
+import { NotificationService, Notification } from '../../services/notification.service';
 
 @Component({
   selector: 'app-navbar',
@@ -15,7 +25,7 @@ import {
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css'],
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnInit, OnDestroy {
   @Input() currentPage: string = '';
   @Input() searchQuery: string = '';
 
@@ -26,23 +36,58 @@ export class NavbarComponent {
 
   showUserDropdown = false;
   showSuggestions = false;
+  showNotificationPanel = false;
   suggestions: SearchSuggestion[] = [];
   isLoadingSuggestions = false;
+
+  // Notification properties
+  notifications: Notification[] = [];
+  unreadCount = 0;
 
   constructor(
     private router: Router,
     private authService: AuthService,
-    private searchSuggestionsService: SearchSuggestionsService
+    private searchSuggestionsService: SearchSuggestionsService,
+    private notificationService: NotificationService,
+    private cd: ChangeDetectorRef
   ) {
-    // Subscribe to search suggestions
+    // Subscribe to search suggestions with change detection
     this.searchSuggestionsService.suggestions$.subscribe((suggestions) => {
       this.suggestions = suggestions;
       this.showSuggestions = suggestions.length > 0 && this.searchQuery.length >= 2;
+      // Force change detection when suggestions are updated from backend
+      this.cd.detectChanges();
     });
 
     this.searchSuggestionsService.isLoading$.subscribe((loading) => {
       this.isLoadingSuggestions = loading;
+      // Force change detection when loading state changes
+      this.cd.detectChanges();
     });
+  }
+
+  ngOnInit() {
+    // Load notifications from backend first
+    this.notificationService.loadNotifications().subscribe();
+    this.notificationService.loadUnreadCount().subscribe();
+
+    // Subscribe to notifications
+    this.notificationService.getNotifications().subscribe((notifications) => {
+      this.notifications = notifications;
+      this.cd.detectChanges();
+    });
+
+    this.notificationService.getUnreadCount().subscribe((count) => {
+      this.unreadCount = count;
+      this.cd.detectChanges();
+    });
+
+    // Connect to SSE notifications for real-time updates
+    this.notificationService.connectToNotifications();
+  }
+
+  ngOnDestroy() {
+    this.notificationService.disconnect();
   }
 
   @HostListener('document:click', ['$event'])
@@ -50,6 +95,7 @@ export class NavbarComponent {
     const target = event.target as HTMLElement;
     const dropdownContainer = target.closest('.user-dropdown-container');
     const searchContainer = target.closest('.search-container');
+    const notificationContainer = target.closest('.notification-container');
 
     if (!dropdownContainer && this.showUserDropdown) {
       this.closeUserDropdown();
@@ -57,6 +103,10 @@ export class NavbarComponent {
 
     if (!searchContainer && this.showSuggestions) {
       this.hideSuggestions();
+    }
+
+    if (!notificationContainer && this.showNotificationPanel) {
+      this.closeNotificationPanel();
     }
   }
 
@@ -87,10 +137,38 @@ export class NavbarComponent {
     } else {
       this.hideSuggestions();
     }
+
+    // Force change detection to ensure UI updates immediately
+    this.cd.detectChanges();
   }
 
   onNotificationClick() {
+    this.showNotificationPanel = !this.showNotificationPanel;
     this.notificationClick.emit();
+  }
+
+  closeNotificationPanel() {
+    this.showNotificationPanel = false;
+  }
+
+  toggleNotificationPanel() {
+    this.showNotificationPanel = !this.showNotificationPanel;
+  }
+
+  markNotificationAsRead(notificationId: number) {
+    this.notificationService.markAsRead(notificationId);
+  }
+
+  markAllNotificationsAsRead() {
+    this.notificationService.markAllAsRead();
+  }
+
+  clearAllNotifications() {
+    this.notificationService.clearAll();
+  }
+
+  formatNotificationDate(dateString: string): string {
+    return this.notificationService.formatDate(dateString);
   }
 
   onUserClick() {
@@ -144,15 +222,29 @@ export class NavbarComponent {
     this.searchSuggestionsService.clearSuggestions();
   }
 
-  onSuggestionClick(suggestion: SearchSuggestion) {
+  onSuggestionClick(suggestion: SearchSuggestion, event?: Event) {
+    // Prevent default behavior if event is provided
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     this.hideSuggestions();
     this.searchQuery = '';
     this.searchChange.emit('');
 
     if (suggestion.type === 'user') {
-      // Navigate to user profile
-      this.router.navigate(['/profile', suggestion.id.toString()]);
+      // Navigate to user profile using Angular Router
+      this.router.navigate(['/profile', suggestion.id.toString()]).then(() => {
+        // Force change detection after navigation
+        this.cd.detectChanges();
+      }).catch(error => {
+        console.error('Navigation error:', error);
+      });
     }
+
+    // Force change detection to ensure UI updates
+    this.cd.detectChanges();
   }
 
   onSearchInputFocus() {

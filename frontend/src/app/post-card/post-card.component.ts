@@ -4,6 +4,7 @@ import { Post, User, Comment, CreateCommentRequest } from '../models';
 import { AuthService } from '../services/auth.service';
 import { PostService } from '../services/post.service';
 import { FormsModule } from '@angular/forms';
+import { UserService } from '../services/user.service';
 
 @Component({
   selector: 'app-post-card',
@@ -29,7 +30,8 @@ export class AppPostCardComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private postService: PostService,
-    private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef,
+    private userService: UserService
   ) { }
 
   localLiked: boolean = false;
@@ -298,8 +300,32 @@ export class AppPostCardComponent implements OnInit {
 
   handleSubscribe(event: Event) {
     event.stopPropagation();
-    this.localSubscribed = !this.localSubscribed;
-    this.subscribe.emit({ userId: this.post.author.id });
+    console.warn(this.localSubscribed);
+    if (this.localSubscribed) {
+      this.userService.unfollowUser(this.post.author.id).subscribe({
+        next: () => {
+          this.localSubscribed = false;
+          this.subscribe.emit({ userId: this.post.author.id });
+        },
+        error: (error) => {
+          console.error('Error unfollowing user:', error);
+          // Revert the UI state on error
+          this.localSubscribed = true;
+        }
+      });
+    } else {
+      this.userService.followUser(this.post.author.id).subscribe({
+        next: () => {
+          this.localSubscribed = true;
+          this.subscribe.emit({ userId: this.post.author.id });
+        },
+        error: (error) => {
+          console.error('Error following user:', error);
+          // Revert the UI state on error
+          this.localSubscribed = false;
+        }
+      });
+    }
   }
 
   handleComment(event: Event) {
@@ -398,7 +424,7 @@ export class AppPostCardComponent implements OnInit {
     this.postService.getComments(this.post.id).subscribe({
       next: (response: any[]) => {
         // Map the response to match the Comment interface
-        this.comments = response.map(commentData => ({
+        this.comments = response.map((commentData) => ({
           id: commentData.id,
           content: commentData.content,
           author: commentData.author,
@@ -408,7 +434,7 @@ export class AppPostCardComponent implements OnInit {
           likes: 0, // Default values since backend doesn't provide these
           isLiked: false,
           replies: [],
-          parentId: undefined
+          parentId: undefined,
         }));
 
         this.loadingComments = false;
@@ -418,7 +444,7 @@ export class AppPostCardComponent implements OnInit {
         this.loadingComments = false;
         this.commentError = 'Failed to load comments. Please try again.';
         console.error('Failed to load comments:', err);
-      }
+      },
     });
   }
 
@@ -435,7 +461,7 @@ export class AppPostCardComponent implements OnInit {
 
     const commentRequest: CreateCommentRequest = {
       content: this.newCommentContent.trim(),
-      postId: this.post.id
+      postId: this.post.id,
     };
 
     this.postService.createComment(commentRequest).subscribe({
@@ -454,7 +480,7 @@ export class AppPostCardComponent implements OnInit {
           likes: 0,
           isLiked: false,
           replies: [],
-          parentId: undefined
+          parentId: undefined,
         };
 
         this.comments.unshift(newComment); // Add to beginning of array
@@ -465,7 +491,7 @@ export class AppPostCardComponent implements OnInit {
         this.submittingComment = false;
         this.commentError = 'Failed to submit comment. Please try again.';
         console.error('Failed to create comment:', err);
-      }
+      },
     });
   }
 
@@ -478,14 +504,14 @@ export class AppPostCardComponent implements OnInit {
 
     this.postService.deleteComment(commentId).subscribe({
       next: () => {
-        this.comments = this.comments.filter(c => c.id !== commentId);
+        this.comments = this.comments.filter((c) => c.id !== commentId);
         this.cd.detectChanges();
         console.log('Comment deleted successfully');
       },
       error: (err) => {
         console.error('Failed to delete comment:', err);
         alert('Failed to delete comment. Please try again.');
-      }
+      },
     });
   }
 
@@ -523,7 +549,7 @@ export class AppPostCardComponent implements OnInit {
     this.commentError = '';
 
     const updateData = {
-      content: this.editingCommentContent.trim()
+      content: this.editingCommentContent.trim(),
     };
 
     console.log('Updating comment:', this.editingCommentId, 'with data:', updateData);
@@ -546,7 +572,7 @@ export class AppPostCardComponent implements OnInit {
         }
 
         // Update the comment in the comments array
-        const index = this.comments.findIndex(c => c.id === response.id);
+        const index = this.comments.findIndex((c) => c.id === response.id);
         if (index !== -1) {
           // Map the response to match the Comment interface
           const updatedComment: Comment = {
@@ -559,7 +585,7 @@ export class AppPostCardComponent implements OnInit {
             likes: this.comments[index].likes || 0, // Preserve existing likes
             isLiked: this.comments[index].isLiked || false, // Preserve existing like status
             replies: this.comments[index].replies || [],
-            parentId: this.comments[index].parentId
+            parentId: this.comments[index].parentId,
           };
 
           this.comments[index] = updatedComment;
@@ -577,7 +603,7 @@ export class AppPostCardComponent implements OnInit {
           status: err.status,
           statusText: err.statusText,
           message: err.message,
-          error: err.error
+          error: err.error,
         });
 
         this.updatingComment = false;
@@ -590,7 +616,7 @@ export class AppPostCardComponent implements OnInit {
         }
 
         console.error('Failed to update comment:', err);
-      }
+      },
     });
   }
 

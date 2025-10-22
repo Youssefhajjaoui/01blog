@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ApplicationRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -41,7 +41,8 @@ export class ProfileComponent implements OnInit {
     private postService: PostService,
     private router: Router,
     private route: ActivatedRoute,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private appRef: ApplicationRef
   ) { }
 
   ngOnInit() {
@@ -61,16 +62,17 @@ export class ProfileComponent implements OnInit {
       if (userId) {
         // Viewing another user's profile
         this.isOwnProfile = false;
-        console.log('Loading other user profile, ID:', userId);
         this.loadUserProfile(Number(userId));
       } else {
         // Viewing own profile
         this.isOwnProfile = true;
         this.profileUser = this.currentUser;
-        console.log('Loading own profile:', this.currentUser?.username);
         this.loading = false;
         this.loadUserPosts();
-        this.cdr.detectChanges(); // Force change detection for own profile
+        // Force change detection for own profile
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+        setTimeout(() => this.cdr.detectChanges(), 0);
       }
     });
   }
@@ -97,17 +99,20 @@ export class ProfileComponent implements OnInit {
           createdAt: userProfile.createdAt || new Date().toISOString()
         };
 
-        console.log('Mapped profileUser:', this.profileUser);
-
         // Force change detection after setting profileUser
+        this.cdr.markForCheck();
         this.cdr.detectChanges();
+        setTimeout(() => this.cdr.detectChanges(), 0);
 
         // Check if following this user
         if (this.currentUser && this.profileUser.id !== this.currentUser.id) {
           this.userService.isFollowing(userId).subscribe({
             next: (isFollowing) => {
               this.isFollowing = isFollowing;
-              this.cdr.detectChanges(); // Force change detection for follow status
+              // Force change detection for follow status
+              this.cdr.markForCheck();
+              this.cdr.detectChanges();
+              setTimeout(() => this.cdr.detectChanges(), 0);
             },
             error: (error) => {
               console.error('Error checking follow status:', error);
@@ -117,12 +122,17 @@ export class ProfileComponent implements OnInit {
 
         this.loadUserPosts();
         this.loading = false;
-        this.cdr.detectChanges(); // Force change detection after loading complete
+        // Force change detection after loading complete
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+        setTimeout(() => this.cdr.detectChanges(), 0);
       },
       error: (error) => {
         console.error('Error loading user profile:', error);
         this.loading = false;
+        this.cdr.markForCheck();
         this.cdr.detectChanges();
+        setTimeout(() => this.cdr.detectChanges(), 0);
         // Redirect to own profile if user not found
         this.router.navigate(['/profile']);
       }
@@ -183,6 +193,14 @@ export class ProfileComponent implements OnInit {
           if (this.profileUser) {
             this.profileUser.followers = Math.max(0, (this.profileUser.followers || 0) - 1);
           }
+          // Force change detection multiple times to ensure UI updates
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+          this.appRef.tick();
+          setTimeout(() => {
+            this.cdr.detectChanges();
+            this.appRef.tick();
+          }, 0);
         },
         error: (error) => {
           console.error('Error unfollowing user:', error);
@@ -196,6 +214,14 @@ export class ProfileComponent implements OnInit {
           if (this.profileUser) {
             this.profileUser.followers = (this.profileUser.followers || 0) + 1;
           }
+          // Force change detection multiple times to ensure UI updates
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+          this.appRef.tick();
+          setTimeout(() => {
+            this.cdr.detectChanges();
+            this.appRef.tick();
+          }, 0);
         },
         error: (error) => {
           console.error('Error following user:', error);
@@ -206,7 +232,6 @@ export class ProfileComponent implements OnInit {
 
   viewPost(post: Post) {
     // TODO: Implement post viewing
-    console.log('View post:', post);
   }
 
   onSearchChange(query: string) {
