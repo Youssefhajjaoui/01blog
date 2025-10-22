@@ -9,6 +9,8 @@ import com.example.demo.models.Subscription;
 import com.example.demo.models.User;
 import com.example.demo.models.MediaType;
 import com.example.demo.repositories.LikeRepository;
+import com.example.demo.services.SseNotificationService;
+import com.example.demo.dtos.NotificationDto;
 import com.example.demo.repositories.NotificationRepository;
 import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.SubscriptionRepository;
@@ -34,17 +36,17 @@ public class PostController {
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
-    private final NotificationController notifcontroller;
+    private final SseNotificationService sseNotificationService;
     private final LikeRepository likeRepository;
 
     public PostController(PostRepository postRepository, UserRepository userRepository,
             SubscriptionRepository subscriptionRepository, NotificationRepository notificationRepository,
-            NotificationController notifcontroller, LikeRepository likerepository) {
+            SseNotificationService sseNotificationService, LikeRepository likerepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.notificationRepository = notificationRepository;
-        this.notifcontroller = notifcontroller;
+        this.sseNotificationService = sseNotificationService;
         this.likeRepository = likerepository;
     }
 
@@ -78,7 +80,7 @@ public class PostController {
         Post saved = postRepository.save(post);
 
         // Create notifications for all followers
-        createNotificationsForFollowers(currentUser, saved, notifcontroller);
+        createNotificationsForFollowers(currentUser, saved);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
@@ -202,7 +204,7 @@ public class PostController {
     }
 
     // ----------------- PRIVATE METHODS -----------------
-    private void createNotificationsForFollowers(User postCreator, Post post, NotificationController notifcontroller) {
+    private void createNotificationsForFollowers(User postCreator, Post post) {
         // Get all followers of the post creator
         List<Subscription> followers = subscriptionRepository.findByFollowed(postCreator);
 
@@ -214,7 +216,12 @@ public class PostController {
             notification.setContent(postCreator.getUsername() + " created a new post: " +
                     (post.getContent().length() > 50 ? post.getContent().substring(0, 50) + "..." : post.getContent()));
             notificationRepository.save(notification);
-            notifcontroller.sendPostNotification(post.getTitle());
+            NotificationDto dto = new NotificationDto();
+            dto.setCreatorName(postCreator.getUsername());
+            dto.setTitle(post.getTitle());
+            dto.setContent("A new post was published!");
+            dto.setCreationDate(notification.getCreatedAt().toString());
+            sseNotificationService.sendToUser(subscription.getFollower().getId(), dto);
         }
     }
 

@@ -125,6 +125,12 @@ export class PostService {
   getTrending(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/posts/tags`, { withCredentials: true });
   }
+  // In your Angular service
+  connectToNotifications(): EventSource {
+    return new EventSource('http://localhost:9090/api/sse/notifications', {
+      withCredentials: true, // Important for JWT cookies
+    });
+  }
 }
 function mapBackendPostToFrontend(raw: any): Post {
   return {

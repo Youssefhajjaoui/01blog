@@ -1,6 +1,7 @@
 package com.example.demo.controllers;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
@@ -31,7 +32,7 @@ public class SubscriptionController {
     }
 
     @PostMapping("/follow/{userId}")
-    public ResponseEntity<String> followUser(@PathVariable Long userId,
+    public ResponseEntity<Map<String, String>> followUser(@PathVariable Long userId,
             @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -47,12 +48,12 @@ public class SubscriptionController {
 
         // Check if trying to follow self
         if (currentUser.getId().equals(userToFollow.getId())) {
-            return ResponseEntity.badRequest().body("Cannot follow yourself");
+            return ResponseEntity.badRequest().body(Map.of("error", "Cannot follow yourself"));
         }
 
         // Check if already following
         if (subscriptionRepository.existsByFollowerAndFollowed(currentUser, userToFollow)) {
-            return ResponseEntity.badRequest().body("Already following this user");
+            return ResponseEntity.badRequest().body(Map.of("error", "Already following this user"));
         }
 
         // Create new subscription
@@ -61,11 +62,11 @@ public class SubscriptionController {
         subscription.setFollowed(userToFollow);
         subscriptionRepository.save(subscription);
 
-        return ResponseEntity.ok("Successfully followed user");
+        return ResponseEntity.ok(Map.of("message", "Successfully followed user"));
     }
 
     @DeleteMapping("/unfollow/{userId}")
-    public ResponseEntity<String> unfollowUser(@PathVariable Long userId,
+    public ResponseEntity<Map<String, String>> unfollowUser(@PathVariable Long userId,
             @AuthenticationPrincipal User principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -83,11 +84,11 @@ public class SubscriptionController {
                 .findByFollowerAndFollowed(currentUser, userToUnfollow);
 
         if (subscriptionOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("Not following this user");
+            return ResponseEntity.badRequest().body(Map.of("error", "Not following this user"));
         }
 
         subscriptionRepository.delete(subscriptionOpt.get());
-        return ResponseEntity.ok("Successfully unfollowed user");
+        return ResponseEntity.ok(Map.of("message", "Successfully unfollowed user"));
     }
 
     @GetMapping("/followers/{userId}")

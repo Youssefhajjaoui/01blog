@@ -5,8 +5,10 @@ import { Router } from '@angular/router';
 import { PostService } from '../services/post.service';
 import { AppPostCardComponent } from '../post-card/post-card.component';
 import { AuthService } from '../services/auth.service';
+import { UserService } from '../services/user.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
 import { SuggestionsService } from '../services/suggestions.service';
+import { NotificationService } from '../services/notification.service';
 import { User, Post, AppState, UserSuggestion } from '../models';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -40,8 +42,10 @@ export class HomePageComponent implements OnInit {
     private postService: PostService,
     private cd: ChangeDetectorRef,
     private authService: AuthService,
+    private userService: UserService,
     private router: Router,
     private suggestionsService: SuggestionsService,
+    private notificationService: NotificationService,
     private snackBar: MatSnackBar
   ) { }
 
@@ -87,6 +91,11 @@ export class HomePageComponent implements OnInit {
     } else {
       // this.router.navigate(["/auth"]);
     }
+
+    // Load notifications from backend and connect to SSE
+    this.notificationService.loadNotifications().subscribe();
+    this.notificationService.loadUnreadCount().subscribe();
+    this.notificationService.connectToNotifications();
   }
   onPostDeleted(postId: number) {
     this.posts = this.posts.filter((p) => p.id !== postId);
@@ -201,9 +210,83 @@ export class HomePageComponent implements OnInit {
   }
 
   handleSubscribe(userId: string) {
-    this.posts = this.posts.map((post) =>
-      post.author.id === Number(userId) ? { ...post, isSubscribed: !post.isSubscribed } : post
-    );
+    const userIdNum = Number(userId);
+
+    // Check if it's a post author or a suggested user
+    const post = this.posts.find((p) => p.author.id === userIdNum);
+    const suggestedUser = this.suggestedUsers.find((u) => u.id === userIdNum);
+
+    if (post) {
+      // Handle post author follow/unfollow
+      const isCurrentlySubscribed = post.isSubscribed || false;
+
+      if (isCurrentlySubscribed) {
+        // Unfollow
+        this.userService.unfollowUser(userIdNum).subscribe({
+          next: () => {
+            this.posts = this.posts.map((p) =>
+              p.author.id === userIdNum ? { ...p, subscribed: false } : p
+            );
+            this.snackBar.open('Unfollowed successfully', 'Close', { duration: 2000 });
+          },
+          error: (error) => {
+            console.error('Error unfollowing user:', error);
+            this.snackBar.open('Failed to unfollow user', 'Close', { duration: 2000 });
+          },
+        });
+      } else {
+        // Follow
+        this.userService.followUser(userIdNum).subscribe({
+          next: () => {
+            this.posts = this.posts.map((p) =>
+              p.author.id === userIdNum ? { ...p, subscribed: true } : p
+            );
+            this.snackBar.open('Followed successfully', 'Close', { duration: 2000 });
+          },
+          error: (error) => {
+            console.error('Error following user:', error);
+            this.snackBar.open('Failed to follow user', 'Close', { duration: 2000 });
+          },
+        });
+      }
+    } else if (suggestedUser) {
+      // Handle suggested user follow/unfollow
+      const isCurrentlyFollowing = suggestedUser.isFollowing || false;
+
+      if (isCurrentlyFollowing) {
+        // Unfollow
+        this.userService.unfollowUser(userIdNum).subscribe({
+          next: () => {
+            this.suggestedUsers = this.suggestedUsers.map((u) =>
+              u.id === userIdNum
+                ? { ...u, isFollowing: false, followerCount: Math.max(0, u.followerCount - 1) }
+                : u
+            );
+            this.snackBar.open('Unfollowed successfully', 'Close', { duration: 2000 });
+          },
+          error: (error) => {
+            console.error('Error unfollowing user:', error);
+            this.snackBar.open('Failed to unfollow user', 'Close', { duration: 2000 });
+          },
+        });
+      } else {
+        // Follow
+        this.userService.followUser(userIdNum).subscribe({
+          next: () => {
+            this.suggestedUsers = this.suggestedUsers.map((u) =>
+              u.id === userIdNum
+                ? { ...u, isFollowing: true, followerCount: u.followerCount + 1 }
+                : u
+            );
+            this.snackBar.open('Followed successfully', 'Close', { duration: 2000 });
+          },
+          error: (error) => {
+            console.error('Error following user:', error);
+            this.snackBar.open('Failed to follow user', 'Close', { duration: 2000 });
+          },
+        });
+      }
+    }
   }
 
   handleComment(postId: string) {
