@@ -1,0 +1,231 @@
+<!-- Navigation Bar -->
+<app-navbar [currentPage]="currentPage" [searchQuery]="searchQuery" (searchChange)="onSearchChange($event)"
+  (notificationClick)="onNotificationClick()" (userClick)="onUserClick()" (navigate)="onNavigate($event.page)">
+</app-navbar>
+
+<div class="home-bg">
+  <div class="container">
+    <div class="main-grid">
+      <!-- Main Feed -->
+      <div class="main-feed">
+        <!-- Header -->
+        <div class="header-row">
+          <div class="header-content">
+            <h1 class="header-title">Welcome back, {{getFirstName()}}!</h1>
+            <p class="header-desc">Discover what your fellow students are learning today</p>
+          </div>
+          <button class="write-btn" (click)="onNavigate('editor')">
+            <svg class="write-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Write Post
+          </button>
+        </div>
+
+        <!-- Tabs with View Toggle -->
+        <div class="tabs-container">
+          <div class="tabs-header">
+            <div class="tabs-list">
+              <button class="tab-trigger" [class.active]="filter === 'all'" (click)="filter = 'all'">
+                All Posts
+              </button>
+              <button class="tab-trigger" [class.active]="filter === 'following'" (click)="filter = 'following'">
+                Following
+              </button>
+              <button class="tab-trigger" [class.active]="filter === 'trending'" (click)="filter = 'trending'">
+                <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                Trending
+              </button>
+            </div>
+
+            <div class="view-toggle">
+              <button class="view-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'">
+                <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <button class="view-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'">
+                <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="4" y="4" width="7" height="7" rx="2" />
+                  <rect x="13" y="4" width="7" height="7" rx="2" />
+                  <rect x="4" y="13" width="7" height="7" rx="2" />
+                  <rect x="13" y="13" width="7" height="7" rx="2" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="tab-content">
+            <!-- Loading State -->
+            <div *ngIf="loading" class="feed-loading">
+              <div *ngFor="let item of [1,2,3]" class="skeleton-card">
+                <div class="skeleton-header">
+                  <div class="skeleton-avatar"></div>
+                  <div class="skeleton-info">
+                    <div class="skeleton-line skeleton-line-md"></div>
+                    <div class="skeleton-line skeleton-line-sm"></div>
+                  </div>
+                </div>
+                <div class="skeleton-title"></div>
+                <div class="skeleton-text"></div>
+                <div class="skeleton-text"></div>
+                <div class="skeleton-text skeleton-text-short"></div>
+                <div class="skeleton-image"></div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div *ngIf="!loading && filteredPosts.length === 0" class="empty-state">
+              <div class="empty-icon-wrapper">
+                <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 class="empty-title">No posts found</h3>
+              <p class="empty-desc">
+                {{filter === 'following'
+                ? "Follow some users to see their posts here"
+                : "Be the first to share your learning journey!"
+                }}
+              </p>
+              <button class="write-btn" (click)="onNavigate('editor')">
+                <svg class="write-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Write Your First Post
+              </button>
+            </div>
+
+            <!-- Grid View -->
+            <div *ngIf="!loading && viewMode === 'grid' && filteredPosts.length > 0" class="feed-grid">
+              <app-post-card *ngFor="let post of filteredPosts" [post]="post" [currentUser]="state.currentUser || null"
+                [variant]="'grid'" (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)"
+                (comment)="onComment($event)" (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)"
+                (report)="onReport($event)" (deleted)="onPostDeleted($event)"
+                (updated)="onPostUpdated($event)"></app-post-card>
+            </div>
+
+            <!-- List View -->
+            <div *ngIf="!loading && viewMode === 'list' && filteredPosts.length > 0" class="feed-list">
+              <app-post-card *ngFor="let post of filteredPosts" [post]="post" [currentUser]="state.currentUser || null"
+                [variant]="'feed'" (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)"
+                (comment)="onComment($event)" (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)"
+                (report)="onReport($event)" (deleted)="onPostDeleted($event)"
+                (updated)="onPostUpdated($event)"></app-post-card>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Sidebar -->
+      <aside class="sidebar">
+        <!-- Suggested Users -->
+        <div class="sidebar-card">
+          <div class="sidebar-header">
+            <h3 class="sidebar-title">
+              <div class="sidebar-icon-wrapper">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              Suggested for you
+            </h3>
+          </div>
+          <div class="sidebar-content">
+            <!-- Loading State -->
+            <div *ngIf="suggestionsLoading" class="suggestions-loading">
+              <div *ngFor="let item of [1,2,3]" class="suggestion-skeleton">
+                <div class="skeleton-avatar"></div>
+                <div class="skeleton-info">
+                  <div class="skeleton-line skeleton-line-sm"></div>
+                  <div class="skeleton-line skeleton-line-xs"></div>
+                </div>
+                <div class="skeleton-button"></div>
+              </div>
+            </div>
+
+            <!-- Suggestions List -->
+            <div *ngIf="!suggestionsLoading && suggestedUsers.length > 0" class="user-list">
+              <div *ngFor="let user of suggestedUsers" class="user-item">
+                <div class="user-info">
+                  <img [src]="getSuggestedUserAvatarUrl(user)" [alt]="user.username" class="user-avatar"
+                    (click)="onUserProfileClick(user.id.toString())" />
+                  <div class="user-details">
+                    <p class="user-name" (click)="onUserProfileClick(user.id.toString())">{{user.username}}</p>
+                    <p class="user-followers">{{user.followerCount.toLocaleString()}} followers</p>
+                    <p class="user-posts">{{user.postCount}} posts</p>
+                  </div>
+                </div>
+                <button class="follow-btn" (click)="onSubscribe(user.id.toString())">Follow</button>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div *ngIf="!suggestionsLoading && suggestedUsers.length === 0" class="empty-suggestions">
+              <p class="empty-text">No suggestions available</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trending Topics -->
+        <div class="sidebar-card">
+          <div class="sidebar-header">
+            <h3 class="sidebar-title">
+              <div class="sidebar-icon-wrapper">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              Trending Topics
+            </h3>
+          </div>
+          <div class="sidebar-content">
+            <div class="tag-list">
+              <div *ngFor="let item of trendingTags.slice(0, 6)" class="tag-item">
+                <span class="tag-badge">
+                  <svg class="tag-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                  </svg>
+                  {{item.tag}}
+                </span>
+                <span class="tag-count">{{item.count.toLocaleString()}} posts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Your Impact -->
+        <div class="sidebar-card stats-card">
+          <div class="sidebar-header">
+            <h3 class="sidebar-title">Your Impact</h3>
+          </div>
+          <div class="sidebar-content">
+            <div class="stat-list">
+              <div class="stat-item">
+                <span class="stat-label">Posts written</span>
+                <span class="stat-value">{{currentUser?.posts || 0}}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Followers</span>
+                <span class="stat-value">{{currentUser?.followers?.toLocaleString() || 0}}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Following</span>
+                <span class="stat-value">{{currentUser?.following?.toLocaleString() || 0}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+</div>

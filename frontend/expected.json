@@ -1,0 +1,26 @@
+{
+  "id": "1",
+  "author": {
+    "id": "2",
+    "name": "Alex Rivera",
+    "email": "alex@example.com",
+    "avatar": "https://...",
+    "bio": "Full-stack developer",
+    "role": "user",
+    "subscribers": 856,
+    "posts": 24
+  },
+  "title": "Understanding React Hooks",
+  "content": "React Hooks have revolutionized...",
+  "excerpt": "Learn the fundamentals of React Hooks...",
+  "media": [
+    { "type": "image", "url": "https://...", "alt": "React code on screen" }
+  ],
+  "tags": ["react", "javascript", "webdev", "hooks"],
+  "likes": 142,
+  "comments": 28,
+  "isLiked": false,
+  "isSubscribed": false,
+  "createdAt": "2024-01-15T10:30:00Z",
+  "visibility": "public"
+}

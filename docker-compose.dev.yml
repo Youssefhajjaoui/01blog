@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: backend-dev
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+      - ~/.m2:/root/.m2 # reuse local Maven cache
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:15
+    container_name: blogdb
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: blogdb
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: frontend-dev
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # prevent overwriting node_modules
+    depends_on:
+      - backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true # for live reload in Docker
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

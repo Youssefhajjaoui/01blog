@@ -1,0 +1,529 @@
+<app-navbar [currentPage]="'admin'" [searchQuery]="''" (searchChange)="onSearchChange($event)"
+    (notificationClick)="onNotificationClick()" (userClick)="onUserClick()" (navigate)="onNavigate($event)">
+</app-navbar>
+
+<div class="admin-dashboard">
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <div class="header-icon">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                        </path>
+                    </svg>
+                </div>
+                <div class="header-text">
+                    <h1 class="dashboard-title">Admin Dashboard</h1>
+                    <p class="dashboard-subtitle">
+                        Comprehensive platform management and moderation tools
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="action-btn">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    Export Data
+                </button>
+                <button class="action-btn">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    Send Newsletter
+                </button>
+                <button class="action-btn">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Platform Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- Enhanced Stats Overview -->
+        <div class="stats-grid">
+            <!-- Total Users Card -->
+            <div class="stat-card stat-card-blue">
+                <div class="stat-header">
+                    <div class="stat-icon stat-icon-blue">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
+                            </path>
+                        </svg>
+                    </div>
+                    <span class="stat-badge">
+                        +{{ getTodayUsers() }} today
+                    </span>
+                </div>
+                <div class="stat-content">
+                    <p class="stat-label">Total Users</p>
+                    <p class="stat-value">{{ stats?.totalUsers || 0 }}</p>
+                    <div class="stat-details">
+                        <span class="stat-detail">
+                            <div class="status-dot status-active"></div>
+                            {{ stats?.activeUsers || 0 }} active
+                        </span>
+                        <span class="stat-detail">
+                            <div class="status-dot status-suspended"></div>
+                            {{ stats?.suspendedUsers || 0 }} suspended
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Posts Card -->
+            <div class="stat-card stat-card-green">
+                <div class="stat-header">
+                    <div class="stat-icon stat-icon-green">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <span class="stat-badge">
+                        +{{ getTodayPosts() }} today
+                    </span>
+                </div>
+                <div class="stat-content">
+                    <p class="stat-label">Total Posts</p>
+                    <p class="stat-value">{{ stats?.totalPosts || 0 }}</p>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-green" style="width: 75%"></div>
+                        </div>
+                        <p class="progress-text">75% approved content</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Reports Card -->
+            <div class="stat-card stat-card-red">
+                <div class="stat-header">
+                    <div class="stat-icon stat-icon-red">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                            </path>
+                        </svg>
+                    </div>
+                    <span class="stat-badge stat-badge-critical">
+                        {{ stats?.criticalReports || 0 }} critical
+                    </span>
+                </div>
+                <div class="stat-content">
+                    <p class="stat-label">Pending Reports</p>
+                    <p class="stat-value">{{ stats?.pendingReports || 0 }}</p>
+                    <div class="stat-details">
+                        <span class="stat-detail">
+                            <div class="status-dot status-critical"></div>
+                            {{ stats?.criticalReports || 0 }} critical
+                        </span>
+                        <span class="stat-detail">
+                            <div class="status-dot status-high"></div>
+                            {{ (stats?.pendingReports || 0) - (stats?.criticalReports || 0) }} high
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Health Card -->
+            <div class="stat-card stat-card-purple">
+                <div class="stat-header">
+                    <div class="stat-icon stat-icon-purple">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <span class="stat-badge">
+                        {{ stats?.resolvedReports || 0 }} today
+                    </span>
+                </div>
+                <div class="stat-content">
+                    <p class="stat-label">Platform Health</p>
+                    <p class="stat-value">{{ stats?.platformHealth || 98.5 }}%</p>
+                    <div class="stat-details">
+                        <span class="stat-detail">
+                            <svg class="detail-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            System Online
+                        </span>
+                        <span class="stat-detail">
+                            <svg class="detail-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            All Services
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Tabs -->
+        <div class="tabs-container">
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <nav class="tab-nav">
+                    <button *ngFor="let tab of tabs" (click)="activeTab = tab.id"
+                        [class]="activeTab === tab.id ? 'tab-button tab-active' : 'tab-button'" class="tab-button">
+                        <svg class="tab-icon" [innerHTML]="tab.icon"></svg>
+                        <span class="tab-text">{{ tab.name }}</span>
+                        <span *ngIf="tab.badge && tab.badge > 0" class="tab-badge">
+                            {{ tab.badge }}
+                        </span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Overview Tab -->
+            <div *ngIf="activeTab === 'overview'" class="tab-content">
+                <div class="overview-grid">
+                    <!-- User Activity Trends -->
+                    <div class="overview-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                                    </path>
+                                </svg>
+                                <h3>User Activity Trends</h3>
+                            </div>
+                            <p class="card-description">User engagement and growth metrics</p>
+
+                            <div class="metrics-list">
+                                <div class="metric-item">
+                                    <span class="metric-label">Active Users</span>
+                                    <span class="metric-value">{{ stats?.activeUsers || 0 }}</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-blue"
+                                            [style.width.%]="stats && stats.totalUsers > 0 ? (stats.activeUsers / stats.totalUsers) * 100 : 0">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="metric-item">
+                                    <span class="metric-label">Users with Warnings</span>
+                                    <span class="metric-value">{{ stats?.suspendedUsers || 0 }}</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-yellow"
+                                            [style.width.%]="stats && stats.totalUsers > 0 ? (stats.suspendedUsers / stats.totalUsers) * 100 : 0">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="metric-item">
+                                    <span class="metric-label">Content Engagement</span>
+                                    <span class="metric-value">87%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill progress-green" style="width: 87%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Moderation Overview -->
+                    <div class="overview-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                    </path>
+                                </svg>
+                                <h3>Moderation Overview</h3>
+                            </div>
+                            <p class="card-description">Content moderation and safety metrics</p>
+
+                            <div class="moderation-metrics">
+                                <div class="metric-grid">
+                                    <div class="metric-box">
+                                        <p class="metric-number metric-critical">{{ stats?.criticalReports || 0 }}</p>
+                                        <p class="metric-label-small">Critical Reports</p>
+                                    </div>
+                                    <div class="metric-box">
+                                        <p class="metric-number metric-resolved">{{ stats?.resolvedReports || 0 }}</p>
+                                        <p class="metric-label-small">Resolved Today</p>
+                                    </div>
+                                </div>
+
+                                <div class="moderation-separator"></div>
+
+                                <div class="moderation-progress">
+                                    <div class="progress-item">
+                                        <div class="progress-info">
+                                            <span class="progress-label">Resolution Rate</span>
+                                            <span class="progress-value">94%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill progress-green" style="width: 94%"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="progress-item">
+                                        <div class="progress-info">
+                                            <span class="progress-label">Response Time</span>
+                                            <span class="progress-value">&lt; 2h avg</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill progress-blue" style="width: 85%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="activity-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <h3>Recent Admin Activity</h3>
+                        </div>
+                        <p class="card-description">Latest moderation actions and system events</p>
+
+                        <div class="activity-list">
+                            <div *ngFor="let activity of recentActivity" class="activity-item">
+                                <div class="activity-icon">
+                                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-header">
+                                        <span class="activity-action">{{ activity.action }}</span>
+                                        <span class="activity-admin">{{ activity.admin }}</span>
+                                    </div>
+                                    <p class="activity-target">{{ activity.target }}</p>
+                                    <p *ngIf="activity.details" class="activity-details">{{ activity.details }}</p>
+                                </div>
+                                <span class="activity-time">{{ activity.timestamp }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div *ngIf="activeTab === 'users'" class="tab-content">
+                <div class="users-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
+                                </path>
+                            </svg>
+                            <h3>User Management</h3>
+                        </div>
+                        <p class="card-description">Manage user accounts, permissions, and status</p>
+                    </div>
+
+                    <!-- Search and Filters -->
+                    <div class="search-filters">
+                        <div class="search-container">
+                            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input type="text" placeholder="Search users by name or email..." [(ngModel)]="userSearch"
+                                class="search-input" />
+                        </div>
+                        <select [(ngModel)]="userStatusFilter" class="status-filter">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="banned">Banned</option>
+                        </select>
+                    </div>
+
+                    <!-- Users Table -->
+                    <div class="table-container">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                    <th>Posts</th>
+                                    <th>Followers</th>
+                                    <th>Last Seen</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let user of filteredUsers" class="table-row">
+                                    <td class="user-cell">
+                                        <div class="user-info">
+                                            <div class="user-avatar">
+                                                <img *ngIf="user.avatar" [src]="user.avatar" [alt]="user.username">
+                                                <div *ngIf="!user.avatar" class="avatar-placeholder">
+                                                    {{ user.username.charAt(0).toUpperCase() }}
+                                                </div>
+                                            </div>
+                                            <div class="user-details">
+                                                <div class="user-name">{{ user.username }}</div>
+                                                <div class="user-email">{{ user.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span [class]="getUserStatusClass(user)" class="status-badge">
+                                            {{ getUserStatus(user) }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.posts }}</td>
+                                    <td>{{ user.followers }}</td>
+                                    <td>{{ formatDate(user.createdAt) }}</td>
+                                    <td class="actions-cell">
+                                        <div class="action-buttons">
+                                            <button (click)="suspendUser(user)"
+                                                class="action-btn action-warning">Suspend</button>
+                                            <button (click)="banUser(user)"
+                                                class="action-btn action-danger">Ban</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div *ngIf="filteredUsers.length === 0" class="empty-state">
+                        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
+                            </path>
+                        </svg>
+                        <p class="empty-text">No users found matching your search criteria</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div *ngIf="activeTab === 'reports'" class="tab-content">
+                <div class="reports-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                                </path>
+                            </svg>
+                            <h3>Report Management</h3>
+                        </div>
+                        <p class="card-description">Review, investigate, and resolve user reports</p>
+                    </div>
+
+                    <!-- Reports List -->
+                    <div class="reports-list">
+                        <div *ngFor="let report of reports" class="report-item">
+                            <div class="report-content">
+                                <div class="report-header">
+                                    <div [class]="getPriorityColor(report.status)" class="priority-dot"></div>
+                                    <span [class]="getReportTypeClass(report)" class="report-type">
+                                        {{ getReportType(report) }} Report
+                                    </span>
+                                    <span [class]="getReportStatusClass(report.status)" class="report-status">
+                                        {{ report.status }}
+                                    </span>
+                                    <span class="report-date">{{ formatDate(report.createdAt) }}</span>
+                                </div>
+
+                                <div class="report-details">
+                                    <div class="report-info">
+                                        <div class="info-item">
+                                            <span class="info-label">Reported by:</span>
+                                            <div class="user-info-small">
+                                                <div class="user-avatar-small">
+                                                    {{ report.reporter.username.charAt(0).toUpperCase() }}
+                                                </div>
+                                                <span class="user-name-small">{{ report.reporter.username }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="info-item">
+                                            <span class="info-label">Target:</span>
+                                            <div class="user-info-small">
+                                                <div class="user-avatar-small">
+                                                    {{ getTargetUser(report).username.charAt(0).toUpperCase() }}
+                                                </div>
+                                                <span class="user-name-small">{{ getTargetUser(report).username
+                                                    }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="report-info">
+                                        <div class="info-item">
+                                            <span class="info-label">Reason:</span>
+                                            <span class="reason-badge">
+                                                {{ report.reason }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="report-actions">
+                                <button *ngIf="report.status === 'PENDING'" (click)="resolveReport(report)"
+                                    class="action-btn action-success">
+                                    Resolve
+                                </button>
+                                <button *ngIf="report.status === 'PENDING'" (click)="dismissReport(report)"
+                                    class="action-btn action-secondary">
+                                    Dismiss
+                                </button>
+                                <span *ngIf="report.status !== 'PENDING'"
+                                    [class]="report.status === 'RESOLVED' ? 'status-resolved' : 'status-dismissed'"
+                                    class="status-text">
+                                    {{ report.status }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div *ngIf="reports.length === 0" class="empty-state">
+                            <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                                </path>
+                            </svg>
+                            <p class="empty-text">No reports found</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
