@@ -1,25 +1,32 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { UserService } from '../services/user.service';
 import { PostService } from '../services/post.service';
 import { User, Post } from '../models';
 import { NavbarComponent } from '../components/navbar/navbar.component';
+import { AppPostCardComponent } from '../post-card/post-card.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, AppPostCardComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css'],
 })
 export class ProfileComponent implements OnInit {
-  currentUser: User | null = null;
+  currentUser: User | null = null; // The logged-in user
+  profileUser: User | null = null; // The user whose profile is being viewed
   userPosts: Post[] = [];
   activeTab: 'posts' | 'about' | 'media' = 'posts';
   viewMode: 'grid' | 'list' = 'grid';
   searchQuery: string = '';
+  state: { currentUser: User | null } = { currentUser: null };
+  isOwnProfile: boolean = true;
+  isFollowing: boolean = false;
+  loading: boolean = false;
 
   // Mock media items for the media tab
   mediaItems = [
@@ -30,35 +37,122 @@ export class ProfileComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
+    private userService: UserService,
     private postService: PostService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
-    this.loadUserPosts();
+    this.state.currentUser = this.currentUser;
+
+    // Watch for route parameter changes
+    this.route.params.subscribe(params => {
+      const userId = params['userId'];
+
+      console.log('Route params changed, userId:', userId);
+
+      // Reset state when switching profiles
+      this.userPosts = [];
+      this.loading = true;
+
+      if (userId) {
+        // Viewing another user's profile
+        this.isOwnProfile = false;
+        console.log('Loading other user profile, ID:', userId);
+        this.loadUserProfile(Number(userId));
+      } else {
+        // Viewing own profile
+        this.isOwnProfile = true;
+        this.profileUser = this.currentUser;
+        console.log('Loading own profile:', this.currentUser?.username);
+        this.loading = false;
+        this.loadUserPosts();
+        this.cdr.detectChanges(); // Force change detection for own profile
+      }
+    });
+  }
+
+  loadUserProfile(userId: number) {
+    this.loading = true;
+    this.cdr.detectChanges(); // Force change detection for loading state
+
+    this.userService.getUserProfile(userId).subscribe({
+      next: (userProfile: any) => {
+        console.log('Loaded user profile:', userProfile);
+
+        // Map UserProfile to User
+        this.profileUser = {
+          id: userProfile.id,
+          username: userProfile.username,
+          email: userProfile.email,
+          avatar: userProfile.image,
+          bio: userProfile.bio,
+          role: userProfile.role,
+          followers: userProfile.followerCount || 0,
+          following: userProfile.followingCount || 0,
+          posts: userProfile.postCount || 0,
+          createdAt: userProfile.createdAt || new Date().toISOString()
+        };
+
+        console.log('Mapped profileUser:', this.profileUser);
+
+        // Force change detection after setting profileUser
+        this.cdr.detectChanges();
+
+        // Check if following this user
+        if (this.currentUser && this.profileUser.id !== this.currentUser.id) {
+          this.userService.isFollowing(userId).subscribe({
+            next: (isFollowing) => {
+              this.isFollowing = isFollowing;
+              this.cdr.detectChanges(); // Force change detection for follow status
+            },
+            error: (error) => {
+              console.error('Error checking follow status:', error);
+            }
+          });
+        }
+
+        this.loadUserPosts();
+        this.loading = false;
+        this.cdr.detectChanges(); // Force change detection after loading complete
+      },
+      error: (error) => {
+        console.error('Error loading user profile:', error);
+        this.loading = false;
+        this.cdr.detectChanges();
+        // Redirect to own profile if user not found
+        this.router.navigate(['/profile']);
+      }
+    });
   }
 
   loadUserPosts() {
+    if (!this.profileUser) return;
+
     this.postService.getPosts().subscribe({
       next: (posts) => {
-        // Filter posts by current user
-        this.userPosts = posts.filter((post) => post.author.id === this.currentUser?.id);
+        // Filter posts by profile user
+        this.userPosts = posts.filter((post) => post.author.id === this.profileUser?.id);
+        console.log('Loaded user posts:', this.userPosts.length, 'posts for user', this.profileUser?.username);
+        this.cdr.detectChanges(); // Force change detection after loading posts
       },
       error: (error) => {
         console.error('Error loading posts:', error);
+        this.cdr.detectChanges();
       },
     });
   }
 
   getAvatarUrl(): string {
-    if (this.currentUser?.avatar) {
-      const filename = this.currentUser.avatar.split('/').pop();
+    const user = this.profileUser || this.currentUser;
+    if (user?.avatar) {
+      const filename = user.avatar.split('/').pop();
       return `http://localhost:9090/api/files/uploads/${filename}`;
     }
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${
-      this.currentUser?.username || 'user'
-    }`;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}`;
   }
 
   setActiveTab(tab: 'posts' | 'about' | 'media') {
@@ -76,6 +170,38 @@ export class ProfileComponent implements OnInit {
 
   navigateToEditor() {
     this.router.navigate(['/create-post']);
+  }
+
+  toggleFollow() {
+    if (!this.profileUser || this.isOwnProfile) return;
+
+    if (this.isFollowing) {
+      // Unfollow
+      this.userService.unfollowUser(this.profileUser.id).subscribe({
+        next: () => {
+          this.isFollowing = false;
+          if (this.profileUser) {
+            this.profileUser.followers = Math.max(0, (this.profileUser.followers || 0) - 1);
+          }
+        },
+        error: (error) => {
+          console.error('Error unfollowing user:', error);
+        }
+      });
+    } else {
+      // Follow
+      this.userService.followUser(this.profileUser.id).subscribe({
+        next: () => {
+          this.isFollowing = true;
+          if (this.profileUser) {
+            this.profileUser.followers = (this.profileUser.followers || 0) + 1;
+          }
+        },
+        error: (error) => {
+          console.error('Error following user:', error);
+        }
+      });
+    }
   }
 
   viewPost(post: Post) {
@@ -106,5 +232,104 @@ export class ProfileComponent implements OnInit {
   onUserClick() {
     // Implement user menu functionality
     console.log('User clicked');
+  }
+
+  // Event handlers for post interactions
+  onLike(event: any) {
+    const postId = event?.postId || event?.detail?.postId || '';
+    if (postId) {
+      this.handleLike(postId);
+    }
+  }
+
+  onSubscribeEvent(event: any) {
+    const userId = event?.userId || event?.detail?.userId || '';
+    if (userId) {
+      this.handleSubscribe(userId);
+    }
+  }
+
+  onComment(event: any) {
+    const postId = event?.postId || event?.detail?.postId || '';
+    if (postId) {
+      this.handleComment(postId);
+    }
+  }
+
+  onPostClick(event: any) {
+    const post = event?.post || event?.detail?.post;
+    if (post) {
+      this.handlePostClick(post);
+    }
+  }
+
+  onUserClickEvent(event: any) {
+    const userId = event?.userId || event?.detail?.userId || '';
+    if (userId) {
+      this.handleUserClick(userId);
+    }
+  }
+
+  onReport(event: any) {
+    const postId = event?.postId || event?.detail?.postId || '';
+    if (postId) {
+      this.handleReport(postId);
+    }
+  }
+
+  onPostDeleted(postId: number) {
+    this.userPosts = this.userPosts.filter((p) => p.id !== postId);
+    console.log('Post deleted:', postId);
+  }
+
+  onPostUpdated(updatedPost: Post) {
+    const index = this.userPosts.findIndex((p) => p.id === updatedPost.id);
+    if (index !== -1) {
+      this.userPosts[index] = updatedPost;
+      console.log('Post updated:', updatedPost);
+    }
+  }
+
+  // Helper methods for post interactions
+  private handleLike(postId: string) {
+    this.userPosts = this.userPosts.map((post) =>
+      post.id === Number(postId)
+        ? {
+          ...post,
+          isLiked: !post.isLiked,
+          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+        }
+        : post
+    );
+  }
+
+  private handleSubscribe(userId: string) {
+    this.userPosts = this.userPosts.map((post) =>
+      post.author.id === Number(userId) ? { ...post, isSubscribed: !post.isSubscribed } : post
+    );
+  }
+
+  private handleComment(postId: string) {
+    const post = this.userPosts.find((p) => p.id === Number(postId));
+    if (post) {
+      console.log('Navigate to post comments:', post);
+      // TODO: Implement comment navigation
+    }
+  }
+
+  private handlePostClick(post: Post) {
+    console.log('Navigate to post:', post);
+    // TODO: Implement post navigation
+  }
+
+  private handleUserClick(userId: string) {
+    console.log('Navigate to user profile:', userId);
+    // Navigate to user profile
+    this.router.navigate(['/profile', userId]);
+  }
+
+  private handleReport(postId: string) {
+    console.log('Report post:', postId);
+    // TODO: Implement report functionality
   }
 }

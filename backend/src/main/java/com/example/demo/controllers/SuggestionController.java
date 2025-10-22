@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.models.User;
@@ -86,6 +87,34 @@ public class SuggestionController {
             .collect(Collectors.toList());
 
         return ResponseEntity.ok(suggestions);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchUsers(@RequestParam String q, @AuthenticationPrincipal User currentUser) {
+        if (currentUser == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        if (q == null || q.trim().isEmpty() || q.trim().length() < 2) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String query = q.trim();
+        
+        // Search by username first (more relevant)
+        List<User> usernameResults = userRepository.searchByUsername(query);
+        
+        // Combine results, avoiding duplicates and excluding current user
+        List<User> allResults = usernameResults.stream()
+            .filter(user -> !user.getId().equals(currentUser.getId()))
+            .collect(Collectors.toList());
+        
+        // Limit to 10 results
+        List<User> limitedResults = allResults.stream()
+            .limit(10)
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(limitedResults);
     }
 
     // DTO for user suggestions

@@ -43,7 +43,7 @@ export class HomePageComponent implements OnInit {
     private router: Router,
     private suggestionsService: SuggestionsService,
     private snackBar: MatSnackBar
-  ) {}
+  ) { }
 
   posts: Post[] = [];
   loading = true;
@@ -192,10 +192,10 @@ export class HomePageComponent implements OnInit {
     this.posts = this.posts.map((post) =>
       post.id === Number(postId)
         ? {
-            ...post,
-            isLiked: !post.isLiked,
-            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-          }
+          ...post,
+          isLiked: !post.isLiked,
+          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+        }
         : post
     );
   }
@@ -219,7 +219,13 @@ export class HomePageComponent implements OnInit {
 
   handleUserClick(userId: string) {
     // Navigate to profile page - could be current user or other user
-    this.router.navigate(['/profile']);
+    if (userId && userId !== this.currentUser?.id.toString()) {
+      // Navigate to other user's profile
+      this.router.navigate(['/profile', userId]);
+    } else {
+      // Navigate to own profile
+      this.router.navigate(['/profile']);
+    }
   }
 
   handleReport(postId: string) {

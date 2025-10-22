@@ -100,7 +100,8 @@ export class PostCreate implements OnInit {
       // Create preview URL
       const reader = new FileReader();
       reader.onload = (e: any) => {
-        this.previewUrl = e.target.result;
+        this.previewUrl = e.target.result; // <-- updates here
+        this.cd.detectChanges(); // manually trigger refresh
       };
       reader.readAsDataURL(file);
     }

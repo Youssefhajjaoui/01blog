@@ -11,6 +11,11 @@ export const routes: Routes = [
   { path: 'auth', component: Auth },
   { path: 'create-post', component: PostCreate, canActivate: [AuthGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
+  {
+    path: 'profile/:userId',
+    component: ProfileComponent,
+    canActivate: [AuthGuard]
+  },
   { path: 'admin', component: AdminDashboardComponent, canActivate: [AdminGuard] },
   { path: '', component: HomePageComponent, canActivate: [AuthGuard] },
   // { path: '', redirectTo: '/auth', pathMatch: 'full' }

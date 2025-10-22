@@ -133,6 +133,46 @@
   background: #4a6b7a;
 }
 
+.follow-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.follow-btn:hover {
+  background: #5568d3;
+}
+
+.following-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #e5e7eb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.following-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #dc2626;
+}
+
 .btn-icon {
   width: 16px;
   height: 16px;
