@@ -1,0 +1,74 @@
+<div class="login-form">
+  <div class="form-card">
+    <div class="form-header">
+      <div class="form-header-icon">
+        <div class="icon-wrapper">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <h2>Welcome back</h2>
+      </div>
+      <p>Sign in to your account to continue your learning journey</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="form-group">
+        <label for="username">Email Address</label>
+        <div class="input-wrapper">
+          <img src="assets/mail.png" alt="Email" class="logo-img">
+          <input
+            type="text"
+            id="username"
+            name="username"
+            [(ngModel)]="username"
+            placeholder="Enter your email"
+            required
+            autocomplete="username"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrapper">
+          <img src="assets/password.png" alt="Password" class="logo-img">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="password"
+            name="password"
+            [(ngModel)]="password"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="togglePasswordVisibility()"
+          >
+            <img
+              [src]="showPassword ? 'assets/view.png' : 'assets/hidden.png'"
+              alt="Toggle password visibility"
+              class="view-img"
+            />
+          </button>
+        </div>
+      </div>
+
+      <div class="form-options">
+        <a href="#" class="forgot-password">Forgot password?</a>
+      </div>
+
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" class="submit-button" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Sign In</span>
+        <span *ngIf="isLoading">Signing in...</span>
+        <span class="button-arrow" *ngIf="!isLoading">→</span>
+      </button>
+    </form>
+  </div>
+</div>

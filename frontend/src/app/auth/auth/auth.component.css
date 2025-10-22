@@ -1,0 +1,339 @@
+.auth-page {
+  height: 100vh;
+  min-height: 100vh;
+  display: flex;
+  background: var(--background);
+  overflow: hidden;
+}
+
+/* Left Promotional Section */
+.promotional-section {
+  flex: 1;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%),
+    url('/assets/background-person.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  height: 100%;
+  padding: 48px;
+}
+
+/* Background Blur Effect */
+.promotional-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.1) 1px, transparent 0);
+  background-size: 40px 40px;
+  opacity: 0.3;
+}
+
+/* Gradient Orbs */
+.promotional-section::after {
+  content: '';
+  position: absolute;
+  top: 80px;
+  right: 80px;
+  width: 384px;
+  height: 384px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  filter: blur(80px);
+}
+
+.promo-overlay {
+  position: relative;
+  z-index: 2;
+  padding: 0;
+  color: white;
+  max-width: 540px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* Branding */
+.branding {
+  margin-bottom: 0;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.brand-logo:hover {
+  opacity: 0.9;
+}
+
+.logo-square {
+  width: 64px;
+  height: 64px;
+  background: var(--primary);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-foreground);
+  box-shadow: 0 10px 25px -5px rgba(92, 126, 143, 0.2);
+  transition: all 0.3s;
+}
+
+.brand-logo:hover .logo-square {
+  box-shadow: 0 20px 25px -5px rgba(92, 126, 143, 0.3);
+}
+
+.brand-text h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+}
+
+.brand-text p {
+  font-size: 13px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
+}
+
+/* Promo Content */
+.promo-content h1 {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 20px 0;
+  color: white;
+}
+
+.promo-content h1 .highlight {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.promo-content>p {
+  font-size: 17px;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 480px;
+}
+
+/* Statistics Grid */
+.stats {
+  display: none;
+}
+
+.stat-item {
+  display: none;
+}
+
+.stat-icon {
+  display: none;
+}
+
+.stat-info {
+  display: none;
+}
+
+.quote {
+  margin-top: 8px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.quote-icon {
+  width: 28px;
+  height: 28px;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.quote blockquote {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: white;
+  line-height: 1.5;
+}
+
+.quote p {
+  font-size: 13px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Right Form Section */
+.form-section {
+  flex: 1;
+  display: flex;
+  overflow-y: auto;
+  justify-content: center;
+  padding: 32px;
+  background: var(--background);
+}
+
+.form-container {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Mobile Logo */
+.mobile-logo {
+  display: none;
+  text-align: center;
+}
+
+/* Auth Tabs */
+.auth-tabs {
+  display: flex !important;
+  gap: 0;
+  background: rgba(209, 218, 224, 0.5);
+  padding: 6px;
+  border-radius: 8px;
+  width: 100%;
+  margin-bottom: 0;
+  min-height: 48px;
+  border: 2px solid rgba(92, 126, 143, 0.2);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  z-index: 10;
+}
+
+.tab-button.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 6px -1px rgba(92, 126, 143, 0.2);
+}
+
+.tab-button:hover:not(.active) {
+  background: rgba(209, 218, 224, 0.5);
+}
+
+.auth-content {
+  width: 100%;
+  flex: 1;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .promotional-section {
+    display: none;
+  }
+
+  .mobile-logo {
+    display: block !important;
+  }
+
+  .form-section {
+    flex: 1;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-section {
+    padding: 24px 20px;
+  }
+
+  .auth-page {
+    flex-direction: column;
+  }
+
+  .form-container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-section {
+    padding: 20px 16px;
+  }
+
+  .form-container {
+    max-width: 100%;
+  }
+}
+
+/* Scale adjustments for smaller promotional section */
+@media (max-width: 1400px) {
+  .promotional-section {
+    padding: 32px;
+  }
+
+  .promo-overlay {
+    max-width: 480px;
+    gap: 32px;
+  }
+
+  .promo-content h1 {
+    font-size: 36px;
+  }
+
+  .logo-square {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+  }
+
+  .brand-text h2 {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .promo-overlay {
+    max-width: 420px;
+    gap: 28px;
+  }
+
+  .promo-content h1 {
+    font-size: 32px;
+  }
+
+  .promo-content>p {
+    font-size: 16px;
+  }
+
+  .stats {
+    gap: 12px;
+  }
+
+  .stat-item {
+    padding: 12px;
+  }
+}
