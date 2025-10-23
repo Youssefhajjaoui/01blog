@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -202,16 +203,17 @@ public class AuthController {
 
         // Find user in repository
         Optional<User> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isEmpty()) {
+        if (userOpt.isEmpty() || (userOpt.get().getBanEnd() != null
+                && userOpt.get().getBanEnd().isAfter(java.time.LocalDateTime.now()))) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         User user = userOpt.get();
 
         Userdto res = new Userdto(user.getUsername(), user.getEmail(), user.getPasswordHash(), user.getImage(),
                 user.getBio());
-                res.setId(user.getId());
-                res.setRole(user.getRole());
-                
+        res.setId(user.getId());
+        res.setRole(user.getRole());
+
         res.setFollowers(subscriptionRepository.findByFollowed(user).size());
         res.setFollowing(subscriptionRepository.findByFollower(user).size());
         res.setPosts(postRepository.findByCreator(user).size());

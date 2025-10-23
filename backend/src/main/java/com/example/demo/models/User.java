@@ -206,7 +206,7 @@ public class User implements UserDetails {
 
 	@Override
 	public boolean isEnabled() {
-		return !banned; // User is enabled if not banned
+		return !isCurrentlyBanned(); // User is enabled if not currently banned
 	}
 
 	public String getBio() {

@@ -1,5 +1,6 @@
 package com.example.demo.repositories;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,4 +27,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // (Optional) Order posts by creation date
     List<Post> findByCreatorOrderByCreatedAtDesc(User creator);
+    
+    // Count posts created after a specific date
+    long countByCreatedAtAfter(LocalDateTime date);
 }

@@ -47,7 +47,7 @@ export class HomePageComponent implements OnInit {
     private suggestionsService: SuggestionsService,
     private notificationService: NotificationService,
     private snackBar: MatSnackBar
-  ) { }
+  ) {}
 
   posts: Post[] = [];
   loading = true;
@@ -89,7 +89,7 @@ export class HomePageComponent implements OnInit {
     if (this.state.currentUser) {
       this.currentUser = this.state.currentUser;
     } else {
-      // this.router.navigate(["/auth"]);
+      // this.router.navigate(['/auth']);
     }
 
     // Load notifications from backend and connect to SSE
@@ -201,10 +201,10 @@ export class HomePageComponent implements OnInit {
     this.posts = this.posts.map((post) =>
       post.id === Number(postId)
         ? {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-        }
+            ...post,
+            isLiked: !post.isLiked,
+            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+          }
         : post
     );
   }

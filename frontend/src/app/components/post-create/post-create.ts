@@ -111,45 +111,39 @@ export class PostCreate implements OnInit {
     if (!this.selectedFile) return null;
 
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e: any) => {
-        try {
-          const base64Data = e.target.result;
-
-          // Check if user is authenticated before uploading
-          const currentUser = this.authService.getCurrentUser();
-          if (!currentUser) {
-            console.error('User not authenticated for file upload');
-            reject(new Error('User not authenticated'));
-            return;
-          }
-
-          console.log('Uploading file for user:', currentUser.username);
-
-          const response = await this.http
-            .post<any>(
-              'http://localhost:9090/api/files/upload',
-              {
-                base64Data: base64Data,
-                filename: this.selectedFile?.name || 'image',
-              },
-              {
-                withCredentials: true,
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              }
-            )
-            .toPromise();
-
-          console.log('Upload successful:', response);
-          resolve(response.url);
-        } catch (error) {
-          console.error('Upload failed:', error);
-          reject(error);
+      try {
+        // Check if user is authenticated before uploading
+        const currentUser = this.authService.getCurrentUser();
+        if (!currentUser) {
+          console.error('User not authenticated for file upload');
+          reject(new Error('User not authenticated'));
+          return;
         }
-      };
-      reader.readAsDataURL(this.selectedFile!);
+
+        console.log('Uploading file for user:', currentUser.username);
+
+        // Create FormData for multipart upload
+        const formData = new FormData();
+        formData.append('file', this.selectedFile!);
+
+        this.http
+          .post<any>('http://localhost:9090/api/files/upload', formData, {
+            withCredentials: true,
+          })
+          .subscribe({
+            next: (response) => {
+              console.log('Upload successful:', response);
+              resolve(response.url || `http://localhost:9090/api/files/uploads/${response.filename}`);
+            },
+            error: (error) => {
+              console.error('Upload failed:', error);
+              reject(error);
+            }
+          });
+      } catch (error) {
+        console.error('Upload failed:', error);
+        reject(error);
+      }
     });
   }
 
@@ -278,9 +272,9 @@ export class PostCreate implements OnInit {
     const tagsValue = this.postForm.get('tags')?.value || '';
     return tagsValue
       ? tagsValue
-          .split(',')
-          .map((tag: string) => tag.trim())
-          .filter((tag: string) => tag)
+        .split(',')
+        .map((tag: string) => tag.trim())
+        .filter((tag: string) => tag)
       : [];
   }
 
