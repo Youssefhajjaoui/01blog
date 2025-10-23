@@ -23,34 +23,7 @@
             </div>
 
             <!-- Quick Actions -->
-            <div class="quick-actions">
-                <button class="action-btn">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                        </path>
-                    </svg>
-                    Export Data
-                </button>
-                <button class="action-btn">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                        </path>
-                    </svg>
-                    Send Newsletter
-                </button>
-                <button class="action-btn">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                        </path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    Platform Settings
-                </button>
-            </div>
+
         </div>
 
         <!-- Enhanced Stats Overview -->
@@ -78,8 +51,8 @@
                             {{ stats?.activeUsers || 0 }} active
                         </span>
                         <span class="stat-detail">
-                            <div class="status-dot status-suspended"></div>
-                            {{ stats?.suspendedUsers || 0 }} suspended
+                            <div class="status-dot status-banned"></div>
+                            {{ stats?.bannedUsers || 0 }} banned
                         </span>
                     </div>
                 </div>
@@ -225,12 +198,12 @@
 
                                 <div class="metric-item">
                                     <span class="metric-label">Users with Warnings</span>
-                                    <span class="metric-value">{{ stats?.suspendedUsers || 0 }}</span>
+                                    <span class="metric-value">{{ stats?.bannedUsers || 0 }}</span>
                                 </div>
                                 <div class="progress-container">
                                     <div class="progress-bar">
                                         <div class="progress-fill progress-yellow"
-                                            [style.width.%]="stats && stats.totalUsers > 0 ? (stats.suspendedUsers / stats.totalUsers) * 100 : 0">
+                                            [style.width.%]="stats && stats.totalUsers > 0 ? (stats.bannedUsers / stats.totalUsers) * 100 : 0">
                                         </div>
                                     </div>
                                 </div>
@@ -365,7 +338,6 @@
                         <select [(ngModel)]="userStatusFilter" class="status-filter">
                             <option value="all">All Status</option>
                             <option value="active">Active</option>
-                            <option value="suspended">Suspended</option>
                             <option value="banned">Banned</option>
                         </select>
                     </div>
@@ -409,10 +381,10 @@
                                     <td>{{ formatDate(user.createdAt) }}</td>
                                     <td class="actions-cell">
                                         <div class="action-buttons">
-                                            <button (click)="suspendUser(user)"
-                                                class="action-btn action-warning">Suspend</button>
-                                            <button (click)="banUser(user)"
-                                                class="action-btn action-danger">Ban</button>
+                                            <button (click)="openBanModal(user)" class="action-btn action-danger"
+                                                [disabled]="isAdminUser(user)">Ban</button>
+                                            <button (click)="openDeleteModal(user)" class="action-btn action-danger"
+                                                [disabled]="isAdminUser(user)">Delete Account</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -523,6 +495,105 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ban User Modal -->
+    <div *ngIf="showBanModal" class="modal-overlay" (click)="closeModals()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Ban User</h3>
+                <button class="modal-close" (click)="closeModals()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">User</label>
+                    <div class="user-info">
+                        <strong>{{ selectedUser?.username }}</strong> ({{ selectedUser?.email }})
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" [(ngModel)]="isPermanentBan" class="checkbox">
+                        Permanent Ban
+                    </label>
+                </div>
+
+                <div class="form-group" *ngIf="!isPermanentBan">
+                    <label class="form-label">Duration</label>
+                    <div class="duration-controls">
+                        <input type="number" [(ngModel)]="banDuration" class="form-input duration-input" min="1"
+                            max="999" placeholder="30">
+                        <select [(ngModel)]="banDurationUnit" class="form-select">
+                            <option value="minutes">Minutes</option>
+                            <option value="hours">Hours</option>
+                            <option value="days">Days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Reason (optional)</label>
+                    <textarea [(ngModel)]="banReason" class="form-textarea" rows="3"
+                        placeholder="Reason for banning this user..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+                <button class="btn btn-danger" (click)="executeBan()">Ban User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div *ngIf="showDeleteModal" class="modal-overlay" (click)="closeModals()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Delete User Account</h3>
+                <button class="modal-close" (click)="closeModals()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">User</label>
+                    <div class="user-info">
+                        <strong>{{ selectedUser?.username }}</strong> ({{ selectedUser?.email }})
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <svg class="warning-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                        </path>
+                    </svg>
+                    <div class="warning-text">
+                        <strong>Warning:</strong> This action will permanently delete the user account and all
+                        associated data. This cannot be undone.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Reason (required)</label>
+                    <textarea [(ngModel)]="deleteReason" class="form-textarea" rows="3"
+                        placeholder="Reason for deleting this user account..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+                <button class="btn btn-danger" (click)="executeDelete()" [disabled]="!deleteReason.trim()">Delete
+                    Account</button>
             </div>
         </div>
     </div>

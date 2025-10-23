@@ -1,5 +1,6 @@
 package com.example.demo.repositories;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,4 +25,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Search users by email (case insensitive)
     @Query("SELECT u FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) AND u.banned = false")
     List<User> searchByEmail(@Param("query") String query);
+    
+    // Count users created after a specific date
+    long countByCreatedAtAfter(LocalDateTime date);
 }

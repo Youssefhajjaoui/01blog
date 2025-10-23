@@ -5,12 +5,20 @@ WORKDIR /app
 # Install Maven
 RUN apk add --no-cache maven
 
+# Create app user to avoid permission issues
+RUN addgroup -g 1001 -S maven
+RUN adduser -S maven -u 1001
+
 # Copy pom.xml for dependency caching
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
-# Copy source code (will be overridden by volume)
+# Copy source code
 COPY src ./src
+
+# Change ownership to the maven user
+RUN chown -R maven:maven /app
+USER maven
 
 EXPOSE 9090
 

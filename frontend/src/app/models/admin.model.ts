@@ -23,7 +23,7 @@ export interface Report {
 export interface DashboardStats {
     totalUsers: number;
     activeUsers: number;
-    suspendedUsers: number;
+    bannedUsers: number;
     totalPosts: number;
     pendingReports: number;
     criticalReports: number;
@@ -60,7 +60,7 @@ export interface SystemSettings {
 
 export interface UserModeration {
     userId: number;
-    action: 'WARN' | 'SUSPEND' | 'BAN' | 'UNBAN';
+    action: 'WARN' | 'BAN' | 'UNBAN';
     reason: string;
     duration?: number; // in days
     adminId: number;

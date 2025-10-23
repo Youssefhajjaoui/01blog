@@ -13,98 +13,91 @@ export class AdminService {
 
   // User Management
   getAllUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.API_URL}/users`);
+    return this.http.get<User[]>(`${this.API_URL}/users`, { withCredentials: true });
   }
 
   getUserById(id: number): Observable<User> {
-    return this.http.get<User>(`${this.API_URL}/users/${id}`);
+    return this.http.get<User>(`${this.API_URL}/users/${id}`, { withCredentials: true });
   }
 
-  suspendUser(id: number, duration?: number): Observable<any> {
-    return this.http.post(`${this.API_URL}/users/${id}/suspend`, { duration });
-  }
-
-  banUser(id: number, permanent: boolean = false): Observable<any> {
-    return this.http.post(`${this.API_URL}/users/${id}/ban`, { permanent });
+  banUser(id: number, permanent: boolean = false, duration?: number, durationUnit?: string, reason?: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/users/${id}/ban`, { permanent, duration, durationUnit, reason }, { withCredentials: true });
   }
 
   unbanUser(id: number): Observable<any> {
-    return this.http.post(`${this.API_URL}/users/${id}/unban`, {});
+    return this.http.post(`${this.API_URL}/users/${id}/unban`, {}, { withCredentials: true });
   }
 
   deleteUser(id: number): Observable<any> {
-    return this.http.delete(`${this.API_URL}/users/${id}`);
+    return this.http.delete(`${this.API_URL}/users/${id}`, { withCredentials: true });
   }
 
   // Post Management
   getAllPosts(): Observable<Post[]> {
-    return this.http.get<Post[]>(`${this.API_URL}/posts`);
+    return this.http.get<Post[]>(`${this.API_URL}/posts`, { withCredentials: true });
   }
 
   getPostById(id: number): Observable<Post> {
-    return this.http.get<Post>(`${this.API_URL}/posts/${id}`);
+    return this.http.get<Post>(`${this.API_URL}/posts/${id}`, { withCredentials: true });
   }
 
   hidePost(id: number): Observable<any> {
-    return this.http.post(`${this.API_URL}/posts/${id}/hide`, {});
+    return this.http.post(`${this.API_URL}/posts/${id}/hide`, {}, { withCredentials: true });
   }
 
   deletePost(id: number): Observable<any> {
-    return this.http.delete(`${this.API_URL}/posts/${id}`);
+    return this.http.delete(`${this.API_URL}/posts/${id}`, { withCredentials: true });
   }
 
   restorePost(id: number): Observable<any> {
-    return this.http.post(`${this.API_URL}/posts/${id}/restore`, {});
+    return this.http.post(`${this.API_URL}/posts/${id}/restore`, {}, { withCredentials: true });
   }
 
   // Report Management
   getAllReports(): Observable<Report[]> {
-    return this.http.get<Report[]>(`${this.API_URL}/reports`);
+    return this.http.get<Report[]>(`${this.API_URL}/reports`, { withCredentials: true });
   }
 
   getReportById(id: number): Observable<Report> {
-    return this.http.get<Report>(`${this.API_URL}/reports/${id}`);
+    return this.http.get<Report>(`${this.API_URL}/reports/${id}`, { withCredentials: true });
   }
 
   resolveReport(id: number, resolution?: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/reports/${id}/resolve`, { resolution });
+    return this.http.post(`${this.API_URL}/reports/${id}/resolve`, { resolution }, { withCredentials: true });
   }
 
   dismissReport(id: number, reason?: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/reports/${id}/dismiss`, { reason });
+    return this.http.post(`${this.API_URL}/reports/${id}/dismiss`, { reason }, { withCredentials: true });
   }
 
   escalateReport(id: number): Observable<any> {
-    return this.http.post(`${this.API_URL}/reports/${id}/escalate`, {});
+    return this.http.post(`${this.API_URL}/reports/${id}/escalate`, {}, { withCredentials: true });
   }
 
   // Dashboard Statistics
   getDashboardStats(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>(`${this.API_URL}/stats`);
+    return this.http.get<DashboardStats>(`${this.API_URL}/stats`, { withCredentials: true });
   }
 
   // Activity Logs
   getActivityLogs(limit: number = 50): Observable<any[]> {
-    return this.http.get<any[]>(`${this.API_URL}/activity-logs?limit=${limit}`);
+    return this.http.get<any[]>(`${this.API_URL}/activity-logs?limit=${limit}`, { withCredentials: true });
   }
 
   // Bulk Operations
-  bulkSuspendUsers(userIds: number[], duration?: number): Observable<any> {
-    return this.http.post(`${this.API_URL}/users/bulk-suspend`, { userIds, duration });
-  }
-
   bulkBanUsers(userIds: number[], permanent: boolean = false): Observable<any> {
-    return this.http.post(`${this.API_URL}/users/bulk-ban`, { userIds, permanent });
+    return this.http.post(`${this.API_URL}/users/bulk-ban`, { userIds, permanent }, { withCredentials: true });
   }
 
   bulkDeleteUsers(userIds: number[]): Observable<any> {
-    return this.http.post(`${this.API_URL}/users/bulk-delete`, { userIds });
+    return this.http.post(`${this.API_URL}/users/bulk-delete`, { userIds }, { withCredentials: true });
   }
 
   // Platform Management
   exportData(format: 'json' | 'csv' = 'json'): Observable<Blob> {
     return this.http.get(`${this.API_URL}/export?format=${format}`, {
-      responseType: 'blob'
+      responseType: 'blob',
+      withCredentials: true
     });
   }
 
@@ -113,14 +106,14 @@ export class AdminService {
       subject,
       content,
       targetUsers: targetUsers || 'all'
-    });
+    }, { withCredentials: true });
   }
 
   updatePlatformSettings(settings: any): Observable<any> {
-    return this.http.put(`${this.API_URL}/settings`, settings);
+    return this.http.put(`${this.API_URL}/settings`, settings, { withCredentials: true });
   }
 
   getPlatformSettings(): Observable<any> {
-    return this.http.get(`${this.API_URL}/settings`);
+    return this.http.get(`${this.API_URL}/settings`, { withCredentials: true });
   }
 }
