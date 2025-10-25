@@ -6,6 +6,7 @@ import { User, Post, Report, DashboardStats } from '../models';
 import { Observable, forkJoin, of, Subject } from 'rxjs';
 import { map, catchError, takeUntil } from 'rxjs/operators';
 import { NavbarComponent } from '../components/navbar/navbar.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -20,6 +21,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   posts = signal<Post[]>([]);
   reports = signal<Report[]>([]);
   stats = signal<DashboardStats | null>(null);
+  constructor(private adminService: AdminService, private router: Router) {}
 
   // UI state
   activeTab = signal('overview');
@@ -93,8 +95,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       timestamp: '8 hours ago',
     },
   ];
-
-  constructor(private adminService: AdminService) { }
 
   ngOnInit(): void {
     this.loadDashboardData();
@@ -244,7 +244,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(
         (user) =>
-          user.username.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower)
+          user.username.toLowerCase().includes(searchLower) ||
+          user.email.toLowerCase().includes(searchLower)
       );
     }
 
@@ -359,6 +360,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.showDeleteModal.set(true);
   }
 
+  onClickReport(postId: number | null) {
+    if (postId !== null) {
+      this.router.navigate([`/post/${postId}`]);
+    }
+  }
+
   // Close modals
   closeModals() {
     this.showBanModal.set(false);
@@ -384,7 +391,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         next: () => {
           console.log('User banned:', user.id);
           // Update user status immediately for better UX
-          this.users.update(users => {
+          this.users.update((users) => {
             const userIndex = users.findIndex((u) => u.id === user.id);
             if (userIndex !== -1) {
               const newUsers = [...users];
@@ -414,7 +421,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         next: () => {
           console.log('User unbanned:', user.id);
           // Update user status immediately for better UX
-          this.users.update(users => {
+          this.users.update((users) => {
             const userIndex = users.findIndex((u) => u.id === user.id);
             if (userIndex !== -1) {
               const newUsers = [...users];
@@ -447,7 +454,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         next: () => {
           console.log('User deleted:', user.id);
           // Remove user from local array immediately
-          this.users.update(users => users.filter((u) => u.id !== user.id));
+          this.users.update((users) => users.filter((u) => u.id !== user.id));
           this.updateTabBadges();
           // ✨ No more detectChanges!
           this.closeModals();
@@ -469,7 +476,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         next: () => {
           console.log('Report resolved:', report.id);
           // Update report status immediately for better UX
-          this.reports.update(reports => {
+          this.reports.update((reports) => {
             const reportIndex = reports.findIndex((r) => r.id === report.id);
             if (reportIndex !== -1) {
               const newReports = [...reports];
@@ -498,7 +505,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         next: () => {
           console.log('Report dismissed:', report.id);
           // Update report status immediately for better UX
-          this.reports.update(reports => {
+          this.reports.update((reports) => {
             const reportIndex = reports.findIndex((r) => r.id === report.id);
             if (reportIndex !== -1) {
               const newReports = [...reports];
@@ -528,7 +535,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           next: () => {
             console.log('Post deleted:', post.id);
             // Remove post from local array immediately
-            this.posts.update(posts => posts.filter((p) => p.id !== post.id));
+            this.posts.update((posts) => posts.filter((p) => p.id !== post.id));
             // ✨ No more detectChanges!
             // Also refresh full data to ensure consistency
             setTimeout(() => this.loadDashboardData(), 500);

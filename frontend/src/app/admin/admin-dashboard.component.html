@@ -422,7 +422,7 @@
                     <div class="reports-list">
                         <p>{{reports().length}}</p>
                         <div *ngFor="let report of reports()" class="report-item">
-                            <div class="report-content">
+                            <div class="report-content" (click)="onClickReport(report.reportedPost?.id || null)">
                                 <div class="report-header">
                                     <div [class]="getPriorityColor(report.status)" class="priority-dot"></div>
                                     <span [class]="getReportTypeClass(report)" class="report-type">

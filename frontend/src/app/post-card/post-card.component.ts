@@ -61,7 +61,7 @@ export class AppPostCardComponent implements OnInit {
     private authService: AuthService,
     private postService: PostService,
     private userService: UserService
-  ) { }
+  ) {}
 
   reportReasons = [
     {
@@ -119,6 +119,11 @@ export class AppPostCardComponent implements OnInit {
     return this.post.author.id === this.currentUser?.id;
   }
 
+  get isAdmin(): boolean {
+    console.warn(this.currentUser?.role);
+    return this.currentUser?.role === 'ADMIN';
+  }
+
   getDisplayContent(): string {
     if (!this.showExcerpt) {
       return this.post.content;
@@ -144,11 +149,11 @@ export class AppPostCardComponent implements OnInit {
 
   // Helper methods for updating editable post fields
   updateEditableTitle(title: string) {
-    this.editablePost.update(p => ({ ...p, title }));
+    this.editablePost.update((p) => ({ ...p, title }));
   }
 
   updateEditableContent(content: string) {
-    this.editablePost.update(p => ({ ...p, content }));
+    this.editablePost.update((p) => ({ ...p, content }));
   }
 
   cancelEdit(event: Event) {
@@ -160,10 +165,10 @@ export class AppPostCardComponent implements OnInit {
   keepOriginalMedia(event: Event) {
     event.stopPropagation();
     // Restore original media
-    this.editablePost.update(post => ({
+    this.editablePost.update((post) => ({
       ...post,
       mediaUrl: this.originalMediaUrl(),
-      mediaType: this.originalMediaType()
+      mediaType: this.originalMediaType(),
     }));
     this.uploadError.set('');
     // ✨ No more detectChanges - signals auto-update!
@@ -172,10 +177,10 @@ export class AppPostCardComponent implements OnInit {
   removeAllMedia(event: Event) {
     event.stopPropagation();
     if (confirm('Are you sure you want to remove all media from this post?')) {
-      this.editablePost.update(post => ({
+      this.editablePost.update((post) => ({
         ...post,
         mediaUrl: '',
-        mediaType: null
+        mediaType: null,
       }));
       this.uploadError.set('');
     }
@@ -184,10 +189,10 @@ export class AppPostCardComponent implements OnInit {
   removeNewMedia(event: Event) {
     event.stopPropagation();
     // Restore original media (or empty if there was no original)
-    this.editablePost.update(post => ({
+    this.editablePost.update((post) => ({
       ...post,
       mediaUrl: this.originalMediaUrl(),
-      mediaType: this.originalMediaType()
+      mediaType: this.originalMediaType(),
     }));
     this.uploadError.set('');
   }
@@ -232,11 +237,12 @@ export class AppPostCardComponent implements OnInit {
       next: (response: any) => {
         this.uploadingMedia.set(false);
         // Update editable post with new media URL
-        const mediaUrl = response.url || `http://localhost:9090/api/files/uploads/${response.filename}`;
-        this.editablePost.update(post => ({
+        const mediaUrl =
+          response.url || `http://localhost:9090/api/files/uploads/${response.filename}`;
+        this.editablePost.update((post) => ({
           ...post,
           mediaUrl,
-          mediaType
+          mediaType,
         }));
         this.uploadError.set('');
         console.log('File uploaded successfully:', response);
@@ -307,8 +313,8 @@ export class AppPostCardComponent implements OnInit {
     const previousLikes = this.localLikes();
 
     // Toggle immediately for UX
-    this.localLiked.update(v => !v);
-    this.localLikes.update(count => this.localLiked() ? count + 1 : count - 1);
+    this.localLiked.update((v) => !v);
+    this.localLikes.update((count) => (this.localLiked() ? count + 1 : count - 1));
 
     // Call backend
     const like$ = this.localLiked()
@@ -342,7 +348,7 @@ export class AppPostCardComponent implements OnInit {
           console.error('Error unfollowing user:', error);
           // Revert the UI state on error
           this.localSubscribed.set(true);
-        }
+        },
       });
     } else {
       this.userService.followUser(this.post.author.id).subscribe({
@@ -354,7 +360,7 @@ export class AppPostCardComponent implements OnInit {
           console.error('Error following user:', error);
           // Revert the UI state on error
           this.localSubscribed.set(false);
-        }
+        },
       });
     }
   }
@@ -515,7 +521,7 @@ export class AppPostCardComponent implements OnInit {
           parentId: undefined,
         };
 
-        this.comments.update(comments => [newComment, ...comments]); // Add to beginning of array
+        this.comments.update((comments) => [newComment, ...comments]); // Add to beginning of array
         console.log('Comment created successfully:', response);
         // ✨ No more detectChanges!
       },
@@ -536,7 +542,7 @@ export class AppPostCardComponent implements OnInit {
 
     this.postService.deleteComment(commentId).subscribe({
       next: () => {
-        this.comments.update(comments => comments.filter((c) => c.id !== commentId));
+        this.comments.update((comments) => comments.filter((c) => c.id !== commentId));
         console.log('Comment deleted successfully');
         // ✨ No more detectChanges!
       },
@@ -603,7 +609,7 @@ export class AppPostCardComponent implements OnInit {
         }
 
         // Update the comment in the comments array
-        this.comments.update(comments => {
+        this.comments.update((comments) => {
           const index = comments.findIndex((c) => c.id === response.id);
           if (index !== -1) {
             // Map the response to match the Comment interface
