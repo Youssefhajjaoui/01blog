@@ -1,8 +1,9 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { User, LoginRequest, RegisterRequest } from '../models';
+import { isPlatformBrowser } from '@angular/common';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -10,6 +11,7 @@ export class AuthService {
 
   // ✨ Use signal instead of BehaviorSubject
   private currentUserSignal = signal<User | null>(null);
+  private readonly platformId = inject(PLATFORM_ID);
 
   // Computed signals for derived state
   public currentUser = this.currentUserSignal.asReadonly(); // Read-only version
@@ -49,6 +51,11 @@ export class AuthService {
 
   /** Check authentication by requesting /me */
   checkAuth(): Observable<boolean> {
+    if (!isPlatformBrowser(this.platformId)) {
+      // During SSR/prerender, return true to avoid redirects
+      // The actual auth check will happen on client-side hydration
+      return of(true);
+    }
     return this.http.get<User>(`${this.API_URL}/me`, { withCredentials: true }).pipe(
       tap((user) => this.currentUserSignal.set(user)),
       map(() => true),
