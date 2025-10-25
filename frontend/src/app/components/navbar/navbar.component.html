@@ -46,7 +46,7 @@
                     (blur)="onSearchInputBlur()" />
 
                 <!-- Search Suggestions Dropdown -->
-                <div class="search-suggestions" [class.show]="showSuggestions" (click)="$event.stopPropagation()">
+                <div class="search-suggestions" [class.show]="showSuggestions()" (click)="$event.stopPropagation()">
                     <!-- Loading State -->
                     <div *ngIf="isLoadingSuggestions" class="suggestion-loading">
                         <div class="loading-spinner"></div>
@@ -55,7 +55,7 @@
 
                     <!-- Suggestions List -->
                     <div *ngIf="!isLoadingSuggestions && suggestions.length > 0" class="suggestions-list">
-                        <div *ngFor="let suggestion of suggestions" class="suggestion-item"
+                        <div *ngFor="let suggestion of suggestions()" class="suggestion-item"
                             (click)="onSuggestionClick(suggestion, $event)">
                             <div class="suggestion-content">
                                 <!-- User Avatar -->
@@ -118,18 +118,18 @@
                                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
                         <!-- Notification Counter -->
-                        <span *ngIf="unreadCount > 0" class="notification-badge">{{ unreadCount > 99 ? '99+' :
+                        <span *ngIf="unreadCount() > 0" class="notification-badge">{{ unreadCount() > 99 ? '99+' :
                             unreadCount }}</span>
                     </button>
 
                     <!-- Notification Panel -->
-                    <div class="notification-panel" [class.show]="showNotificationPanel"
+                    <div class="notification-panel" [class.show]="showNotificationPanel()"
                         (click)="$event.stopPropagation()">
                         <div class="notification-panel-header">
                             <h3 class="notification-panel-title">Notifications</h3>
                             <div class="notification-panel-actions" *ngIf="notifications.length > 0">
                                 <button class="notification-action-btn" (click)="markAllNotificationsAsRead()"
-                                    *ngIf="unreadCount > 0" title="Mark all as read">
+                                    *ngIf="unreadCount() > 0" title="Mark all as read">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 13l4 4L19 7" />
@@ -158,7 +158,7 @@
 
                             <!-- Notifications List -->
                             <div *ngIf="notifications.length > 0" class="notifications-list">
-                                <div *ngFor="let notification of notifications" class="notification-item"
+                                <div *ngFor="let notification of notifications()" class="notification-item"
                                     [class.unread]="!notification.read"
                                     (click)="markNotificationAsRead(notification.id)">
                                     <div class="notification-content">
@@ -188,7 +188,7 @@
                     </button>
 
                     <!-- User Dropdown Menu -->
-                    <div class="user-dropdown" [class.show]="showUserDropdown">
+                    <div class="user-dropdown" [class.show]="showUserDropdown()">
                         <!-- User Info Header -->
                         <div class="user-dropdown-header">
                             <div class="user-info">

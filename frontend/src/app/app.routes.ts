@@ -6,15 +6,21 @@ import { HomePageComponent } from './home/home.component';
 import { PostCreate } from './components/post-create/post-create';
 import { ProfileComponent } from './profile/profile.component';
 import { AdminDashboardComponent } from './admin/admin-dashboard.component';
+import { PostDetailComponent } from './post-detail/post-detail.component';
 
 export const routes: Routes = [
   { path: 'auth', component: Auth },
   { path: 'create-post', component: PostCreate, canActivate: [AuthGuard] },
+  {
+    path: 'post/:id',
+    component: PostDetailComponent,
+    canActivate: [AuthGuard],
+  },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
   {
     path: 'profile/:userId',
     component: ProfileComponent,
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard],
   },
   { path: 'admin', component: AdminDashboardComponent, canActivate: [AdminGuard] },
   { path: '', component: HomePageComponent, canActivate: [AuthGuard] },

@@ -91,9 +91,9 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Post> getPostById(@PathVariable Long id) {
+    public ResponseEntity<PostDto> getPostById(@PathVariable Long id, @AuthenticationPrincipal User principale) {
         return postRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(post -> ResponseEntity.ok(mapToDto(post, principale)))
                 .orElse(ResponseEntity.notFound().build());
     }
 

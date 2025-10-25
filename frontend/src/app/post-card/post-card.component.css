@@ -1673,3 +1673,18 @@
     justify-content: center;
   }
 }
+/* Read More Link */
+.read-more {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: #3b82f6;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.card-feed:hover .read-more {
+  opacity: 1;
+  text-decoration: underline;
+}

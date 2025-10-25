@@ -1,5 +1,5 @@
 <!-- Navigation Bar -->
-<app-navbar [currentPage]="currentPage" [searchQuery]="searchQuery" (searchChange)="onSearchChange($event)"
+<app-navbar [currentPage]="currentPage()" [searchQuery]="searchQuery()" (searchChange)="onSearchChange($event)"
   (notificationClick)="onNotificationClick()" (userClick)="onUserClick()" (navigate)="onNavigate($event.page)">
 </app-navbar>
 
@@ -26,13 +26,13 @@
         <div class="tabs-container">
           <div class="tabs-header">
             <div class="tabs-list">
-              <button class="tab-trigger" [class.active]="filter === 'all'" (click)="filter = 'all'">
+              <button class="tab-trigger" [class.active]="filter() === 'all'" (click)="filter.set('all')">
                 All Posts
               </button>
-              <button class="tab-trigger" [class.active]="filter === 'following'" (click)="filter = 'following'">
+              <button class="tab-trigger" [class.active]="filter() === 'following'" (click)="filter.set('following')">
                 Following
               </button>
-              <button class="tab-trigger" [class.active]="filter === 'trending'" (click)="filter = 'trending'">
+              <button class="tab-trigger" [class.active]="filter() === 'trending'" (click)="filter.set('trending')">
                 <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -42,12 +42,12 @@
             </div>
 
             <div class="view-toggle">
-              <button class="view-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'">
+              <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="viewMode.set('list')">
                 <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <button class="view-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'">
+              <button class="view-btn" [class.active]="viewMode() === 'grid'" (click)="viewMode.set('grid')">
                 <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <rect x="4" y="4" width="7" height="7" rx="2" />
                   <rect x="13" y="4" width="7" height="7" rx="2" />
@@ -61,7 +61,7 @@
           <!-- Tab Content -->
           <div class="tab-content">
             <!-- Loading State -->
-            <div *ngIf="loading" class="feed-loading">
+            <div *ngIf="loading()" class="feed-loading">
               <div *ngFor="let item of [1,2,3]" class="skeleton-card">
                 <div class="skeleton-header">
                   <div class="skeleton-avatar"></div>
@@ -79,7 +79,7 @@
             </div>
 
             <!-- Empty State -->
-            <div *ngIf="!loading && filteredPosts.length === 0" class="empty-state">
+            <div *ngIf="!loading() && filteredPosts().length === 0" class="empty-state">
               <div class="empty-icon-wrapper">
                 <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -88,7 +88,7 @@
               </div>
               <h3 class="empty-title">No posts found</h3>
               <p class="empty-desc">
-                {{filter === 'following'
+                {{filter() === 'following'
                 ? "Follow some users to see their posts here"
                 : "Be the first to share your learning journey!"
                 }}
@@ -102,21 +102,45 @@
             </div>
 
             <!-- Grid View -->
-            <div *ngIf="!loading && viewMode === 'grid' && filteredPosts.length > 0" class="feed-grid">
-              <app-post-card *ngFor="let post of filteredPosts" [post]="post" [currentUser]="state.currentUser || null"
-                [variant]="'grid'" (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)"
-                (comment)="onComment($event)" (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)"
-                (report)="onReport($event)" (deleted)="onPostDeleted($event)"
-                (updated)="onPostUpdated($event)"></app-post-card>
+            <div *ngIf="!loading() && viewMode() === 'grid' && filteredPosts().length > 0" class="feed-grid">
+              <app-post-card *ngFor="let post of paginatedPosts()" [post]="post"
+                [currentUser]="state.currentUser || null" [variant]="'grid'" [showExcerpt]="true"
+                (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)" (comment)="onComment($event)"
+                (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)" (report)="onReport($event)"
+                (deleted)="onPostDeleted($event)" (updated)="onPostUpdated($event)"></app-post-card>
             </div>
 
             <!-- List View -->
-            <div *ngIf="!loading && viewMode === 'list' && filteredPosts.length > 0" class="feed-list">
-              <app-post-card *ngFor="let post of filteredPosts" [post]="post" [currentUser]="state.currentUser || null"
-                [variant]="'feed'" (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)"
-                (comment)="onComment($event)" (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)"
-                (report)="onReport($event)" (deleted)="onPostDeleted($event)"
-                (updated)="onPostUpdated($event)"></app-post-card>
+            <div *ngIf="!loading() && viewMode() === 'list' && filteredPosts().length > 0" class="feed-list">
+              <app-post-card *ngFor="let post of paginatedPosts()" [post]="post"
+                [currentUser]="state.currentUser || null" [variant]="'feed'" [showExcerpt]="true"
+                (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)" (comment)="onComment($event)"
+                (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)" (report)="onReport($event)"
+                (deleted)="onPostDeleted($event)" (updated)="onPostUpdated($event)"></app-post-card>
+            </div>
+
+            <!-- Pagination -->
+            <div *ngIf="!loading() && filteredPosts().length > pageSize()" class="pagination">
+              <button class="pagination-btn" [disabled]="page() === 0" (click)="previousPage()">
+                <svg class="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous
+              </button>
+
+              <div class="pagination-pages">
+                <button *ngFor="let pageNum of [].constructor(totalPages()); let i = index" class="pagination-page"
+                  [class.active]="i === page()" (click)="goToPage(i)">
+                  {{ i + 1 }}
+                </button>
+              </div>
+
+              <button class="pagination-btn" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">
+                Next
+                <svg class="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -139,7 +163,7 @@
           </div>
           <div class="sidebar-content">
             <!-- Loading State -->
-            <div *ngIf="suggestionsLoading" class="suggestions-loading">
+            <div *ngIf="suggestionsLoading()" class="suggestions-loading">
               <div *ngFor="let item of [1,2,3]" class="suggestion-skeleton">
                 <div class="skeleton-avatar"></div>
                 <div class="skeleton-info">
@@ -151,8 +175,8 @@
             </div>
 
             <!-- Suggestions List -->
-            <div *ngIf="!suggestionsLoading && suggestedUsers.length > 0" class="user-list">
-              <div *ngFor="let user of suggestedUsers" class="user-item">
+            <div *ngIf="!suggestionsLoading() && suggestedUsers().length > 0" class="user-list">
+              <div *ngFor="let user of suggestedUsers()" class="user-item">
                 <div class="user-info">
                   <img [src]="getSuggestedUserAvatarUrl(user)" [alt]="user.username" class="user-avatar"
                     (click)="onUserProfileClick(user.id.toString())" />
@@ -170,7 +194,7 @@
             </div>
 
             <!-- Empty State -->
-            <div *ngIf="!suggestionsLoading && suggestedUsers.length === 0" class="empty-suggestions">
+            <div *ngIf="!suggestionsLoading() && suggestedUsers().length === 0" class="empty-suggestions">
               <p class="empty-text">No suggestions available</p>
             </div>
           </div>
@@ -191,7 +215,7 @@
           </div>
           <div class="sidebar-content">
             <div class="tag-list">
-              <div *ngFor="let item of trendingTags.slice(0, 6)" class="tag-item">
+              <div *ngFor="let item of trendingTags().slice(0, 6)" class="tag-item">
                 <span class="tag-badge">
                   <svg class="tag-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -214,15 +238,15 @@
             <div class="stat-list">
               <div class="stat-item">
                 <span class="stat-label">Posts written</span>
-                <span class="stat-value">{{currentUser?.posts || 0}}</span>
+                <span class="stat-value">{{currentUser()?.posts || 0}}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Followers</span>
-                <span class="stat-value">{{currentUser?.followers?.toLocaleString() || 0}}</span>
+                <span class="stat-value">{{currentUser()?.followers?.toLocaleString() || 0}}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Following</span>
-                <span class="stat-value">{{currentUser?.following?.toLocaleString() || 0}}</span>
+                <span class="stat-value">{{currentUser()?.following?.toLocaleString() || 0}}</span>
               </div>
             </div>
           </div>

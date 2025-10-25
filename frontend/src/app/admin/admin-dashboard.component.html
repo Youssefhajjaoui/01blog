@@ -23,7 +23,6 @@
             </div>
 
             <!-- Quick Actions -->
-
         </div>
 
         <!-- Enhanced Stats Overview -->
@@ -44,15 +43,15 @@
                 </div>
                 <div class="stat-content">
                     <p class="stat-label">Total Users</p>
-                    <p class="stat-value">{{ stats?.totalUsers || 0 }}</p>
+                    <p class="stat-value">{{ stats()?.totalUsers || 0 }}</p>
                     <div class="stat-details">
                         <span class="stat-detail">
                             <div class="status-dot status-active"></div>
-                            {{ stats?.activeUsers || 0 }} active
+                            {{ stats()?.activeUsers || 0 }} active
                         </span>
                         <span class="stat-detail">
                             <div class="status-dot status-banned"></div>
-                            {{ stats?.bannedUsers || 0 }} banned
+                            {{ stats()?.bannedUsers || 0 }} banned
                         </span>
                     </div>
                 </div>
@@ -74,7 +73,7 @@
                 </div>
                 <div class="stat-content">
                     <p class="stat-label">Total Posts</p>
-                    <p class="stat-value">{{ stats?.totalPosts || 0 }}</p>
+                    <p class="stat-value">{{ stats()?.totalPosts || 0 }}</p>
                     <div class="progress-container">
                         <div class="progress-bar">
                             <div class="progress-fill progress-green" style="width: 75%"></div>
@@ -95,20 +94,20 @@
                         </svg>
                     </div>
                     <span class="stat-badge stat-badge-critical">
-                        {{ stats?.criticalReports || 0 }} critical
+                        {{ stats()?.criticalReports || 0 }} critical
                     </span>
                 </div>
                 <div class="stat-content">
                     <p class="stat-label">Pending Reports</p>
-                    <p class="stat-value">{{ stats?.pendingReports || 0 }}</p>
+                    <p class="stat-value">{{ stats()?.pendingReports || 0 }}</p>
                     <div class="stat-details">
                         <span class="stat-detail">
                             <div class="status-dot status-critical"></div>
-                            {{ stats?.criticalReports || 0 }} critical
+                            {{ stats()?.criticalReports || 0 }} critical
                         </span>
                         <span class="stat-detail">
                             <div class="status-dot status-high"></div>
-                            {{ (stats?.pendingReports || 0) - (stats?.criticalReports || 0) }} high
+                            {{ (stats()?.pendingReports || 0) - (stats()?.criticalReports || 0) }} high
                         </span>
                     </div>
                 </div>
@@ -125,12 +124,12 @@
                         </svg>
                     </div>
                     <span class="stat-badge">
-                        {{ stats?.resolvedReports || 0 }} today
+                        {{ stats()?.resolvedReports || 0 }} today
                     </span>
                 </div>
                 <div class="stat-content">
                     <p class="stat-label">Platform Health</p>
-                    <p class="stat-value">{{ stats?.platformHealth || 98.5 }}%</p>
+                    <p class="stat-value">{{ stats()?.platformHealth || 98.5 }}%</p>
                     <div class="stat-details">
                         <span class="stat-detail">
                             <svg class="detail-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,8 +155,8 @@
             <!-- Tab Navigation -->
             <div class="tab-navigation">
                 <nav class="tab-nav">
-                    <button *ngFor="let tab of tabs" (click)="activeTab = tab.id"
-                        [class]="activeTab === tab.id ? 'tab-button tab-active' : 'tab-button'" class="tab-button">
+                    <button *ngFor="let tab of tabs" (click)="activeTab.set(tab.id)"
+                        [class]="activeTab() === tab.id ? 'tab-button tab-active' : 'tab-button'" class="tab-button">
                         <svg class="tab-icon" [innerHTML]="tab.icon"></svg>
                         <span class="tab-text">{{ tab.name }}</span>
                         <span *ngIf="tab.badge && tab.badge > 0" class="tab-badge">
@@ -168,7 +167,7 @@
             </div>
 
             <!-- Overview Tab -->
-            <div *ngIf="activeTab === 'overview'" class="tab-content">
+            <div *ngIf="activeTab() === 'overview'" class="tab-content">
                 <div class="overview-grid">
                     <!-- User Activity Trends -->
                     <div class="overview-card">
@@ -186,24 +185,24 @@
                             <div class="metrics-list">
                                 <div class="metric-item">
                                     <span class="metric-label">Active Users</span>
-                                    <span class="metric-value">{{ stats?.activeUsers || 0 }}</span>
+                                    <span class="metric-value">{{ stats()?.activeUsers || 0 }}</span>
                                 </div>
                                 <div class="progress-container">
                                     <div class="progress-bar">
                                         <div class="progress-fill progress-blue"
-                                            [style.width.%]="stats && stats.totalUsers > 0 ? (stats.activeUsers / stats.totalUsers) * 100 : 0">
+                                            [style.width.%]="stats() && stats()!.totalUsers > 0 ? (stats()!.activeUsers / stats()!.totalUsers) * 100 : 0">
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="metric-item">
                                     <span class="metric-label">Users with Warnings</span>
-                                    <span class="metric-value">{{ stats?.bannedUsers || 0 }}</span>
+                                    <span class="metric-value">{{ stats()?.bannedUsers || 0 }}</span>
                                 </div>
                                 <div class="progress-container">
                                     <div class="progress-bar">
                                         <div class="progress-fill progress-yellow"
-                                            [style.width.%]="stats && stats.totalUsers > 0 ? (stats.bannedUsers / stats.totalUsers) * 100 : 0">
+                                            [style.width.%]="stats() && stats()!.totalUsers > 0 ? (stats()!.bannedUsers / stats()!.totalUsers) * 100 : 0">
                                         </div>
                                     </div>
                                 </div>
@@ -237,11 +236,11 @@
                             <div class="moderation-metrics">
                                 <div class="metric-grid">
                                     <div class="metric-box">
-                                        <p class="metric-number metric-critical">{{ stats?.criticalReports || 0 }}</p>
+                                        <p class="metric-number metric-critical">{{ stats()?.criticalReports || 0 }}</p>
                                         <p class="metric-label-small">Critical Reports</p>
                                     </div>
                                     <div class="metric-box">
-                                        <p class="metric-number metric-resolved">{{ stats?.resolvedReports || 0 }}</p>
+                                        <p class="metric-number metric-resolved">{{ stats()?.resolvedReports || 0 }}</p>
                                         <p class="metric-label-small">Resolved Today</p>
                                     </div>
                                 </div>
@@ -311,7 +310,7 @@
             </div>
 
             <!-- Users Tab -->
-            <div *ngIf="activeTab === 'users'" class="tab-content">
+            <div *ngIf="activeTab() === 'users'" class="tab-content">
                 <div class="users-card">
                     <div class="card-header">
                         <div class="card-title">
@@ -332,10 +331,11 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg>
-                            <input type="text" placeholder="Search users by name or email..." [(ngModel)]="userSearch"
-                                class="search-input" />
+                            <input type="text" placeholder="Search users by name or email..." [ngModel]="userSearch()"
+                                (ngModelChange)="userSearch.set($event)" class="search-input" />
                         </div>
-                        <select [(ngModel)]="userStatusFilter" class="status-filter">
+                        <select [ngModel]="userStatusFilter()" (ngModelChange)="userStatusFilter.set($event)"
+                            class="status-filter">
                             <option value="all">All Status</option>
                             <option value="active">Active</option>
                             <option value="banned">Banned</option>
@@ -356,7 +356,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr *ngFor="let user of filteredUsers" class="table-row">
+                                <tr *ngFor="let user of filteredUsers()" class="table-row">
                                     <td class="user-cell">
                                         <div class="user-info">
                                             <div class="user-avatar">
@@ -392,7 +392,7 @@
                         </table>
                     </div>
 
-                    <div *ngIf="filteredUsers.length === 0" class="empty-state">
+                    <div *ngIf="filteredUsers().length === 0" class="empty-state">
                         <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
@@ -404,7 +404,7 @@
             </div>
 
             <!-- Reports Tab -->
-            <div *ngIf="activeTab === 'reports'" class="tab-content">
+            <div *ngIf="activeTab() === 'reports'" class="tab-content">
                 <div class="reports-card">
                     <div class="card-header">
                         <div class="card-title">
@@ -420,7 +420,8 @@
 
                     <!-- Reports List -->
                     <div class="reports-list">
-                        <div *ngFor="let report of reports" class="report-item">
+                        <p>{{reports().length}}</p>
+                        <div *ngFor="let report of reports()" class="report-item">
                             <div class="report-content">
                                 <div class="report-header">
                                     <div [class]="getPriorityColor(report.status)" class="priority-dot"></div>
@@ -485,7 +486,7 @@
                             </div>
                         </div>
 
-                        <div *ngIf="reports.length === 0" class="empty-state">
+                        <div *ngIf="reports().length === 0" class="empty-state">
                             <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
@@ -500,7 +501,7 @@
     </div>
 
     <!-- Ban User Modal -->
-    <div *ngIf="showBanModal" class="modal-overlay" (click)="closeModals()">
+    <div *ngIf="showBanModal()" class="modal-overlay" (click)="closeModals()">
         <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
                 <h3 class="modal-title">Ban User</h3>
@@ -515,23 +516,25 @@
                 <div class="form-group">
                     <label class="form-label">User</label>
                     <div class="user-info">
-                        <strong>{{ selectedUser?.username }}</strong> ({{ selectedUser?.email }})
+                        <strong>{{ selectedUser()?.username }}</strong> ({{ selectedUser()?.email }})
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">
-                        <input type="checkbox" [(ngModel)]="isPermanentBan" class="checkbox">
+                        <input type="checkbox" [ngModel]="isPermanentBan()" (ngModelChange)="isPermanentBan.set($event)"
+                            class="checkbox">
                         Permanent Ban
                     </label>
                 </div>
 
-                <div class="form-group" *ngIf="!isPermanentBan">
+                <div class="form-group" *ngIf="!isPermanentBan()">
                     <label class="form-label">Duration</label>
                     <div class="duration-controls">
-                        <input type="number" [(ngModel)]="banDuration" class="form-input duration-input" min="1"
-                            max="999" placeholder="30">
-                        <select [(ngModel)]="banDurationUnit" class="form-select">
+                        <input type="number" [ngModel]="banDuration()" (ngModelChange)="banDuration.set($event)"
+                            class="form-input duration-input" min="1" max="999" placeholder="30">
+                        <select [ngModel]="banDurationUnit()" (ngModelChange)="banDurationUnit.set($event)"
+                            class="form-select">
                             <option value="minutes">Minutes</option>
                             <option value="hours">Hours</option>
                             <option value="days">Days</option>
@@ -541,8 +544,8 @@
 
                 <div class="form-group">
                     <label class="form-label">Reason (optional)</label>
-                    <textarea [(ngModel)]="banReason" class="form-textarea" rows="3"
-                        placeholder="Reason for banning this user..."></textarea>
+                    <textarea [ngModel]="banReason()" (ngModelChange)="banReason.set($event)" class="form-textarea"
+                        rows="3" placeholder="Reason for banning this user..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -553,7 +556,7 @@
     </div>
 
     <!-- Delete User Modal -->
-    <div *ngIf="showDeleteModal" class="modal-overlay" (click)="closeModals()">
+    <div *ngIf="showDeleteModal()" class="modal-overlay" (click)="closeModals()">
         <div class="modal-content" (click)="$event.stopPropagation()">
             <div class="modal-header">
                 <h3 class="modal-title">Delete User Account</h3>
@@ -568,7 +571,7 @@
                 <div class="form-group">
                     <label class="form-label">User</label>
                     <div class="user-info">
-                        <strong>{{ selectedUser?.username }}</strong> ({{ selectedUser?.email }})
+                        <strong>{{ selectedUser()?.username }}</strong> ({{ selectedUser()?.email }})
                     </div>
                 </div>
 
@@ -586,13 +589,14 @@
 
                 <div class="form-group">
                     <label class="form-label">Reason (required)</label>
-                    <textarea [(ngModel)]="deleteReason" class="form-textarea" rows="3"
-                        placeholder="Reason for deleting this user account..." required></textarea>
+                    <textarea [ngModel]="deleteReason()" (ngModelChange)="deleteReason.set($event)"
+                        class="form-textarea" rows="3" placeholder="Reason for deleting this user account..."
+                        required></textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
-                <button class="btn btn-danger" (click)="executeDelete()" [disabled]="!deleteReason.trim()">Delete
+                <button class="btn btn-danger" (click)="executeDelete()" [disabled]="!deleteReason().trim()">Delete
                     Account</button>
             </div>
         </div>

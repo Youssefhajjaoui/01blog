@@ -1,5 +1,5 @@
 <!-- Navigation Bar -->
-<app-navbar [currentPage]="'profile'" [searchQuery]="searchQuery" (searchChange)="onSearchChange($event)"
+<app-navbar [currentPage]="'profile'" [searchQuery]="searchQuery()" (searchChange)="onSearchChange($event)"
     (notificationClick)="onNotificationClick()" (navigate)="onNavigate($event.page)" (userClick)="onUserClick()">
 </app-navbar>
 
@@ -10,21 +10,21 @@
             <!-- Avatar Section -->
             <div class="avatar-section">
                 <div class="profile-avatar">
-                    <img [src]="getAvatarUrl()" [alt]="profileUser?.username || 'User'" class="avatar-image" />
+                    <img [src]="getAvatarUrl()" [alt]="profileUser()?.username || 'User'" class="avatar-image" />
                 </div>
 
                 <!-- Mobile Stats -->
                 <div class="mobile-stats">
                     <div class="stat-item">
-                        <div class="stat-number">{{ profileUser?.posts || 0 }}</div>
+                        <div class="stat-number">{{ profileUser()?.posts || 0 }}</div>
                         <div class="stat-label">Posts</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">{{ profileUser?.followers || 0 }}</div>
+                        <div class="stat-number">{{ profileUser()?.followers || 0 }}</div>
                         <div class="stat-label">Followers</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">{{ profileUser?.following || 0 }}</div>
+                        <div class="stat-number">{{ profileUser()?.following || 0 }}</div>
                         <div class="stat-label">Following</div>
                     </div>
                 </div>
@@ -34,14 +34,14 @@
             <div class="profile-details">
                 <div class="profile-header-row">
                     <div class="profile-info">
-                        <h1 class="profile-name">{{ profileUser?.username || 'User' }}</h1>
-                        <p class="profile-email">{{ profileUser?.email || 'user@example.com' }}</p>
+                        <h1 class="profile-name">{{ profileUser()?.username || 'User' }}</h1>
+                        <p class="profile-email">{{ profileUser()?.email || 'user@example.com' }}</p>
                     </div>
 
                     <!-- Action Buttons -->
                     <div class="profile-actions">
                         <!-- Edit Profile Button (Own Profile) -->
-                        <button *ngIf="isOwnProfile" class="edit-profile-btn" (click)="navigateToSettings()">
+                        <button *ngIf="isOwnProfile()" class="edit-profile-btn" (click)="navigateToSettings()">
                             <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -50,7 +50,7 @@
                         </button>
 
                         <!-- Follow/Unfollow Button (Other User's Profile) -->
-                        <button *ngIf="!isOwnProfile && !isFollowing" class="follow-btn" (click)="toggleFollow()">
+                        <button *ngIf="!isOwnProfile() && !isFollowing()" class="follow-btn" (click)="toggleFollow()">
                             <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -58,7 +58,7 @@
                             Follow
                         </button>
 
-                        <button *ngIf="!isOwnProfile && isFollowing" class="following-btn" (click)="toggleFollow()">
+                        <button *ngIf="!isOwnProfile() && isFollowing()" class="following-btn" (click)="toggleFollow()">
                             <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M5 13l4 4L19 7" />
@@ -71,22 +71,22 @@
                 <!-- Desktop Stats -->
                 <div class="desktop-stats">
                     <div class="stat-item">
-                        <span class="stat-number">{{ profileUser?.posts || 0 }}</span>
+                        <span class="stat-number">{{ profileUser()?.posts || 0 }}</span>
                         <span class="stat-label">Posts</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number">{{ profileUser?.followers || 0 }}</span>
+                        <span class="stat-number">{{ profileUser()?.followers || 0 }}</span>
                         <span class="stat-label">Followers</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number">{{ profileUser?.following || 0 }}</span>
+                        <span class="stat-number">{{ profileUser()?.following || 0 }}</span>
                         <span class="stat-label">Following</span>
                     </div>
                 </div>
 
                 <!-- Bio -->
-                <div class="profile-bio" *ngIf="profileUser?.bio">
-                    <p>{{ profileUser?.bio }}</p>
+                <div class="profile-bio" *ngIf="profileUser()?.bio">
+                    <p>{{ profileUser()?.bio }}</p>
                 </div>
 
                 <!-- Additional Info -->
@@ -120,14 +120,14 @@
             </div>
 
             <!-- View Mode Toggle -->
-            <div class="view-toggle" *ngIf="activeTab === 'posts'">
-                <button class="view-btn" [class.active]="viewMode === 'grid'" (click)="setViewMode('grid')">
+            <div class="view-toggle" *ngIf="activeTab() === 'posts'">
+                <button class="view-btn" [class.active]="viewMode() === 'grid'" (click)="setViewMode('grid')">
                     <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                     </svg>
                 </button>
-                <button class="view-btn" [class.active]="viewMode === 'list'" (click)="setViewMode('list')">
+                <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
                     <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -137,8 +137,8 @@
         </div>
 
         <!-- Posts Tab Content -->
-        <div class="tab-content" *ngIf="activeTab === 'posts'">
-            <div *ngIf="userPosts.length === 0" class="empty-state">
+        <div class="tab-content" *ngIf="activeTab() === 'posts'">
+            <div *ngIf="userPosts().length === 0" class="empty-state">
                 <div class="empty-icon">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -152,8 +152,8 @@
                 </button>
             </div>
 
-            <div *ngIf="userPosts.length > 0"
-                [class]="'posts-container ' + (viewMode === 'grid' ? 'grid-view' : 'list-view')">
+            <div *ngIf="userPosts().length > 0"
+                [class]="'posts-container ' + (viewMode() === 'grid' ? 'grid-view' : 'list-view')">
                 <!-- <div *ngFor="let post of userPosts" class="post-card" (click)="viewPost(post)">
                     <div class="post-image" *ngIf="post.media && post.media.length > 0">
                         <img [src]="post.media[0].url" [alt]="post.media[0].alt" />
@@ -183,11 +183,11 @@
                         </div>
                     </div>
                 </div> -->
-                <app-post-card *ngFor="let post of userPosts" [post]="post" [currentUser]="state.currentUser || null"
-                    [variant]="'grid'" (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)"
-                    (comment)="onComment($event)" (postClick)="onPostClick($event)"
-                    (userClick)="onUserClickEvent($event)" (report)="onReport($event)" (deleted)="onPostDeleted($event)"
-                    (updated)="onPostUpdated($event)"></app-post-card>
+                <app-post-card *ngFor="let post of userPosts()" [post]="post"
+                    [currentUser]="state()?.currentUser || null" [variant]="'grid'" (like)="onLike($event)"
+                    (subscribe)="onSubscribeEvent($event)" (comment)="onComment($event)"
+                    (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)" (report)="onReport($event)"
+                    (deleted)="onPostDeleted($event)" (updated)="onPostUpdated($event)"></app-post-card>
             </div>
         </div>
     </div>

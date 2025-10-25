@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Post, User, Comment, CreateCommentRequest } from '../models';
 import { AuthService } from '../services/auth.service';
@@ -16,6 +16,7 @@ import { UserService } from '../services/user.service';
 export class AppPostCardComponent implements OnInit {
   @Input() post!: Post;
   @Input() variant: string = 'feed';
+  @Input() showExcerpt: boolean = false;
   @Input()
   currentUser!: User | null;
   @Output() deleted = new EventEmitter<number>();
@@ -27,40 +28,40 @@ export class AppPostCardComponent implements OnInit {
   @Output() userClick = new EventEmitter<{ userId: number }>();
   @Output() report = new EventEmitter<{ postId: number }>();
 
+  // ✨ Convert all state to signals
+  localLiked = signal(false);
+  localSubscribed = signal(false);
+  localLikes = signal(0);
+  showMenu = signal(false);
+  editMode = signal(false);
+  editablePost = signal<any>({});
+  uploadingMedia = signal(false);
+  uploadError = signal('');
+  originalMediaUrl = signal('');
+  originalMediaType = signal<'IMAGE' | 'VIDEO' | 'AUDIO' | null>(null);
+  showReportModal = signal(false);
+  selectedReason = signal('');
+  reportDetails = signal('');
+  submittingReport = signal(false);
+
+  // Comment modal properties
+  showCommentModal = signal(false);
+  comments = signal<Comment[]>([]);
+  loadingComments = signal(false);
+  newCommentContent = signal('');
+  submittingComment = signal(false);
+  commentError = signal('');
+
+  // Comment editing properties
+  editingCommentId = signal<number | null>(null);
+  editingCommentContent = signal('');
+  updatingComment = signal(false);
+
   constructor(
     private authService: AuthService,
     private postService: PostService,
-    private cd: ChangeDetectorRef,
     private userService: UserService
   ) { }
-
-  localLiked: boolean = false;
-  localSubscribed: boolean = false;
-  localLikes: number = 0;
-  showMenu: boolean = false;
-  editMode = false;
-  editablePost: any = {};
-  uploadingMedia: boolean = false;
-  uploadError: string = '';
-  originalMediaUrl: string = '';
-  originalMediaType: 'IMAGE' | 'VIDEO' | 'AUDIO' | null = null;
-  showReportModal: boolean = false;
-  selectedReason: string = '';
-  reportDetails: string = '';
-  submittingReport: boolean = false;
-
-  // Comment modal properties
-  showCommentModal: boolean = false;
-  comments: Comment[] = [];
-  loadingComments: boolean = false;
-  newCommentContent: string = '';
-  submittingComment: boolean = false;
-  commentError: string = '';
-
-  // Comment editing properties
-  editingCommentId: number | null = null;
-  editingCommentContent: string = '';
-  updatingComment: boolean = false;
 
   reportReasons = [
     {
@@ -108,9 +109,9 @@ export class AppPostCardComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.localLiked = this.post.isLiked;
-    this.localSubscribed = this.post.isSubscribed;
-    this.localLikes = this.post.likes;
+    this.localLiked.set(this.post.isLiked);
+    this.localSubscribed.set(this.post.isSubscribed);
+    this.localLikes.set(this.post.likes);
     this.currentUser = this.authService.getCurrentUser();
   }
 
@@ -118,47 +119,77 @@ export class AppPostCardComponent implements OnInit {
     return this.post.author.id === this.currentUser?.id;
   }
 
+  getDisplayContent(): string {
+    if (!this.showExcerpt) {
+      return this.post.content;
+    }
+
+    // Show first 200 characters as excerpt
+    const maxLength = 200;
+    if (this.post.content.length <= maxLength) {
+      return this.post.content;
+    }
+
+    return this.post.content.substring(0, maxLength) + '...';
+  }
+
   handleEdit(event: Event) {
     event.stopPropagation();
-    this.editablePost = { ...this.post }; // clone current post
+    this.editablePost.set({ ...this.post }); // clone current post
     // Store original media URL and type
-    this.originalMediaUrl = this.post.mediaUrl || '';
-    this.originalMediaType = this.post.mediaType || null;
-    this.editMode = true;
+    this.originalMediaUrl.set(this.post.mediaUrl || '');
+    this.originalMediaType.set(this.post.mediaType || null);
+    this.editMode.set(true);
+  }
+
+  // Helper methods for updating editable post fields
+  updateEditableTitle(title: string) {
+    this.editablePost.update(p => ({ ...p, title }));
+  }
+
+  updateEditableContent(content: string) {
+    this.editablePost.update(p => ({ ...p, content }));
   }
 
   cancelEdit(event: Event) {
     event.stopPropagation();
-    this.editMode = false;
-    this.uploadError = '';
+    this.editMode.set(false);
+    this.uploadError.set('');
   }
 
   keepOriginalMedia(event: Event) {
     event.stopPropagation();
     // Restore original media
-    this.editablePost.mediaUrl = this.originalMediaUrl;
-    this.editablePost.mediaType = this.originalMediaType;
-    this.uploadError = '';
-    this.cd.detectChanges();
+    this.editablePost.update(post => ({
+      ...post,
+      mediaUrl: this.originalMediaUrl(),
+      mediaType: this.originalMediaType()
+    }));
+    this.uploadError.set('');
+    // ✨ No more detectChanges - signals auto-update!
   }
 
   removeAllMedia(event: Event) {
     event.stopPropagation();
     if (confirm('Are you sure you want to remove all media from this post?')) {
-      this.editablePost.mediaUrl = '';
-      this.editablePost.mediaType = null;
-      this.uploadError = '';
-      this.cd.detectChanges();
+      this.editablePost.update(post => ({
+        ...post,
+        mediaUrl: '',
+        mediaType: null
+      }));
+      this.uploadError.set('');
     }
   }
 
   removeNewMedia(event: Event) {
     event.stopPropagation();
     // Restore original media (or empty if there was no original)
-    this.editablePost.mediaUrl = this.originalMediaUrl;
-    this.editablePost.mediaType = this.originalMediaType;
-    this.uploadError = '';
-    this.cd.detectChanges();
+    this.editablePost.update(post => ({
+      ...post,
+      mediaUrl: this.originalMediaUrl(),
+      mediaType: this.originalMediaType()
+    }));
+    this.uploadError.set('');
   }
 
   onFileSelected(event: any) {
@@ -172,7 +203,7 @@ export class AppPostCardComponent implements OnInit {
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      this.uploadError = 'File size must be less than 10MB';
+      this.uploadError.set('File size must be less than 10MB');
       return;
     }
 
@@ -185,13 +216,13 @@ export class AppPostCardComponent implements OnInit {
     } else if (file.type.startsWith('audio/')) {
       mediaType = 'AUDIO';
     } else {
-      this.uploadError = 'Invalid file type. Please upload an image, video, or audio file.';
+      this.uploadError.set('Invalid file type. Please upload an image, video, or audio file.');
       return;
     }
 
     // Upload the file
-    this.uploadingMedia = true;
-    this.uploadError = '';
+    this.uploadingMedia.set(true);
+    this.uploadError.set('');
 
     const formData = new FormData();
     formData.append('file', file);
@@ -199,21 +230,21 @@ export class AppPostCardComponent implements OnInit {
     // Use the file upload service
     this.postService.uploadFile(formData).subscribe({
       next: (response: any) => {
-        this.uploadingMedia = false;
+        this.uploadingMedia.set(false);
         // Update editable post with new media URL
-        if (response.url) {
-          this.editablePost.mediaUrl = response.url;
-        } else if (response.filename) {
-          this.editablePost.mediaUrl = `http://localhost:9090/api/files/uploads/${response.filename}`;
-        }
-        this.editablePost.mediaType = mediaType;
-        this.uploadError = '';
-        this.cd.detectChanges();
+        const mediaUrl = response.url || `http://localhost:9090/api/files/uploads/${response.filename}`;
+        this.editablePost.update(post => ({
+          ...post,
+          mediaUrl,
+          mediaType
+        }));
+        this.uploadError.set('');
         console.log('File uploaded successfully:', response);
+        // ✨ No more detectChanges!
       },
       error: (err: any) => {
-        this.uploadingMedia = false;
-        this.uploadError = err.error?.error || 'Upload failed. Please try again.';
+        this.uploadingMedia.set(false);
+        this.uploadError.set(err.error?.error || 'Upload failed. Please try again.');
         console.error('Upload error:', err);
       },
     });
@@ -226,12 +257,13 @@ export class AppPostCardComponent implements OnInit {
     event.stopPropagation();
 
     // Create update request with only the fields that can be updated
+    const editedPost = this.editablePost();
     const updateRequest = {
-      title: this.editablePost.title,
-      content: this.editablePost.content,
-      tags: this.editablePost.tags,
-      mediaUrl: this.editablePost.mediaUrl,
-      mediaType: this.editablePost.mediaType,
+      title: editedPost.title,
+      content: editedPost.content,
+      tags: editedPost.tags,
+      mediaUrl: editedPost.mediaUrl,
+      mediaType: editedPost.mediaType,
     };
 
     this.postService.updatePost(this.post.id, updateRequest).subscribe({
@@ -250,11 +282,10 @@ export class AppPostCardComponent implements OnInit {
         // Update the excerpt if it's derived from content
         this.post.excerpt = updated.content ? updated.content.substring(0, 150) + '...' : '';
 
-        this.editMode = false;
-        this.showMenu = false;
+        this.editMode.set(false);
+        this.showMenu.set(false);
 
-        // Force change detection to ensure UI updates
-        this.cd.detectChanges();
+        // ✨ No more detectChanges - signals auto-update!
 
         // Emit the updated post to parent component
         this.updated.emit(this.post);
@@ -272,15 +303,15 @@ export class AppPostCardComponent implements OnInit {
     event.stopPropagation();
 
     // Optimistic UI update
-    const previousLiked = this.localLiked;
-    const previousLikes = this.localLikes;
+    const previousLiked = this.localLiked();
+    const previousLikes = this.localLikes();
 
     // Toggle immediately for UX
-    this.localLiked = !this.localLiked;
-    this.localLikes = this.localLiked ? this.localLikes + 1 : this.localLikes - 1;
+    this.localLiked.update(v => !v);
+    this.localLikes.update(count => this.localLiked() ? count + 1 : count - 1);
 
     // Call backend
-    const like$ = this.localLiked
+    const like$ = this.localLiked()
       ? this.postService.likePost(this.post.id)
       : this.postService.unlikePost(this.post.id);
 
@@ -292,37 +323,37 @@ export class AppPostCardComponent implements OnInit {
       error: (err) => {
         console.error('Failed to toggle like', err);
         // Revert UI if backend fails
-        this.localLiked = previousLiked;
-        this.localLikes = previousLikes;
+        this.localLiked.set(previousLiked);
+        this.localLikes.set(previousLikes);
       },
     });
   }
 
   handleSubscribe(event: Event) {
     event.stopPropagation();
-    console.warn(this.localSubscribed);
-    if (this.localSubscribed) {
+    console.warn(this.localSubscribed());
+    if (this.localSubscribed()) {
       this.userService.unfollowUser(this.post.author.id).subscribe({
         next: () => {
-          this.localSubscribed = false;
+          this.localSubscribed.set(false);
           this.subscribe.emit({ userId: this.post.author.id });
         },
         error: (error) => {
           console.error('Error unfollowing user:', error);
           // Revert the UI state on error
-          this.localSubscribed = true;
+          this.localSubscribed.set(true);
         }
       });
     } else {
       this.userService.followUser(this.post.author.id).subscribe({
         next: () => {
-          this.localSubscribed = true;
+          this.localSubscribed.set(true);
           this.subscribe.emit({ userId: this.post.author.id });
         },
         error: (error) => {
           console.error('Error following user:', error);
           // Revert the UI state on error
-          this.localSubscribed = false;
+          this.localSubscribed.set(false);
         }
       });
     }
@@ -330,7 +361,7 @@ export class AppPostCardComponent implements OnInit {
 
   handleComment(event: Event) {
     event.stopPropagation();
-    this.showCommentModal = true;
+    this.showCommentModal.set(true);
     this.loadComments();
   }
 
@@ -363,46 +394,46 @@ export class AppPostCardComponent implements OnInit {
 
   handleReport(event: Event) {
     event.stopPropagation();
-    this.showMenu = false;
-    this.showReportModal = true;
+    this.showMenu.set(false);
+    this.showReportModal.set(true);
   }
 
   closeReportModal(event: Event) {
     event.stopPropagation();
-    this.showReportModal = false;
-    this.selectedReason = '';
-    this.reportDetails = '';
+    this.showReportModal.set(false);
+    this.selectedReason.set('');
+    this.reportDetails.set('');
   }
 
   submitReport(event: Event) {
     event.stopPropagation();
 
-    if (!this.selectedReason) {
+    if (!this.selectedReason()) {
       return;
     }
 
-    this.submittingReport = true;
+    this.submittingReport.set(true);
 
     // Create report data
     const reportData = {
       postId: this.post.id,
-      reason: this.selectedReason,
-      details: this.reportDetails,
+      reason: this.selectedReason(),
+      details: this.reportDetails(),
     };
 
     // Call the API to submit the report
     this.postService.reportPost(reportData).subscribe({
       next: (response) => {
-        this.submittingReport = false;
-        this.showReportModal = false;
-        this.selectedReason = '';
-        this.reportDetails = '';
+        this.submittingReport.set(false);
+        this.showReportModal.set(false);
+        this.selectedReason.set('');
+        this.reportDetails.set('');
         alert('Report submitted successfully. Thank you for helping keep our community safe.');
         console.log('Report submitted:', response);
-        this.cd.detectChanges();
+        // ✨ No more detectChanges!
       },
       error: (err) => {
-        this.submittingReport = false;
+        this.submittingReport.set(false);
         console.error('Failed to submit report:', err);
         alert('Failed to submit report. Please try again.');
       },
@@ -412,19 +443,19 @@ export class AppPostCardComponent implements OnInit {
   // Comment modal methods
   closeCommentModal(event: Event) {
     event.stopPropagation();
-    this.showCommentModal = false;
-    this.newCommentContent = '';
-    this.commentError = '';
+    this.showCommentModal.set(false);
+    this.newCommentContent.set('');
+    this.commentError.set('');
   }
 
   loadComments() {
-    this.loadingComments = true;
-    this.commentError = '';
+    this.loadingComments.set(true);
+    this.commentError.set('');
 
     this.postService.getComments(this.post.id).subscribe({
       next: (response: any[]) => {
         // Map the response to match the Comment interface
-        this.comments = response.map((commentData) => ({
+        const mappedComments = response.map((commentData) => ({
           id: commentData.id,
           content: commentData.content,
           author: commentData.author,
@@ -437,12 +468,13 @@ export class AppPostCardComponent implements OnInit {
           parentId: undefined,
         }));
 
-        this.loadingComments = false;
-        this.cd.detectChanges();
+        this.comments.set(mappedComments);
+        this.loadingComments.set(false);
+        // ✨ No more detectChanges!
       },
       error: (err: any) => {
-        this.loadingComments = false;
-        this.commentError = 'Failed to load comments. Please try again.';
+        this.loadingComments.set(false);
+        this.commentError.set('Failed to load comments. Please try again.');
         console.error('Failed to load comments:', err);
       },
     });
@@ -451,23 +483,23 @@ export class AppPostCardComponent implements OnInit {
   submitComment(event: Event) {
     event.stopPropagation();
 
-    if (!this.newCommentContent.trim()) {
-      this.commentError = 'Please enter a comment.';
+    if (!this.newCommentContent().trim()) {
+      this.commentError.set('Please enter a comment.');
       return;
     }
 
-    this.submittingComment = true;
-    this.commentError = '';
+    this.submittingComment.set(true);
+    this.commentError.set('');
 
     const commentRequest: CreateCommentRequest = {
-      content: this.newCommentContent.trim(),
+      content: this.newCommentContent().trim(),
       postId: this.post.id,
     };
 
     this.postService.createComment(commentRequest).subscribe({
       next: (response: any) => {
-        this.submittingComment = false;
-        this.newCommentContent = '';
+        this.submittingComment.set(false);
+        this.newCommentContent.set('');
 
         // Map the response to match the Comment interface
         const newComment: Comment = {
@@ -483,13 +515,13 @@ export class AppPostCardComponent implements OnInit {
           parentId: undefined,
         };
 
-        this.comments.unshift(newComment); // Add to beginning of array
-        this.cd.detectChanges();
+        this.comments.update(comments => [newComment, ...comments]); // Add to beginning of array
         console.log('Comment created successfully:', response);
+        // ✨ No more detectChanges!
       },
       error: (err: any) => {
-        this.submittingComment = false;
-        this.commentError = 'Failed to submit comment. Please try again.';
+        this.submittingComment.set(false);
+        this.commentError.set('Failed to submit comment. Please try again.');
         console.error('Failed to create comment:', err);
       },
     });
@@ -504,9 +536,9 @@ export class AppPostCardComponent implements OnInit {
 
     this.postService.deleteComment(commentId).subscribe({
       next: () => {
-        this.comments = this.comments.filter((c) => c.id !== commentId);
-        this.cd.detectChanges();
+        this.comments.update(comments => comments.filter((c) => c.id !== commentId));
         console.log('Comment deleted successfully');
+        // ✨ No more detectChanges!
       },
       error: (err) => {
         console.error('Failed to delete comment:', err);
@@ -521,98 +553,94 @@ export class AppPostCardComponent implements OnInit {
 
   startEditComment(comment: Comment, event: Event) {
     event.stopPropagation();
-    this.editingCommentId = comment.id;
-    this.editingCommentContent = comment.content;
-    this.commentError = '';
+    this.editingCommentId.set(comment.id);
+    this.editingCommentContent.set(comment.content);
+    this.commentError.set('');
   }
 
   cancelEditComment(event: Event) {
     event.stopPropagation();
-    this.editingCommentId = null;
-    this.editingCommentContent = '';
-    this.commentError = '';
+    this.editingCommentId.set(null);
+    this.editingCommentContent.set('');
+    this.commentError.set('');
   }
 
   updateComment(event: Event) {
     event.stopPropagation();
 
-    if (!this.editingCommentContent.trim()) {
-      this.commentError = 'Please enter a comment.';
+    if (!this.editingCommentContent().trim()) {
+      this.commentError.set('Please enter a comment.');
       return;
     }
 
-    if (!this.editingCommentId) {
+    const commentId = this.editingCommentId();
+    if (!commentId) {
       return;
     }
 
-    this.updatingComment = true;
-    this.commentError = '';
+    this.updatingComment.set(true);
+    this.commentError.set('');
 
     const updateData = {
-      content: this.editingCommentContent.trim(),
+      content: this.editingCommentContent().trim(),
     };
 
-    console.log('Updating comment:', this.editingCommentId, 'with data:', updateData);
+    console.log('Updating comment:', commentId, 'with data:', updateData);
 
-    this.postService.updateComment(this.editingCommentId, updateData).subscribe({
+    this.postService.updateComment(commentId, updateData).subscribe({
       next: (response: any) => {
         console.log('Update response received:', response);
-        console.log('Response type:', typeof response);
-        console.log('Response keys:', Object.keys(response || {}));
 
-        this.updatingComment = false;
-        this.editingCommentId = null;
-        this.editingCommentContent = '';
+        this.updatingComment.set(false);
+        this.editingCommentId.set(null);
+        this.editingCommentContent.set('');
 
         // Check if response has the expected structure
         if (!response || !response.id) {
           console.error('Invalid response structure:', response);
-          this.commentError = 'Invalid response from server.';
+          this.commentError.set('Invalid response from server.');
           return;
         }
 
         // Update the comment in the comments array
-        const index = this.comments.findIndex((c) => c.id === response.id);
-        if (index !== -1) {
-          // Map the response to match the Comment interface
-          const updatedComment: Comment = {
-            id: response.id,
-            content: response.content,
-            author: response.author,
-            postId: this.post.id,
-            createdAt: response.createdAt,
-            updatedAt: response.createdAt, // Use createdAt as updatedAt since backend doesn't provide updatedAt
-            likes: this.comments[index].likes || 0, // Preserve existing likes
-            isLiked: this.comments[index].isLiked || false, // Preserve existing like status
-            replies: this.comments[index].replies || [],
-            parentId: this.comments[index].parentId,
-          };
+        this.comments.update(comments => {
+          const index = comments.findIndex((c) => c.id === response.id);
+          if (index !== -1) {
+            // Map the response to match the Comment interface
+            const updatedComment: Comment = {
+              id: response.id,
+              content: response.content,
+              author: response.author,
+              postId: this.post.id,
+              createdAt: response.createdAt,
+              updatedAt: response.createdAt, // Use createdAt as updatedAt since backend doesn't provide updatedAt
+              likes: comments[index].likes || 0, // Preserve existing likes
+              isLiked: comments[index].isLiked || false, // Preserve existing like status
+              replies: comments[index].replies || [],
+              parentId: comments[index].parentId,
+            };
 
-          this.comments[index] = updatedComment;
-          this.cd.detectChanges();
-          console.log('Comment updated in UI:', updatedComment);
-        } else {
+            const newComments = [...comments];
+            newComments[index] = updatedComment;
+            console.log('Comment updated in UI:', updatedComment);
+            return newComments;
+          }
           console.error('Comment not found in comments array:', response.id);
-        }
+          return comments;
+        });
 
         console.log('Comment updated successfully:', response);
       },
       error: (err: any) => {
         console.error('Update error:', err);
-        console.error('Error details:', {
-          status: err.status,
-          statusText: err.statusText,
-          message: err.message,
-          error: err.error,
-        });
 
-        this.updatingComment = false;
+        this.updatingComment.set(false);
 
         // Check if it's a JSON parsing error
         if (err.message && err.message.includes('JSON')) {
-          this.commentError = 'Server returned invalid data. Please try again.';
+          this.commentError.set('Server returned invalid data. Please try again.');
         } else {
-          this.commentError = 'Failed to update comment. Please try again.';
+          this.commentError.set('Failed to update comment. Please try again.');
         }
 
         console.error('Failed to update comment:', err);
@@ -622,7 +650,7 @@ export class AppPostCardComponent implements OnInit {
 
   handleShare(event: Event) {
     event.stopPropagation();
-    this.showMenu = false;
+    this.showMenu.set(false);
     // Copy link to clipboard logic
   }
 

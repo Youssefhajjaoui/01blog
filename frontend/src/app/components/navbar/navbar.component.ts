@@ -4,9 +4,9 @@ import {
   Output,
   EventEmitter,
   HostListener,
-  ChangeDetectorRef,
   OnInit,
   OnDestroy,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -34,35 +34,33 @@ export class NavbarComponent implements OnInit, OnDestroy {
   @Output() userClick = new EventEmitter<void>();
   @Output() navigate = new EventEmitter<{ page: string }>();
 
-  showUserDropdown = false;
-  showSuggestions = false;
-  showNotificationPanel = false;
-  suggestions: SearchSuggestion[] = [];
-  isLoadingSuggestions = false;
+  // ✨ Convert to signals
+  showUserDropdown = signal(false);
+  showSuggestions = signal(false);
+  showNotificationPanel = signal(false);
+  suggestions = signal<SearchSuggestion[]>([]);
+  isLoadingSuggestions = signal(false);
 
   // Notification properties
-  notifications: Notification[] = [];
-  unreadCount = 0;
+  notifications = signal<Notification[]>([]);
+  unreadCount = signal(0);
 
   constructor(
     private router: Router,
     private authService: AuthService,
     private searchSuggestionsService: SearchSuggestionsService,
-    private notificationService: NotificationService,
-    private cd: ChangeDetectorRef
+    private notificationService: NotificationService
   ) {
-    // Subscribe to search suggestions with change detection
+    // Subscribe to search suggestions
     this.searchSuggestionsService.suggestions$.subscribe((suggestions) => {
-      this.suggestions = suggestions;
-      this.showSuggestions = suggestions.length > 0 && this.searchQuery.length >= 2;
-      // Force change detection when suggestions are updated from backend
-      this.cd.detectChanges();
+      this.suggestions.set(suggestions);
+      this.showSuggestions.set(suggestions.length > 0 && this.searchQuery.length >= 2);
+      // ✨ No more detectChanges - signals auto-update!
     });
 
     this.searchSuggestionsService.isLoading$.subscribe((loading) => {
-      this.isLoadingSuggestions = loading;
-      // Force change detection when loading state changes
-      this.cd.detectChanges();
+      this.isLoadingSuggestions.set(loading);
+      // ✨ No more detectChanges!
     });
   }
 
@@ -73,13 +71,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     // Subscribe to notifications
     this.notificationService.getNotifications().subscribe((notifications) => {
-      this.notifications = notifications;
-      this.cd.detectChanges();
+      this.notifications.set(notifications);
+      // ✨ No more detectChanges!
     });
 
     this.notificationService.getUnreadCount().subscribe((count) => {
-      this.unreadCount = count;
-      this.cd.detectChanges();
+      this.unreadCount.set(count);
+      // ✨ No more detectChanges!
     });
 
     // Connect to SSE notifications for real-time updates
@@ -97,15 +95,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
     const searchContainer = target.closest('.search-container');
     const notificationContainer = target.closest('.notification-container');
 
-    if (!dropdownContainer && this.showUserDropdown) {
+    if (!dropdownContainer && this.showUserDropdown()) {
       this.closeUserDropdown();
     }
 
-    if (!searchContainer && this.showSuggestions) {
+    if (!searchContainer && this.showSuggestions()) {
       this.hideSuggestions();
     }
 
-    if (!notificationContainer && this.showNotificationPanel) {
+    if (!notificationContainer && this.showNotificationPanel()) {
       this.closeNotificationPanel();
     }
   }
@@ -133,26 +131,25 @@ export class NavbarComponent implements OnInit, OnDestroy {
     // Trigger search suggestions
     if (this.searchQuery.length >= 2) {
       this.searchSuggestionsService.search(this.searchQuery);
-      this.showSuggestions = true;
+      this.showSuggestions.set(true);
     } else {
       this.hideSuggestions();
     }
 
-    // Force change detection to ensure UI updates immediately
-    this.cd.detectChanges();
+    // ✨ No more detectChanges - signals auto-update!
   }
 
   onNotificationClick() {
-    this.showNotificationPanel = !this.showNotificationPanel;
+    this.showNotificationPanel.update(v => !v);
     this.notificationClick.emit();
   }
 
   closeNotificationPanel() {
-    this.showNotificationPanel = false;
+    this.showNotificationPanel.set(false);
   }
 
   toggleNotificationPanel() {
-    this.showNotificationPanel = !this.showNotificationPanel;
+    this.showNotificationPanel.update(v => !v);
   }
 
   markNotificationAsRead(notificationId: number) {
@@ -176,11 +173,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   toggleUserDropdown() {
-    this.showUserDropdown = !this.showUserDropdown;
+    this.showUserDropdown.update(v => !v);
   }
 
   closeUserDropdown() {
-    this.showUserDropdown = false;
+    this.showUserDropdown.set(false);
   }
 
   onProfileClick() {
@@ -218,7 +215,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   // Search suggestions methods
   hideSuggestions() {
-    this.showSuggestions = false;
+    this.showSuggestions.set(false);
     this.searchSuggestionsService.clearSuggestions();
   }
 
@@ -236,20 +233,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (suggestion.type === 'user') {
       // Navigate to user profile using Angular Router
       this.router.navigate(['/profile', suggestion.id.toString()]).then(() => {
-        // Force change detection after navigation
-        this.cd.detectChanges();
+        // ✨ No more detectChanges - signals auto-update!
       }).catch(error => {
         console.error('Navigation error:', error);
       });
     }
-
-    // Force change detection to ensure UI updates
-    this.cd.detectChanges();
   }
 
   onSearchInputFocus() {
-    if (this.searchQuery.length >= 2 && this.suggestions.length > 0) {
-      this.showSuggestions = true;
+    if (this.searchQuery.length >= 2 && this.suggestions().length > 0) {
+      this.showSuggestions.set(true);
     }
   }
 

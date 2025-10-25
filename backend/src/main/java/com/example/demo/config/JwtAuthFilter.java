@@ -6,8 +6,6 @@ import java.util.Optional;
 import com.example.demo.models.*;
 import com.example.demo.repositories.UserRepository;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -50,7 +48,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write(
-                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource111111111111\"}");
+                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
             return;
         }
         // Find the "jwt" cookie
@@ -66,32 +64,36 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write(
-                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource22222222222\"}");
+                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
             return;
         }
 
-        if (token != null && !token.isEmpty()) {
-            String username = jwtUtil.extractUsername(token);
+        String username = jwtUtil.extractUsername(token);
 
-            if (username != null &&
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
-                Optional<User> optionalUser = userDetailsService.findByUsername(username);
+        if (username != null &&
+                SecurityContextHolder.getContext().getAuthentication() == null) {
+            Optional<User> optionalUser = userDetailsService.findByUsername(username);
 
-                if (optionalUser.isEmpty()) {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType("application/json");
-                    response.getWriter().write(
-                            "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource333333333\"}");
-                    return; // stop filter chain here
-                }
-
-                User user = optionalUser.get();
-                if (jwtUtil.validateToken(token, user)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            user, null, user.getAuthorities());
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
+            if (optionalUser.isEmpty() || optionalUser == null) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write(
+                        "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
+                return; // stop filter chain here
             }
+
+            User user = optionalUser.get();
+            if (jwtUtil.validateToken(token, user)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        user, null, user.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write(
+                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
+            return;
         }
 
         filterChain.doFilter(request, response);

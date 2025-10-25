@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
@@ -15,30 +15,30 @@ import { NavbarComponent } from '../components/navbar/navbar.component';
   styleUrl: './admin-dashboard.component.css',
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
-  // Data properties
-  users: User[] = [];
-  posts: Post[] = [];
-  reports: Report[] = [];
-  stats: DashboardStats | null = null;
+  // ✨ Convert all state to signals
+  users = signal<User[]>([]);
+  posts = signal<Post[]>([]);
+  reports = signal<Report[]>([]);
+  stats = signal<DashboardStats | null>(null);
 
   // UI state
-  activeTab: string = 'overview';
-  userSearch: string = '';
-  userStatusFilter: string = 'all';
+  activeTab = signal('overview');
+  userSearch = signal('');
+  userStatusFilter = signal('all');
 
   // Modal state
-  showBanModal = false;
-  showDeleteModal = false;
-  selectedUser: User | null = null;
-  banDuration: number = 30;
-  banDurationUnit: string = 'days';
-  banReason: string = '';
-  deleteReason: string = '';
-  isPermanentBan = false;
+  showBanModal = signal(false);
+  showDeleteModal = signal(false);
+  selectedUser = signal<User | null>(null);
+  banDuration = signal(30);
+  banDurationUnit = signal('days');
+  banReason = signal('');
+  deleteReason = signal('');
+  isPermanentBan = signal(false);
 
   // Change detection
   private destroy$ = new Subject<void>();
-  private isLoading = false;
+  isLoading = signal(false);
 
   // Tab configuration
   tabs = [
@@ -94,10 +94,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     },
   ];
 
-  constructor(
-    private adminService: AdminService,
-    private cdr: ChangeDetectorRef
-  ) { }
+  constructor(private adminService: AdminService) { }
 
   ngOnInit(): void {
     this.loadDashboardData();
@@ -109,9 +106,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboardData(): void {
-    if (this.isLoading) return;
+    if (this.isLoading()) return;
 
-    this.isLoading = true;
+    this.isLoading.set(true);
 
     forkJoin({
       users: this.adminService.getAllUsers().pipe(catchError(() => of([]))),
@@ -122,53 +119,59 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          // Create new array references to trigger change detection
-          this.users = [...data.users];
-          this.posts = [...data.posts];
-          this.reports = [...data.reports];
-          this.stats = data.stats ? { ...data.stats } : null;
+          console.log('Reports loaded:', data.reports);
+
+          // ✨ Update signals - auto-triggers change detection
+          this.users.set([...data.users]);
+          this.posts.set([...data.posts]);
+          this.reports.set([...data.reports]);
+          this.stats.set(data.stats ? { ...data.stats } : null);
 
           // Update tab badges
           this.updateTabBadges();
 
           // Calculate stats if backend doesn't provide them
-          if (!this.stats) {
+          if (!this.stats()) {
             this.calculateStats();
           }
 
-          // Force change detection
-          this.cdr.detectChanges();
-          this.isLoading = false;
+          // ✨ No more detectChanges - signals auto-update!
+          this.isLoading.set(false);
         },
         error: (error) => {
           console.error('Error loading dashboard data:', error);
           // Set fallback data
           this.calculateStats();
-          this.isLoading = false;
-          this.cdr.detectChanges();
+          this.isLoading.set(false);
+          // ✨ No more detectChanges!
         },
       });
   }
 
   calculateStats(): void {
-    if (!this.stats) {
-      this.stats = {
-        totalUsers: this.users.length,
-        activeUsers: this.users.filter((u) => !u.banned).length,
-        bannedUsers: this.users.filter((u) => u.banned).length,
-        totalPosts: this.posts.length,
-        pendingReports: this.reports.filter((r) => r.status === 'PENDING').length,
-        criticalReports: this.reports.filter((r) => r.status === 'PENDING').length, // All pending reports as critical for now
-        resolvedReports: this.reports.filter((r) => r.status === 'RESOLVED').length,
+    const currentStats = this.stats();
+    if (!currentStats) {
+      const users = this.users();
+      const posts = this.posts();
+      const reports = this.reports();
+
+      this.stats.set({
+        totalUsers: users.length,
+        activeUsers: users.filter((u) => !u.banned).length,
+        bannedUsers: users.filter((u) => u.banned).length,
+        totalPosts: posts.length,
+        pendingReports: reports.filter((r) => r.status === 'PENDING').length,
+        criticalReports: reports.filter((r) => r.status === 'PENDING').length, // All pending reports as critical for now
+        resolvedReports: reports.filter((r) => r.status === 'RESOLVED').length,
         platformHealth: 98.5,
-        newUsersThisMonth: this.users.filter((u) => {
+        newUsersThisMonth: users.filter((u) => {
           const userDate = new Date(u.createdAt);
           const now = new Date();
           return (
             userDate.getMonth() === now.getMonth() && userDate.getFullYear() === now.getFullYear()
           );
         }).length,
-        newPostsThisMonth: this.posts.filter((p) => {
+        newPostsThisMonth: posts.filter((p) => {
           const postDate = new Date(p.createdAt);
           const now = new Date();
           return (
@@ -178,19 +181,19 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         topTags: this.getTopTags(),
         userGrowth: this.getUserGrowth(),
         postGrowth: this.getPostGrowth(),
-      };
+      });
     }
   }
 
   updateTabBadges(): void {
-    this.tabs[1].badge = this.users.filter((u) => u.banned).length;
-    this.tabs[2].badge = this.reports.filter((r) => r.status === 'PENDING').length;
+    this.tabs[1].badge = this.users().filter((u) => u.banned).length;
+    this.tabs[2].badge = this.reports().filter((r) => r.status === 'PENDING').length;
   }
 
   private getTopTags(): { tag: string; count: number }[] {
     const tagCounts: { [key: string]: number } = {};
 
-    this.posts.forEach((post) => {
+    this.posts().forEach((post) => {
       post.tags.forEach((tag) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
       });
@@ -205,7 +208,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private getUserGrowth(): { month: string; users: number }[] {
     const growth: { [key: string]: number } = {};
 
-    this.users.forEach((user) => {
+    this.users().forEach((user) => {
       const date = new Date(user.createdAt);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       growth[monthKey] = (growth[monthKey] || 0) + 1;
@@ -220,7 +223,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private getPostGrowth(): { month: string; posts: number }[] {
     const growth: { [key: string]: number } = {};
 
-    this.posts.forEach((post) => {
+    this.posts().forEach((post) => {
       const date = new Date(post.createdAt);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       growth[monthKey] = (growth[monthKey] || 0) + 1;
@@ -232,20 +235,23 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       .slice(-12); // Last 12 months
   }
 
-  get filteredUsers(): User[] {
-    let filtered = this.users;
+  // ✨ Convert to computed signal
+  filteredUsers = computed(() => {
+    let filtered = this.users();
 
-    if (this.userSearch) {
-      const search = this.userSearch.toLowerCase();
+    const search = this.userSearch();
+    if (search) {
+      const searchLower = search.toLowerCase();
       filtered = filtered.filter(
         (user) =>
-          user.username.toLowerCase().includes(search) || user.email.toLowerCase().includes(search)
+          user.username.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower)
       );
     }
 
-    if (this.userStatusFilter !== 'all') {
+    const statusFilter = this.userStatusFilter();
+    if (statusFilter !== 'all') {
       filtered = filtered.filter((user) => {
-        switch (this.userStatusFilter) {
+        switch (statusFilter) {
           case 'active':
             return !user.banned;
           case 'banned':
@@ -257,7 +263,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     return filtered;
-  }
+  });
 
   getUserStatus(user: User): string {
     if (user.banned) return 'Banned';
@@ -334,12 +340,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       alert('Cannot ban admin users');
       return;
     }
-    this.selectedUser = user;
-    this.banDuration = 30;
-    this.banDurationUnit = 'days';
-    this.banReason = '';
-    this.isPermanentBan = false;
-    this.showBanModal = true;
+    this.selectedUser.set(user);
+    this.banDuration.set(30);
+    this.banDurationUnit.set('days');
+    this.banReason.set('');
+    this.isPermanentBan.set(false);
+    this.showBanModal.set(true);
   }
 
   // Open delete modal
@@ -348,34 +354,47 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       alert('Cannot delete admin users');
       return;
     }
-    this.selectedUser = user;
-    this.deleteReason = '';
-    this.showDeleteModal = true;
+    this.selectedUser.set(user);
+    this.deleteReason.set('');
+    this.showDeleteModal.set(true);
   }
 
   // Close modals
   closeModals() {
-    this.showBanModal = false;
-    this.showDeleteModal = false;
-    this.selectedUser = null;
+    this.showBanModal.set(false);
+    this.showDeleteModal.set(false);
+    this.selectedUser.set(null);
   }
 
   // Execute ban
   executeBan() {
-    if (!this.selectedUser) return;
+    const user = this.selectedUser();
+    if (!user) return;
 
-    this.adminService.banUser(this.selectedUser.id, this.isPermanentBan, this.banDuration, this.banDurationUnit, this.banReason)
+    this.adminService
+      .banUser(
+        user.id,
+        this.isPermanentBan(),
+        this.banDuration(),
+        this.banDurationUnit(),
+        this.banReason()
+      )
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          console.log('User banned:', this.selectedUser!.id);
+          console.log('User banned:', user.id);
           // Update user status immediately for better UX
-          const userIndex = this.users.findIndex(u => u.id === this.selectedUser!.id);
-          if (userIndex !== -1) {
-            this.users[userIndex] = { ...this.users[userIndex], banned: true };
-            this.updateTabBadges();
-            this.cdr.detectChanges();
-          }
+          this.users.update(users => {
+            const userIndex = users.findIndex((u) => u.id === user.id);
+            if (userIndex !== -1) {
+              const newUsers = [...users];
+              newUsers[userIndex] = { ...newUsers[userIndex], banned: true };
+              return newUsers;
+            }
+            return users;
+          });
+          this.updateTabBadges();
+          // ✨ No more detectChanges!
           this.closeModals();
           // Also refresh full data to ensure consistency
           setTimeout(() => this.loadDashboardData(), 500);
@@ -388,18 +407,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   unbanUser(user: User) {
-    this.adminService.unbanUser(user.id)
+    this.adminService
+      .unbanUser(user.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           console.log('User unbanned:', user.id);
           // Update user status immediately for better UX
-          const userIndex = this.users.findIndex(u => u.id === user.id);
-          if (userIndex !== -1) {
-            this.users[userIndex] = { ...this.users[userIndex], banned: false };
-            this.updateTabBadges();
-            this.cdr.detectChanges();
-          }
+          this.users.update(users => {
+            const userIndex = users.findIndex((u) => u.id === user.id);
+            if (userIndex !== -1) {
+              const newUsers = [...users];
+              newUsers[userIndex] = { ...newUsers[userIndex], banned: false };
+              return newUsers;
+            }
+            return users;
+          });
+          this.updateTabBadges();
+          // ✨ No more detectChanges!
           // Also refresh full data to ensure consistency
           setTimeout(() => this.loadDashboardData(), 500);
         },
@@ -412,17 +437,19 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // Execute delete
   executeDelete() {
-    if (!this.selectedUser) return;
+    const user = this.selectedUser();
+    if (!user) return;
 
-    this.adminService.deleteUser(this.selectedUser.id)
+    this.adminService
+      .deleteUser(user.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          console.log('User deleted:', this.selectedUser!.id);
+          console.log('User deleted:', user.id);
           // Remove user from local array immediately
-          this.users = this.users.filter(u => u.id !== this.selectedUser!.id);
+          this.users.update(users => users.filter((u) => u.id !== user.id));
           this.updateTabBadges();
-          this.cdr.detectChanges();
+          // ✨ No more detectChanges!
           this.closeModals();
           // Also refresh full data to ensure consistency
           setTimeout(() => this.loadDashboardData(), 500);
@@ -435,18 +462,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   resolveReport(report: Report) {
-    this.adminService.resolveReport(report.id)
+    this.adminService
+      .resolveReport(report.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           console.log('Report resolved:', report.id);
           // Update report status immediately for better UX
-          const reportIndex = this.reports.findIndex(r => r.id === report.id);
-          if (reportIndex !== -1) {
-            this.reports[reportIndex] = { ...this.reports[reportIndex], status: 'RESOLVED' };
-            this.updateTabBadges();
-            this.cdr.detectChanges();
-          }
+          this.reports.update(reports => {
+            const reportIndex = reports.findIndex((r) => r.id === report.id);
+            if (reportIndex !== -1) {
+              const newReports = [...reports];
+              newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
+              return newReports;
+            }
+            return reports;
+          });
+          this.updateTabBadges();
+          // ✨ No more detectChanges!
           // Also refresh full data to ensure consistency
           setTimeout(() => this.loadDashboardData(), 500);
         },
@@ -458,18 +491,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   dismissReport(report: Report) {
-    this.adminService.dismissReport(report.id)
+    this.adminService
+      .dismissReport(report.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           console.log('Report dismissed:', report.id);
           // Update report status immediately for better UX
-          const reportIndex = this.reports.findIndex(r => r.id === report.id);
-          if (reportIndex !== -1) {
-            this.reports[reportIndex] = { ...this.reports[reportIndex], status: 'DISMISSED' };
-            this.updateTabBadges();
-            this.cdr.detectChanges();
-          }
+          this.reports.update(reports => {
+            const reportIndex = reports.findIndex((r) => r.id === report.id);
+            if (reportIndex !== -1) {
+              const newReports = [...reports];
+              newReports[reportIndex] = { ...newReports[reportIndex], status: 'DISMISSED' };
+              return newReports;
+            }
+            return reports;
+          });
+          this.updateTabBadges();
+          // ✨ No more detectChanges!
           // Also refresh full data to ensure consistency
           setTimeout(() => this.loadDashboardData(), 500);
         },
@@ -482,14 +521,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   deletePost(post: Post) {
     if (confirm(`Are you sure you want to delete this post?`)) {
-      this.adminService.deletePost(post.id)
+      this.adminService
+        .deletePost(post.id)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
             console.log('Post deleted:', post.id);
             // Remove post from local array immediately
-            this.posts = this.posts.filter(p => p.id !== post.id);
-            this.cdr.detectChanges();
+            this.posts.update(posts => posts.filter((p) => p.id !== post.id));
+            // ✨ No more detectChanges!
             // Also refresh full data to ensure consistency
             setTimeout(() => this.loadDashboardData(), 500);
           },
@@ -502,11 +542,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   getTodayUsers(): number {
-    return this.stats?.totalUsers ? Math.floor(this.stats.totalUsers * 0.1) : 0;
+    return this.stats()?.totalUsers ? Math.floor(this.stats()!.totalUsers * 0.1) : 0;
   }
 
   getTodayPosts(): number {
-    return this.stats?.totalPosts ? Math.floor(this.stats.totalPosts * 0.2) : 0;
+    return this.stats()?.totalPosts ? Math.floor(this.stats()!.totalPosts * 0.2) : 0;
   }
 
   // Manual refresh method
@@ -516,7 +556,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // Getter for loading state
   get loading(): boolean {
-    return this.isLoading;
+    return this.isLoading();
   }
 
   // Navbar event handlers
