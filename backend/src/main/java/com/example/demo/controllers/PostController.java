@@ -7,6 +7,7 @@ import com.example.demo.models.Notification;
 import com.example.demo.models.Post;
 import com.example.demo.models.Subscription;
 import com.example.demo.models.User;
+import com.example.demo.models.UserRole;
 import com.example.demo.models.MediaType;
 import com.example.demo.repositories.LikeRepository;
 import com.example.demo.services.SseNotificationService;
@@ -161,9 +162,13 @@ public class PostController {
 
         User currentUser = principal;
 
-        Optional<Post> optionalPost = postRepository.findByIdAndCreator_Id(id, currentUser.getId());
+        Optional<Post> optionalPost = postRepository.findById(id);
         if (optionalPost.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        if (currentUser.getRole() != UserRole.ADMIN && optionalPost.get().getCreator() != currentUser) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         }
 
         postRepository.delete(optionalPost.get());
