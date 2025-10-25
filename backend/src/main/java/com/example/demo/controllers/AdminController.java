@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dtos.DashboardStats;
+import com.example.demo.dtos.ReportDto;
 import com.example.demo.models.Post;
 import com.example.demo.models.Report;
 import com.example.demo.models.User;
@@ -315,23 +316,27 @@ public class AdminController {
 
     // Report Management Endpoints
     @GetMapping("/reports")
-    public ResponseEntity<List<Report>> getAllReports(@AuthenticationPrincipal User principal) {
+    public ResponseEntity<List<ReportDto>> getAllReports(@AuthenticationPrincipal User principal) {
         if (principal == null || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         List<Report> reports = reportRepository.findAll();
-        return ResponseEntity.ok(reports);
+        List<ReportDto> reportDtos = reports.stream()
+                .map(ReportDto::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(reportDtos);
     }
 
     @GetMapping("/reports/{id}")
-    public ResponseEntity<Report> getReportById(@PathVariable Long id, @AuthenticationPrincipal User principal) {
+    public ResponseEntity<ReportDto> getReportById(@PathVariable Long id, @AuthenticationPrincipal User principal) {
         if (principal == null || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         Optional<Report> report = reportRepository.findById(id);
-        return report.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        return report.map(r -> ResponseEntity.ok(new ReportDto(r)))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/reports/{id}/resolve")

@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -38,130 +38,30 @@ export class HomePageComponent implements OnInit {
   @Output() userClick = new EventEmitter<string>();
   @Output() report = new EventEmitter<string>();
   @Output() postClick = new EventEmitter<Post>();
-  constructor(
-    private postService: PostService,
-    private cd: ChangeDetectorRef,
-    private authService: AuthService,
-    private userService: UserService,
-    private router: Router,
-    private suggestionsService: SuggestionsService,
-    private notificationService: NotificationService,
-    private snackBar: MatSnackBar
-  ) {}
 
-  posts: Post[] = [];
-  loading = true;
-  filter: 'all' | 'following' | 'trending' = 'all';
-  viewMode: 'list' | 'grid' = 'list';
-  mockUsers = [];
-  trendingTags = trendingTags;
-  searchQuery = '';
-  currentPage = 'home';
-  currentUser: User | null = null;
-  authUser: User | null = null;
-  suggestedUsers: UserSuggestion[] = [];
-  suggestionsLoading = false;
+  // ✨ Convert to signals - no more ChangeDetectorRef needed!
+  posts = signal<Post[]>([]);
+  loading = signal(true);
+  filter = signal<'all' | 'following' | 'trending'>('all');
+  viewMode = signal<'list' | 'grid'>('list');
+  trendingTags = signal(trendingTags);
+  searchQuery = signal('');
+  currentPage = signal('home');
+  currentUser = signal<User | null>(null);
+  authUser = signal<User | null>(null);
+  suggestedUsers = signal<UserSuggestion[]>([]);
+  suggestionsLoading = signal(false);
 
-  ngOnInit() {
-    this.loadPosts();
-    this.postService.getTrending().subscribe((tags) => {
-      this.trendingTags = tags.trendingTags;
-      this.cd.detectChanges();
-    });
-    this.loadSuggestions();
-    // Get authenticated user
-    this.authService.currentUser$.subscribe((user) => {
-      this.authUser = user;
-      console.log('Current user:', user);
+  // Pagination
+  page = signal(0);
+  pageSize = signal(10);
+  totalPosts = signal(0);
+  hasMore = signal(true);
 
-      // Update state.currentUser with authUser data including statistics
-      if (user) {
-        this.currentUser = user;
-
-        // Update the state to trigger template updates
-        this.updateState.emit({ currentUser: this.currentUser });
-      }
-
-      this.cd.detectChanges();
-    });
-
-    // Set current user from state if available
-    if (this.state.currentUser) {
-      this.currentUser = this.state.currentUser;
-    } else {
-      // this.router.navigate(['/auth']);
-    }
-
-    // Load notifications from backend and connect to SSE
-    this.notificationService.loadNotifications().subscribe();
-    this.notificationService.loadUnreadCount().subscribe();
-    this.notificationService.connectToNotifications();
-  }
-  onPostDeleted(postId: number) {
-    this.posts = this.posts.filter((p) => p.id !== postId);
-    this.cd.detectChanges();
-    this.snackBar.open('Post deleted', 'Close', { duration: 2000 });
-  }
-
-  onPostUpdated(updatedPost: Post) {
-    // Find and update the post in the posts array
-    const index = this.posts.findIndex((p) => p.id === updatedPost.id);
-    if (index !== -1) {
-      this.posts[index] = updatedPost;
-      this.cd.detectChanges();
-      this.snackBar.open('Post updated successfully', 'Close', { duration: 2000 });
-    }
-  }
-
-  loadPosts() {
-    this.loading = true;
-    this.postService.getPosts().subscribe({
-      next: (posts) => {
-        console.log('Fetched posts:', posts);
-        this.posts = posts;
-        this.loading = false;
-        this.cd.detectChanges(); // 👈 ensures Angular updates the DOM
-      },
-
-      error: (err) => {
-        console.error(err);
-        this.loading = false;
-      },
-    });
-  }
-
-  loadSuggestions() {
-    this.suggestionsLoading = true;
-    this.suggestionsService.getSuggestedUsers().subscribe({
-      next: (suggestions) => {
-        console.log('Fetched suggestions:', suggestions);
-        this.suggestedUsers = suggestions;
-        this.suggestionsLoading = false;
-        this.cd.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error loading suggestions:', err);
-        // this.suggestionsLoading = false;
-        // // Fallback to mock users if API fails
-        // this.suggestedUsers = this.mockUsers.map(user => ({
-        //   id: parseInt(user.id),
-        //   username: user.name,
-        //   email: user.email,
-        //   image: user.avatar,
-        //   bio: user.bio,
-        //   role: user.role,
-        //   followerCount: user.subscribers,
-        //   postCount: user.posts,
-        //   suggestionScore: user.subscribers + user.posts
-        // }));
-        // this.cd.detectChanges();
-      },
-    });
-  }
-
-  get filteredPosts(): Post[] {
-    return this.posts.filter((post) => {
-      switch (this.filter) {
+  // ✨ Computed signals for derived state
+  filteredPosts = computed(() => {
+    return this.posts().filter((post) => {
+      switch (this.filter()) {
         case 'following':
           return post.isSubscribed;
         case 'trending':
@@ -170,6 +70,124 @@ export class HomePageComponent implements OnInit {
           return true;
       }
     });
+  });
+
+  paginatedPosts = computed(() => {
+    const start = this.page() * this.pageSize();
+    const end = start + this.pageSize();
+    return this.filteredPosts().slice(start, end);
+  });
+
+  totalPages = computed(() => {
+    return Math.ceil(this.filteredPosts().length / this.pageSize());
+  });
+
+  constructor(
+    private postService: PostService,
+    private authService: AuthService,
+    private userService: UserService,
+    private router: Router,
+    private suggestionsService: SuggestionsService,
+    private notificationService: NotificationService,
+    private snackBar: MatSnackBar
+  ) { }
+
+  ngOnInit() {
+    this.loadPosts();
+    this.postService.getTrending().subscribe((tags) => {
+      this.trendingTags.set(tags.trendingTags);
+      // ✨ No more detectChanges - signals auto-update!
+    });
+    this.loadSuggestions();
+
+    // Get authenticated user - use signal directly
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.authUser.set(user);
+      this.currentUser.set(user);
+      this.updateState.emit({ currentUser: user });
+    }
+
+    // Set current user from state if available
+    if (this.state.currentUser) {
+      this.currentUser.set(this.state.currentUser);
+    }
+
+    // Load notifications from backend and connect to SSE
+    this.notificationService.loadNotifications().subscribe();
+    this.notificationService.loadUnreadCount().subscribe();
+    this.notificationService.connectToNotifications();
+  }
+  onPostDeleted(postId: number) {
+    this.posts.update(posts => posts.filter((p) => p.id !== postId));
+    this.snackBar.open('Post deleted', 'Close', { duration: 2000 });
+  }
+
+  onPostUpdated(updatedPost: Post) {
+    // Find and update the post in the posts array
+    this.posts.update(posts => {
+      const index = posts.findIndex((p) => p.id === updatedPost.id);
+      if (index !== -1) {
+        const newPosts = [...posts];
+        newPosts[index] = updatedPost;
+        return newPosts;
+      }
+      return posts;
+    });
+    this.snackBar.open('Post updated successfully', 'Close', { duration: 2000 });
+  }
+
+  loadPosts() {
+    this.loading.set(true);
+    this.postService.getPosts().subscribe({
+      next: (posts) => {
+        console.log('Fetched posts:', posts);
+        this.posts.set(posts);
+        this.totalPosts.set(posts.length);
+        this.loading.set(false);
+        // ✨ No more detectChanges - signals auto-update!
+      },
+
+      error: (err) => {
+        console.error(err);
+        this.loading.set(false);
+      },
+    });
+  }
+
+  nextPage() {
+    if ((this.page() + 1) * this.pageSize() < this.filteredPosts().length) {
+      this.page.update(p => p + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  previousPage() {
+    if (this.page() > 0) {
+      this.page.update(p => p - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  goToPage(page: number) {
+    this.page.set(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  loadSuggestions() {
+    this.suggestionsLoading.set(true);
+    this.suggestionsService.getSuggestedUsers().subscribe({
+      next: (suggestions) => {
+        console.log('Fetched suggestions:', suggestions);
+        this.suggestedUsers.set(suggestions);
+        this.suggestionsLoading.set(false);
+        // ✨ No more detectChanges - signals auto-update!
+      },
+      error: (err) => {
+        console.error('Error loading suggestions:', err);
+        this.suggestionsLoading.set(false);
+      },
+    });
   }
 
   getFirstName(): string {
@@ -177,14 +195,15 @@ export class HomePageComponent implements OnInit {
   }
 
   getAvatarUrl(): string {
-    if (this.authUser?.avatar) {
+    const user = this.authUser();
+    if (user?.avatar) {
       // If user has uploaded avatar, use the backend API endpoint
       // Extract filename from the full path (e.g., "uploads/filename.jpg" -> "filename.jpg")
-      const filename = this.authUser.avatar.split('/').pop();
+      const filename = user.avatar.split('/').pop();
       return `http://localhost:9090/api/files/uploads/${filename}`;
     }
     // Fallback to generated avatar
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${this.authUser?.username || 'user'}`;
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}`;
   }
 
   getSuggestedUserAvatarUrl(user: UserSuggestion): string {
@@ -198,14 +217,16 @@ export class HomePageComponent implements OnInit {
   }
 
   handleLike(postId: string) {
-    this.posts = this.posts.map((post) =>
-      post.id === Number(postId)
-        ? {
+    this.posts.update(posts =>
+      posts.map((post) =>
+        post.id === Number(postId)
+          ? {
             ...post,
             isLiked: !post.isLiked,
             likes: post.isLiked ? post.likes - 1 : post.likes + 1,
           }
-        : post
+          : post
+      )
     );
   }
 
@@ -213,8 +234,8 @@ export class HomePageComponent implements OnInit {
     const userIdNum = Number(userId);
 
     // Check if it's a post author or a suggested user
-    const post = this.posts.find((p) => p.author.id === userIdNum);
-    const suggestedUser = this.suggestedUsers.find((u) => u.id === userIdNum);
+    const post = this.posts().find((p) => p.author.id === userIdNum);
+    const suggestedUser = this.suggestedUsers().find((u) => u.id === userIdNum);
 
     if (post) {
       // Handle post author follow/unfollow
@@ -224,8 +245,10 @@ export class HomePageComponent implements OnInit {
         // Unfollow
         this.userService.unfollowUser(userIdNum).subscribe({
           next: () => {
-            this.posts = this.posts.map((p) =>
-              p.author.id === userIdNum ? { ...p, subscribed: false } : p
+            this.posts.update(posts =>
+              posts.map((p) =>
+                p.author.id === userIdNum ? { ...p, subscribed: false } : p
+              )
             );
             this.snackBar.open('Unfollowed successfully', 'Close', { duration: 2000 });
           },
@@ -238,8 +261,10 @@ export class HomePageComponent implements OnInit {
         // Follow
         this.userService.followUser(userIdNum).subscribe({
           next: () => {
-            this.posts = this.posts.map((p) =>
-              p.author.id === userIdNum ? { ...p, subscribed: true } : p
+            this.posts.update(posts =>
+              posts.map((p) =>
+                p.author.id === userIdNum ? { ...p, subscribed: true } : p
+              )
             );
             this.snackBar.open('Followed successfully', 'Close', { duration: 2000 });
           },
@@ -257,10 +282,12 @@ export class HomePageComponent implements OnInit {
         // Unfollow
         this.userService.unfollowUser(userIdNum).subscribe({
           next: () => {
-            this.suggestedUsers = this.suggestedUsers.map((u) =>
-              u.id === userIdNum
-                ? { ...u, isFollowing: false, followerCount: Math.max(0, u.followerCount - 1) }
-                : u
+            this.suggestedUsers.update(users =>
+              users.map((u) =>
+                u.id === userIdNum
+                  ? { ...u, isFollowing: false, followerCount: Math.max(0, u.followerCount - 1) }
+                  : u
+              )
             );
             this.snackBar.open('Unfollowed successfully', 'Close', { duration: 2000 });
           },
@@ -273,10 +300,12 @@ export class HomePageComponent implements OnInit {
         // Follow
         this.userService.followUser(userIdNum).subscribe({
           next: () => {
-            this.suggestedUsers = this.suggestedUsers.map((u) =>
-              u.id === userIdNum
-                ? { ...u, isFollowing: true, followerCount: u.followerCount + 1 }
-                : u
+            this.suggestedUsers.update(users =>
+              users.map((u) =>
+                u.id === userIdNum
+                  ? { ...u, isFollowing: true, followerCount: u.followerCount + 1 }
+                  : u
+              )
             );
             this.snackBar.open('Followed successfully', 'Close', { duration: 2000 });
           },
@@ -290,19 +319,17 @@ export class HomePageComponent implements OnInit {
   }
 
   handleComment(postId: string) {
-    const post = this.posts.find((p) => p.id === Number(postId));
-    if (post) {
-      this.navigateTo.emit({ page: 'post', data: { post } });
-    }
+    this.router.navigate(['/post', postId]);
   }
 
   handlePostClick(post: Post) {
-    this.navigateTo.emit({ page: 'post', data: { post } });
+    this.router.navigate(['/post', post.id]);
   }
 
   handleUserClick(userId: string) {
     // Navigate to profile page - could be current user or other user
-    if (userId && userId !== this.currentUser?.id.toString()) {
+    const currentUserId = this.currentUser()?.id.toString();
+    if (userId && userId !== currentUserId) {
       // Navigate to other user's profile
       this.router.navigate(['/profile', userId]);
     } else {
@@ -387,7 +414,7 @@ export class HomePageComponent implements OnInit {
   }
 
   onSearchChange(query: string) {
-    this.searchQuery = query;
+    this.searchQuery.set(query);
     // Implement search functionality
   }
 

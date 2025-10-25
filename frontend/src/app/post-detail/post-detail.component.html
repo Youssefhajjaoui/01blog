@@ -1,0 +1,242 @@
+<app-navbar [currentPage]="'post'" [searchQuery]="''" (searchChange)="onSearchChange($event)"
+    (notificationClick)="onNotificationClick()" (userClick)="onUserClick()" (navigate)="onNavigate($event.page)">
+</app-navbar>
+
+<div class="post-detail-page">
+    <div class="container">
+        <!-- Back Button -->
+        <button class="back-btn" (click)="goBack()">
+            <svg class="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Feed
+        </button>
+
+        <div class="post-detail-grid">
+            <!-- Main Post Content -->
+            <div class="post-content-section">
+                <!-- Loading State -->
+                <div *ngIf="loading" class="loading-state">
+                    <div class="skeleton-post">
+                        <div class="skeleton-header">
+                            <div class="skeleton-avatar"></div>
+                            <div class="skeleton-info">
+                                <div class="skeleton-line skeleton-line-md"></div>
+                                <div class="skeleton-line skeleton-line-sm"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-text"></div>
+                        <div class="skeleton-text"></div>
+                        <div class="skeleton-image"></div>
+                    </div>
+                </div>
+
+                <!-- Post Content -->
+                <article *ngIf="!loading && post" class="post-card">
+                    <!-- Post Header -->
+                    <header class="post-header">
+                        <div class="author-info" (click)="navigateToProfile(post.author.id)">
+                            <img [src]="getUserAvatarUrl(post.author)" [alt]="post.author.username"
+                                class="author-avatar" />
+                            <div class="author-details">
+                                <h3 class="author-name">{{ post.author.username }}</h3>
+                                <time class="post-date">{{ formatDate(post.createdAt) }}</time>
+                            </div>
+                        </div>
+                        <button *ngIf="post.author.id !== currentUser?.id" class="follow-btn"
+                            [class.following]="post.isSubscribed" (click)="handleSubscribe()">
+                            {{ post.isSubscribed ? 'Following' : 'Follow' }}
+                        </button>
+                    </header>
+
+                    <!-- Post Title -->
+                    <h1 class="post-title">{{ post.title }}</h1>
+
+                    <!-- Post Tags -->
+                    <div *ngIf="post.tags && post.tags.length > 0" class="post-tags">
+                        <span *ngFor="let tag of post.tags" class="tag-badge">#{{ tag }}</span>
+                    </div>
+
+                    <!-- Post Media -->
+                    <div *ngIf="post.mediaUrl" class="post-media">
+                        <img *ngIf="post.mediaType === 'IMAGE'" [src]="getPostMediaUrl()" [alt]="post.title"
+                            class="media-image" />
+                        <video *ngIf="post.mediaType === 'VIDEO'" [src]="getPostMediaUrl()" controls
+                            class="media-video"></video>
+                        <audio *ngIf="post.mediaType === 'AUDIO'" [src]="getPostMediaUrl()" controls
+                            class="media-audio"></audio>
+                    </div>
+
+                    <!-- Post Content -->
+                    <div class="post-body" [innerHTML]="post.content"></div>
+
+                    <!-- Post Actions -->
+                    <footer class="post-actions">
+                        <button class="action-btn" [class.active]="post.isLiked" (click)="handleLike()">
+                            <svg class="action-icon" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            <span class="action-text">{{ post.likes }} {{ post.likes === 1 ? 'Like' : 'Likes' }}</span>
+                        </button>
+
+                        <button class="action-btn">
+                            <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span class="action-text">{{ post.comments }} {{ post.comments === 1 ? 'Comment' :
+                                'Comments' }}</span>
+                        </button>
+                    </footer>
+                </article>
+
+                <!-- Comments Section -->
+                <section *ngIf="!loading && post" class="comments-section">
+                    <h2 class="comments-title">Comments ({{ post.comments }})</h2>
+
+                    <!-- Add Comment Form -->
+                    <div *ngIf="currentUser" class="add-comment-form">
+                        <img [src]="getUserAvatarUrl(currentUser)" [alt]="currentUser.username"
+                            class="comment-avatar" />
+                        <div class="comment-input-wrapper">
+                            <textarea [(ngModel)]="newCommentContent" placeholder="Add a comment..."
+                                class="comment-input" rows="3" [disabled]="submittingComment"></textarea>
+                            <button class="submit-comment-btn" (click)="submitComment()"
+                                [disabled]="!newCommentContent.trim() || submittingComment">
+                                {{ submittingComment ? 'Posting...' : 'Post Comment' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Comments List -->
+                    <div class="comments-list">
+                        <!-- Loading Comments -->
+                        <div *ngIf="loadingComments" class="loading-comments">
+                            <div *ngFor="let item of [1, 2, 3]" class="skeleton-comment">
+                                <div class="skeleton-avatar"></div>
+                                <div class="skeleton-comment-content">
+                                    <div class="skeleton-line skeleton-line-sm"></div>
+                                    <div class="skeleton-line skeleton-line-md"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- No Comments -->
+                        <div *ngIf="!loadingComments && comments.length === 0" class="no-comments">
+                            <svg class="no-comments-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <p class="no-comments-text">No comments yet. Be the first to comment!</p>
+                        </div>
+
+                        <!-- Comment Items -->
+                        <div *ngFor="let comment of comments" class="comment-item">
+                            <img [src]="getUserAvatarUrl(comment.author)" [alt]="comment.author.username"
+                                class="comment-avatar" (click)="navigateToProfile(comment.author.id)" />
+                            <div class="comment-content">
+                                <div class="comment-header">
+                                    <span class="comment-author" (click)="navigateToProfile(comment.author.id)">{{
+                                        comment.author.username
+                                        }}</span>
+                                    <span class="comment-date">{{ formatTimeAgo(comment.createdAt) }}</span>
+                                </div>
+
+                                <!-- Comment Text (View Mode) -->
+                                <p *ngIf="editingCommentId !== comment.id" class="comment-text">{{ comment.content }}
+                                </p>
+
+                                <!-- Comment Edit Form -->
+                                <div *ngIf="editingCommentId === comment.id" class="comment-edit-form">
+                                    <textarea [(ngModel)]="editingCommentContent" class="comment-input" rows="2"
+                                        [disabled]="updatingComment"></textarea>
+                                    <div class="comment-edit-actions">
+                                        <button class="cancel-btn" (click)="cancelEditComment()"
+                                            [disabled]="updatingComment">
+                                            Cancel
+                                        </button>
+                                        <button class="save-btn" (click)="updateComment(comment.id)"
+                                            [disabled]="!editingCommentContent.trim() || updatingComment">
+                                            {{ updatingComment ? 'Saving...' : 'Save' }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Comment Actions -->
+                                <div class="comment-actions">
+                                    <button class="comment-action-btn" [class.active]="comment.isLiked"
+                                        (click)="likeComment(comment.id)">
+                                        <svg class="action-icon" fill="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                        <span>{{ comment.likes }}</span>
+                                    </button>
+
+                                    <button
+                                        *ngIf="comment.author.id === currentUser?.id && editingCommentId !== comment.id"
+                                        class="comment-action-btn" (click)="startEditComment(comment)">
+                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        *ngIf="comment.author.id === currentUser?.id && editingCommentId !== comment.id"
+                                        class="comment-action-btn delete-btn" (click)="deleteComment(comment.id)">
+                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Author Card -->
+                <div *ngIf="post" class="author-card">
+                    <div class="author-card-header">
+                        <img [src]="getUserAvatarUrl(post.author)" [alt]="post.author.username"
+                            class="author-card-avatar" />
+                    </div>
+                    <div class="author-card-body">
+                        <h3 class="author-card-name" (click)="navigateToProfile(post.author.id)">{{ post.author.username
+                            }}</h3>
+                        <p *ngIf="post.author.bio" class="author-card-bio">{{ post.author.bio }}</p>
+                        <div class="author-stats">
+                            <div class="stat">
+                                <span class="stat-value">{{ post.author.posts }}</span>
+                                <span class="stat-label">Posts</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ post.author.followers }}</span>
+                                <span class="stat-label">Followers</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ post.author.following }}</span>
+                                <span class="stat-label">Following</span>
+                            </div>
+                        </div>
+                        <button *ngIf="post.author.id !== currentUser?.id" class="follow-author-btn"
+                            [class.following]="post.isSubscribed" (click)="handleSubscribe()">
+                            {{ post.isSubscribed ? 'Following' : 'Follow' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- More from Author -->
+                <!-- This could be implemented later to show more posts from the same author -->
+            </aside>
+        </div>
+    </div>
+</div>

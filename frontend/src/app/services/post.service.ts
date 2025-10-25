@@ -15,7 +15,7 @@ import {
 export class PostService {
   private apiUrl = 'http://localhost:9090'; // replace with your backend URL
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getPosts(): Observable<Post[]> {
     return this.http
@@ -46,7 +46,13 @@ export class PostService {
   }
 
   getPost(postId: number): Observable<Post> {
-    return this.http.get<Post>(`${this.apiUrl}/posts/${postId}`, { withCredentials: true });
+    return this.http
+      .get<any>(`${this.apiUrl}/posts/${postId}`, { withCredentials: true })
+      .pipe(map(mapBackendPostToFrontend));
+  }
+
+  getPostById(postId: number): Observable<Post> {
+    return this.getPost(postId);
   }
 
   likePost(postId: number): Observable<void> {
@@ -133,30 +139,40 @@ export class PostService {
   }
 }
 function mapBackendPostToFrontend(raw: any): Post {
+  // Handle both 'author' and 'creator' field names from backend
+  const authorData = raw.author || raw.creator;
+
+  if (!authorData) {
+    console.error('Post missing author/creator data:', raw);
+    throw new Error('Post data is missing author information');
+  }
+
   return {
     id: raw.id,
     author: {
-      id: raw.author.id, // Keep as number
-      username: raw.author.username, // Use username instead of name
-      email: raw.author.email,
-      avatar: raw.author.avatar || raw.author.avatr, // Handle typo
-      bio: raw.author.bio,
-      role: raw.author.role,
-      followers: raw.author.followers || 0,
-      following: raw.author.following || 0,
-      posts: raw.author.posts || 0,
-      createdAt: raw.author.createdAt || new Date().toISOString(),
+      id: authorData.id, // Keep as number
+      username: authorData.username, // Use username instead of name
+      email: authorData.email || '',
+      avatar: authorData.avatar || authorData.image || authorData.avatr, // Handle typo and different field names
+      bio: authorData.bio || '',
+      role: authorData.role || 'USER',
+      followers: authorData.followers || 0,
+      following: authorData.following || 0,
+      posts: authorData.posts || 0,
+      createdAt: authorData.createdAt || new Date().toISOString(),
     },
     title: raw.title,
     content: raw.content,
-    excerpt: raw.excerpt,
+    excerpt: raw.excerpt || raw.content?.substring(0, 200),
     media: raw.media,
-    tags: raw.tags,
-    likes: raw.likes,
-    comments: raw.comments,
-    isLiked: raw.liked,
-    isSubscribed: raw.subscribed,
+    mediaUrl: raw.mediaUrl,
+    mediaType: raw.mediaType,
+    tags: raw.tags || [],
+    likes: raw.likes || 0,
+    comments: raw.comments || 0,
+    isLiked: raw.liked || false,
+    isSubscribed: raw.subscribed || false,
     createdAt: raw.createdAt,
-    visibility: raw.visibility,
+    visibility: raw.visibility || 'PUBLIC',
   };
 }

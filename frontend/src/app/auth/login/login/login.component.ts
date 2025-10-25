@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -9,55 +9,51 @@ import { AuthService } from '../../../services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+  styleUrls: ['./login.component.css'],
 })
 export class Login {
-  username = '';
-  password = '';
-  rememberMe = false;
-  showPassword = false;
-  isLoading = false;
-  errorMessage = '';
+  username = signal('');
+  password = signal('');
+  rememberMe = signal(false);
+  showPassword = signal(false);
+  isLoading = signal(false);
+  errorMessage = signal('');
 
-  // 👇 inject AuthService properly (you forgot `private`)
   constructor(private router: Router, private authService: AuthService) { }
-
   onSubmit() {
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
-    if (this.username && this.password) {
-      this.authService.login({ username: this.username, password: this.password }).subscribe({
+    if (this.username() && this.password()) {
+      this.authService.login({ username: this.username(), password: this.password() }).subscribe({
         next: (res) => {
           console.log('Login success', res);
-          // Optionally navigate somewhere
+          this.isLoading.set(false); // ✅ immediately stop loading
           this.router.navigate(['/']);
         },
         error: (err) => {
           console.error('Login failed:', err);
-          this.errorMessage = 'Invalid credentials';
+          this.errorMessage.set(err.error.message || 'Login failed');
+          this.isLoading.set(false); // ✅ stop loading on error
         },
-        complete: () => {
-          this.isLoading = false;
-        }
       });
     } else {
-      this.errorMessage = 'Please fill in all fields';
-      this.isLoading = false;
+      this.errorMessage.set('Please fill in all fields');
+      this.isLoading.set(false);
     }
   }
 
   togglePasswordVisibility() {
-    this.showPassword = !this.showPassword;
+    this.showPassword.update(v => !v);
   }
 
   fillDemoUser() {
-    this.username = 'user@demo.com';
-    this.password = 'demo12345';
+    this.username.set('user@demo.com');
+    this.password.set('demo12345');
   }
 
   fillDemoAdmin() {
-    this.username = 'admin@01blog.com';
-    this.password = 'demo12345';
+    this.username.set('admin@01blog.com');
+    this.password.set('demo12345');
   }
 }

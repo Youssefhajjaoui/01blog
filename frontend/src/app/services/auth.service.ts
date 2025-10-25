@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { User, LoginRequest, RegisterRequest } from '../models';
 
@@ -8,10 +8,15 @@ import { User, LoginRequest, RegisterRequest } from '../models';
 export class AuthService {
   private readonly API_URL = 'http://localhost:9090/api/auth';
 
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$ = this.currentUserSubject.asObservable();
+  // ✨ Use signal instead of BehaviorSubject
+  private currentUserSignal = signal<User | null>(null);
 
-  constructor(private http: HttpClient) {}
+  // Computed signals for derived state
+  public currentUser = this.currentUserSignal.asReadonly(); // Read-only version
+  public isAuthenticated = computed(() => this.currentUserSignal() !== null);
+  public isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
+
+  constructor(private http: HttpClient) { }
 
   /** Login - backend sets HttpOnly cookie automatically */
   login(loginData: LoginRequest): Observable<any> {
@@ -39,27 +44,23 @@ export class AuthService {
   logout(): Observable<void> {
     return this.http
       .post<void>(`${this.API_URL}/logout`, {}, { withCredentials: true })
-      .pipe(tap(() => this.currentUserSubject.next(null)));
+      .pipe(tap(() => this.currentUserSignal.set(null)));
   }
 
   /** Check authentication by requesting /me */
   checkAuth(): Observable<boolean> {
     return this.http.get<User>(`${this.API_URL}/me`, { withCredentials: true }).pipe(
-      tap((user) => this.currentUserSubject.next(user)),
+      tap((user) => this.currentUserSignal.set(user)),
       map(() => true),
       catchError(() => {
-        this.currentUserSubject.next(null);
+        this.currentUserSignal.set(null);
         return of(false);
       })
     );
   }
 
-  /** Current user observable */
+  /** Get current user value (for backwards compatibility) */
   getCurrentUser(): User | null {
-    return this.currentUserSubject.value;
-  }
-
-  isAdmin(): boolean {
-    return this.currentUserSubject.value?.role === 'ADMIN';
+    return this.currentUserSignal();
   }
 }

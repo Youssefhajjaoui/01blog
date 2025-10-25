@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ApplicationRef } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -17,16 +17,17 @@ import { AppPostCardComponent } from '../post-card/post-card.component';
   styleUrls: ['./profile.component.css'],
 })
 export class ProfileComponent implements OnInit {
-  currentUser: User | null = null; // The logged-in user
-  profileUser: User | null = null; // The user whose profile is being viewed
-  userPosts: Post[] = [];
-  activeTab: 'posts' | 'about' | 'media' = 'posts';
-  viewMode: 'grid' | 'list' = 'grid';
-  searchQuery: string = '';
-  state: { currentUser: User | null } = { currentUser: null };
-  isOwnProfile: boolean = true;
-  isFollowing: boolean = false;
-  loading: boolean = false;
+  // ✨ Convert all state to signals
+  currentUser = signal<User | null>(null); // The logged-in user
+  profileUser = signal<User | null>(null); // The user whose profile is being viewed
+  userPosts = signal<Post[]>([]);
+  activeTab = signal<'posts' | 'about' | 'media'>('posts');
+  viewMode = signal<'grid' | 'list'>('grid');
+  searchQuery = signal('');
+  state = signal<{ currentUser: User | null }>({ currentUser: null });
+  isOwnProfile = signal(true);
+  isFollowing = signal(false);
+  loading = signal(false);
 
   // Mock media items for the media tab
   mediaItems = [
@@ -40,14 +41,13 @@ export class ProfileComponent implements OnInit {
     private userService: UserService,
     private postService: PostService,
     private router: Router,
-    private route: ActivatedRoute,
-    private cdr: ChangeDetectorRef,
-    private appRef: ApplicationRef
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit() {
-    this.currentUser = this.authService.getCurrentUser();
-    this.state.currentUser = this.currentUser;
+    const user = this.authService.getCurrentUser();
+    this.currentUser.set(user);
+    this.state.set({ currentUser: user });
 
     // Watch for route parameter changes
     this.route.params.subscribe(params => {
@@ -56,37 +56,34 @@ export class ProfileComponent implements OnInit {
       console.log('Route params changed, userId:', userId);
 
       // Reset state when switching profiles
-      this.userPosts = [];
-      this.loading = true;
+      this.userPosts.set([]);
+      this.loading.set(true);
 
       if (userId) {
         // Viewing another user's profile
-        this.isOwnProfile = false;
+        this.isOwnProfile.set(false);
         this.loadUserProfile(Number(userId));
       } else {
         // Viewing own profile
-        this.isOwnProfile = true;
-        this.profileUser = this.currentUser;
-        this.loading = false;
+        this.isOwnProfile.set(true);
+        this.profileUser.set(this.currentUser());
+        this.loading.set(false);
         this.loadUserPosts();
-        // Force change detection for own profile
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
-        setTimeout(() => this.cdr.detectChanges(), 0);
+        // ✨ No more detectChanges - signals auto-update!
       }
     });
   }
 
   loadUserProfile(userId: number) {
-    this.loading = true;
-    this.cdr.detectChanges(); // Force change detection for loading state
+    this.loading.set(true);
+    // ✨ No more detectChanges - signals auto-update!
 
     this.userService.getUserProfile(userId).subscribe({
       next: (userProfile: any) => {
         console.log('Loaded user profile:', userProfile);
 
         // Map UserProfile to User
-        this.profileUser = {
+        this.profileUser.set({
           id: userProfile.id,
           username: userProfile.username,
           email: userProfile.email,
@@ -97,22 +94,18 @@ export class ProfileComponent implements OnInit {
           following: userProfile.followingCount || 0,
           posts: userProfile.postCount || 0,
           createdAt: userProfile.createdAt || new Date().toISOString()
-        };
+        });
 
-        // Force change detection after setting profileUser
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
-        setTimeout(() => this.cdr.detectChanges(), 0);
+        // ✨ No more detectChanges - signals auto-update!
 
         // Check if following this user
-        if (this.currentUser && this.profileUser.id !== this.currentUser.id) {
+        const currentUserId = this.currentUser()?.id;
+        const profileUserId = this.profileUser()?.id;
+        if (currentUserId && profileUserId && profileUserId !== currentUserId) {
           this.userService.isFollowing(userId).subscribe({
             next: (isFollowing) => {
-              this.isFollowing = isFollowing;
-              // Force change detection for follow status
-              this.cdr.markForCheck();
-              this.cdr.detectChanges();
-              setTimeout(() => this.cdr.detectChanges(), 0);
+              this.isFollowing.set(isFollowing);
+              // ✨ No more detectChanges!
             },
             error: (error) => {
               console.error('Error checking follow status:', error);
@@ -121,18 +114,13 @@ export class ProfileComponent implements OnInit {
         }
 
         this.loadUserPosts();
-        this.loading = false;
-        // Force change detection after loading complete
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
-        setTimeout(() => this.cdr.detectChanges(), 0);
+        this.loading.set(false);
+        // ✨ No more detectChanges!
       },
       error: (error) => {
         console.error('Error loading user profile:', error);
-        this.loading = false;
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
-        setTimeout(() => this.cdr.detectChanges(), 0);
+        this.loading.set(false);
+        // ✨ No more detectChanges!
         // Redirect to own profile if user not found
         this.router.navigate(['/profile']);
       }
@@ -140,24 +128,26 @@ export class ProfileComponent implements OnInit {
   }
 
   loadUserPosts() {
-    if (!this.profileUser) return;
+    const user = this.profileUser();
+    if (!user) return;
 
     this.postService.getPosts().subscribe({
       next: (posts) => {
         // Filter posts by profile user
-        this.userPosts = posts.filter((post) => post.author.id === this.profileUser?.id);
-        console.log('Loaded user posts:', this.userPosts.length, 'posts for user', this.profileUser?.username);
-        this.cdr.detectChanges(); // Force change detection after loading posts
+        const filtered = posts.filter((post) => post.author.id === user.id);
+        this.userPosts.set(filtered);
+        console.log('Loaded user posts:', filtered.length, 'posts for user', user.username);
+        // ✨ No more detectChanges - signals auto-update!
       },
       error: (error) => {
         console.error('Error loading posts:', error);
-        this.cdr.detectChanges();
+        // ✨ No more detectChanges!
       },
     });
   }
 
   getAvatarUrl(): string {
-    const user = this.profileUser || this.currentUser;
+    const user = this.profileUser() || this.currentUser();
     if (user?.avatar) {
       const filename = user.avatar.split('/').pop();
       return `http://localhost:9090/api/files/uploads/${filename}`;
@@ -166,11 +156,11 @@ export class ProfileComponent implements OnInit {
   }
 
   setActiveTab(tab: 'posts' | 'about' | 'media') {
-    this.activeTab = tab;
+    this.activeTab.set(tab);
   }
 
   setViewMode(mode: 'grid' | 'list') {
-    this.viewMode = mode;
+    this.viewMode.set(mode);
   }
 
   navigateToSettings() {
@@ -183,24 +173,20 @@ export class ProfileComponent implements OnInit {
   }
 
   toggleFollow() {
-    if (!this.profileUser || this.isOwnProfile) return;
+    const user = this.profileUser();
+    if (!user || this.isOwnProfile()) return;
 
-    if (this.isFollowing) {
+    if (this.isFollowing()) {
       // Unfollow
-      this.userService.unfollowUser(this.profileUser.id).subscribe({
+      this.userService.unfollowUser(user.id).subscribe({
         next: () => {
-          this.isFollowing = false;
-          if (this.profileUser) {
-            this.profileUser.followers = Math.max(0, (this.profileUser.followers || 0) - 1);
-          }
-          // Force change detection multiple times to ensure UI updates
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
-          this.appRef.tick();
-          setTimeout(() => {
-            this.cdr.detectChanges();
-            this.appRef.tick();
-          }, 0);
+          this.isFollowing.set(false);
+          // Update follower count
+          this.profileUser.update(current => current ? {
+            ...current,
+            followers: Math.max(0, (current.followers || 0) - 1)
+          } : null);
+          // ✨ No more detectChanges - signals auto-update!
         },
         error: (error) => {
           console.error('Error unfollowing user:', error);
@@ -208,20 +194,15 @@ export class ProfileComponent implements OnInit {
       });
     } else {
       // Follow
-      this.userService.followUser(this.profileUser.id).subscribe({
+      this.userService.followUser(user.id).subscribe({
         next: () => {
-          this.isFollowing = true;
-          if (this.profileUser) {
-            this.profileUser.followers = (this.profileUser.followers || 0) + 1;
-          }
-          // Force change detection multiple times to ensure UI updates
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
-          this.appRef.tick();
-          setTimeout(() => {
-            this.cdr.detectChanges();
-            this.appRef.tick();
-          }, 0);
+          this.isFollowing.set(true);
+          // Update follower count
+          this.profileUser.update(current => current ? {
+            ...current,
+            followers: (current.followers || 0) + 1
+          } : null);
+          // ✨ No more detectChanges - signals auto-update!
         },
         error: (error) => {
           console.error('Error following user:', error);
@@ -235,7 +216,7 @@ export class ProfileComponent implements OnInit {
   }
 
   onSearchChange(query: string) {
-    this.searchQuery = query;
+    this.searchQuery.set(query);
     // Implement search functionality
   }
 
@@ -303,21 +284,26 @@ export class ProfileComponent implements OnInit {
   }
 
   onPostDeleted(postId: number) {
-    this.userPosts = this.userPosts.filter((p) => p.id !== postId);
+    this.userPosts.update(posts => posts.filter((p) => p.id !== postId));
     console.log('Post deleted:', postId);
   }
 
   onPostUpdated(updatedPost: Post) {
-    const index = this.userPosts.findIndex((p) => p.id === updatedPost.id);
-    if (index !== -1) {
-      this.userPosts[index] = updatedPost;
-      console.log('Post updated:', updatedPost);
-    }
+    this.userPosts.update(posts => {
+      const index = posts.findIndex((p) => p.id === updatedPost.id);
+      if (index !== -1) {
+        const newPosts = [...posts];
+        newPosts[index] = updatedPost;
+        console.log('Post updated:', updatedPost);
+        return newPosts;
+      }
+      return posts;
+    });
   }
 
   // Helper methods for post interactions
   private handleLike(postId: string) {
-    this.userPosts = this.userPosts.map((post) =>
+    this.userPosts.update(posts => posts.map((post) =>
       post.id === Number(postId)
         ? {
           ...post,
@@ -325,17 +311,17 @@ export class ProfileComponent implements OnInit {
           likes: post.isLiked ? post.likes - 1 : post.likes + 1,
         }
         : post
-    );
+    ));
   }
 
   private handleSubscribe(userId: string) {
-    this.userPosts = this.userPosts.map((post) =>
+    this.userPosts.update(posts => posts.map((post) =>
       post.author.id === Number(userId) ? { ...post, isSubscribed: !post.isSubscribed } : post
-    );
+    ));
   }
 
   private handleComment(postId: string) {
-    const post = this.userPosts.find((p) => p.id === Number(postId));
+    const post = this.userPosts().find((p) => p.id === Number(postId));
     if (post) {
       console.log('Navigate to post comments:', post);
       // TODO: Implement comment navigation
