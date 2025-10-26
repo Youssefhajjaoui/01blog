@@ -37,6 +37,7 @@ import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.SubscriptionRepository;
 import com.example.demo.services.FileStorageService;
 import com.example.demo.security.JwtUtil;
+import com.example.demo.security.TokenBlacklistService;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -57,6 +58,7 @@ public class AuthController {
     private final FileStorageService fileStorageService;
     private final PostRepository postRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public AuthController(UserRepository repo,
             PasswordEncoder encoder,
@@ -65,7 +67,8 @@ public class AuthController {
             ObjectMapper objectMapper,
             FileStorageService fileStorageService,
             PostRepository postRepository,
-            SubscriptionRepository subscriptionRepository) {
+            SubscriptionRepository subscriptionRepository,
+            TokenBlacklistService tokenBlacklistService) {
         this.userRepository = repo;
         this.passwordEncoder = encoder;
         this.jwtUtil = jwtUtil;
@@ -74,6 +77,7 @@ public class AuthController {
         this.fileStorageService = fileStorageService;
         this.postRepository = postRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @PostMapping(value = "/register")
@@ -154,9 +158,26 @@ public class AuthController {
     }
 
     @GetMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         try {
-            // Clear the JWT cookie
+            // Extract token from request to blacklist it
+            String token = null;
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if ("jwt".equals(cookie.getName())) {
+                        token = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+            
+            // Blacklist the token so it cannot be used anymore
+            if (token != null && !token.isEmpty()) {
+                tokenBlacklistService.blacklistToken(token);
+            }
+            
+            // Clear the JWT cookie on client side
             ResponseCookie cookie = ResponseCookie.from("jwt", "")
                     .httpOnly(true)
                     .secure(false)

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.example.demo.security.JwtUtil;
+import com.example.demo.security.TokenBlacklistService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,10 +24,12 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserRepository userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthFilter(JwtUtil jwtUtil, UserRepository uds) {
+    public JwtAuthFilter(JwtUtil jwtUtil, UserRepository uds, TokenBlacklistService tokenBlacklistService) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = uds;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -65,6 +68,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             response.setContentType("application/json");
             response.getWriter().write(
                     "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
+            return;
+        }
+
+        // Check if token is blacklisted (invalidated by logout)
+        if (tokenBlacklistService.isTokenBlacklisted(token)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write(
+                    "{\"error\":\"Unauthorized\",\"message\":\"Token has been revoked. Please log in again.\"}");
             return;
         }
 
