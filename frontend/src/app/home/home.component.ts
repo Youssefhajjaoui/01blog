@@ -9,8 +9,8 @@ import { UserService } from '../services/user.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
 import { SuggestionsService } from '../services/suggestions.service';
 import { NotificationService } from '../services/notification.service';
+import { NotificationService as UINotificationService } from '../services/ui-notification.service';
 import { User, Post, AppState, UserSuggestion } from '../models';
-import { MatSnackBar } from '@angular/material/snack-bar';
 
 const trendingTags = [
   { tag: 'react', count: 1450 },
@@ -42,7 +42,7 @@ export class HomePageComponent implements OnInit {
   // ✨ Convert to signals - no more ChangeDetectorRef needed!
   posts = signal<Post[]>([]);
   loading = signal(true);
-  filter = signal<'all' | 'following' | 'trending'>('all');
+  filter = signal<'all' | 'following'>('all');
   viewMode = signal<'list' | 'grid'>('list');
   trendingTags = signal(trendingTags);
   searchQuery = signal('');
@@ -64,8 +64,6 @@ export class HomePageComponent implements OnInit {
       switch (this.filter()) {
         case 'following':
           return post.isSubscribed;
-        case 'trending':
-          return post.likes > 100;
         default:
           return true;
       }
@@ -89,7 +87,7 @@ export class HomePageComponent implements OnInit {
     private router: Router,
     private suggestionsService: SuggestionsService,
     private notificationService: NotificationService,
-    private snackBar: MatSnackBar
+    private uiNotificationService: UINotificationService
   ) { }
 
   ngOnInit() {
@@ -113,14 +111,18 @@ export class HomePageComponent implements OnInit {
       this.currentUser.set(this.state.currentUser);
     }
 
-    // Load notifications from backend and connect to SSE
-    this.notificationService.loadNotifications().subscribe();
-    this.notificationService.loadUnreadCount().subscribe();
-    this.notificationService.connectToNotifications();
+    // Only load notifications if user is authenticated
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      // Load notifications from backend and connect to SSE
+      this.notificationService.loadNotifications().subscribe();
+      this.notificationService.loadUnreadCount().subscribe();
+      this.notificationService.connectToNotifications();
+    }
   }
   onPostDeleted(postId: number) {
     this.posts.update(posts => posts.filter((p) => p.id !== postId));
-    this.snackBar.open('Post deleted', 'Close', { duration: 2000 });
+    // Success message is handled by the post-card component
   }
 
   onPostUpdated(updatedPost: Post) {
@@ -134,7 +136,7 @@ export class HomePageComponent implements OnInit {
       }
       return posts;
     });
-    this.snackBar.open('Post updated successfully', 'Close', { duration: 2000 });
+    this.uiNotificationService.success('Post updated successfully');
   }
 
   loadPosts() {
@@ -247,14 +249,14 @@ export class HomePageComponent implements OnInit {
           next: () => {
             this.posts.update(posts =>
               posts.map((p) =>
-                p.author.id === userIdNum ? { ...p, subscribed: false } : p
+                p.author.id === userIdNum ? { ...p, isSubscribed: false } : p
               )
             );
-            this.snackBar.open('Unfollowed successfully', 'Close', { duration: 2000 });
+            this.uiNotificationService.success('Unfollowed successfully');
           },
           error: (error) => {
             console.error('Error unfollowing user:', error);
-            this.snackBar.open('Failed to unfollow user', 'Close', { duration: 2000 });
+            this.uiNotificationService.error('Failed to unfollow user');
           },
         });
       } else {
@@ -263,14 +265,14 @@ export class HomePageComponent implements OnInit {
           next: () => {
             this.posts.update(posts =>
               posts.map((p) =>
-                p.author.id === userIdNum ? { ...p, subscribed: true } : p
+                p.author.id === userIdNum ? { ...p, isSubscribed: true } : p
               )
             );
-            this.snackBar.open('Followed successfully', 'Close', { duration: 2000 });
+            this.uiNotificationService.success('Followed successfully');
           },
           error: (error) => {
             console.error('Error following user:', error);
-            this.snackBar.open('Failed to follow user', 'Close', { duration: 2000 });
+            this.uiNotificationService.error('Failed to follow user');
           },
         });
       }
@@ -289,11 +291,11 @@ export class HomePageComponent implements OnInit {
                   : u
               )
             );
-            this.snackBar.open('Unfollowed successfully', 'Close', { duration: 2000 });
+            this.uiNotificationService.success('Unfollowed successfully');
           },
           error: (error) => {
             console.error('Error unfollowing user:', error);
-            this.snackBar.open('Failed to unfollow user', 'Close', { duration: 2000 });
+            this.uiNotificationService.error('Failed to unfollow user');
           },
         });
       } else {
@@ -307,11 +309,11 @@ export class HomePageComponent implements OnInit {
                   : u
               )
             );
-            this.snackBar.open('Followed successfully', 'Close', { duration: 2000 });
+            this.uiNotificationService.success('Followed successfully');
           },
           error: (error) => {
             console.error('Error following user:', error);
-            this.snackBar.open('Failed to follow user', 'Close', { duration: 2000 });
+            this.uiNotificationService.error('Failed to follow user');
           },
         });
       }

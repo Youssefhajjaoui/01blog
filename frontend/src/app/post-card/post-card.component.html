@@ -425,7 +425,7 @@
           <p>No comments yet. Be the first to comment!</p>
         </div>
 
-        <div *ngIf="!loadingComments() && comments.length > 0" class="comments-list">
+        <div *ngIf="!loadingComments() && comments().length > 0" class="comments-list">
           <div *ngFor="let comment of comments()" class="comment-item">
             <div class="comment-avatar">
               <img *ngIf="comment.author.avatar" [src]="getAvatarUrl(comment.author.avatar)"

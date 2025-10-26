@@ -38,7 +38,7 @@ public class LikeController {
 
     // Like a post
     @PostMapping("/post/{postId}")
-    public ResponseEntity<Like> likePost(@PathVariable Long postId,
+    public ResponseEntity<Void> likePost(@PathVariable Long postId,
             @AuthenticationPrincipal User principal) {
         if (principal == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -58,8 +58,8 @@ public class LikeController {
         Like like = new Like();
         like.setCreator(currentUser);
         like.setPost(optPost.get());
-        Like saved = likeRepository.save(like);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        likeRepository.save(like);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     // Unlike a post

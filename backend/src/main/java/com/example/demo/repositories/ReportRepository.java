@@ -22,6 +22,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     // find Reports by reported user
     List<Report> findByReportedUser(User reportedUser);
     
+    // find Reports by reported post
+    List<Report> findByReportedPost(Post reportedPost);
+    
     // Count reports by status
     long countByStatus(ReportStatus status);
 }

@@ -65,23 +65,32 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // Load notifications from backend first
-    this.notificationService.loadNotifications().subscribe();
-    this.notificationService.loadUnreadCount().subscribe();
+    // Only load notifications if user is authenticated
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      // Load notifications from backend first
+      this.notificationService.loadNotifications().subscribe();
+      this.notificationService.loadUnreadCount().subscribe();
 
-    // Subscribe to notifications
-    this.notificationService.getNotifications().subscribe((notifications) => {
-      this.notifications.set(notifications);
-      // ✨ No more detectChanges!
-    });
+      // Subscribe to notifications
+      this.notificationService.notifications$.subscribe((notifications) => {
+        this.notifications.set(notifications);
+        // ✨ No more detectChanges!
+      });
 
-    this.notificationService.getUnreadCount().subscribe((count) => {
-      this.unreadCount.set(count);
-      // ✨ No more detectChanges!
-    });
+      this.notificationService.unreadCount$.subscribe((count) => {
+        this.unreadCount.set(count);
+        // ✨ No more detectChanges!
+      });
 
-    // Connect to SSE notifications for real-time updates
-    this.notificationService.connectToNotifications();
+      // Connect to SSE notifications for real-time updates
+      this.notificationService.connectToNotifications();
+    } else {
+      // Clear notifications when user is not authenticated
+      this.notifications.set([]);
+      this.unreadCount.set(0);
+      this.notificationService.disconnect();
+    }
   }
 
   ngOnDestroy() {
@@ -140,7 +149,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   onNotificationClick() {
-    this.showNotificationPanel.update(v => !v);
+    this.showNotificationPanel.update((v) => !v);
     this.notificationClick.emit();
   }
 
@@ -149,19 +158,36 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   toggleNotificationPanel() {
-    this.showNotificationPanel.update(v => !v);
+    this.showNotificationPanel.update((v) => !v);
   }
 
   markNotificationAsRead(notificationId: number) {
-    this.notificationService.markAsRead(notificationId);
+    this.notificationService.markAsRead(notificationId).subscribe({
+      next(value) {},
+      error(value) {
+        console.error(value);
+      },
+    });
   }
 
   markAllNotificationsAsRead() {
-    this.notificationService.markAllAsRead();
+    this.notificationService.markAllAsRead().subscribe({
+      next(value) {
+        // unreadCount =
+      },
+      error(value) {
+        console.error(value);
+      },
+    });
   }
 
   clearAllNotifications() {
-    this.notificationService.clearAll();
+    this.notificationService.clearAll().subscribe({
+      next(value) {},
+      error(value) {
+        console.error(value);
+      },
+    });
   }
 
   formatNotificationDate(dateString: string): string {
@@ -173,7 +199,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   toggleUserDropdown() {
-    this.showUserDropdown.update(v => !v);
+    this.showUserDropdown.update((v) => !v);
   }
 
   closeUserDropdown() {
@@ -232,11 +258,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     if (suggestion.type === 'user') {
       // Navigate to user profile using Angular Router
-      this.router.navigate(['/profile', suggestion.id.toString()]).then(() => {
-        // ✨ No more detectChanges - signals auto-update!
-      }).catch(error => {
-        console.error('Navigation error:', error);
-      });
+      this.router
+        .navigate(['/profile', suggestion.id.toString()])
+        .then(() => {
+          // ✨ No more detectChanges - signals auto-update!
+        })
+        .catch((error) => {
+          console.error('Navigation error:', error);
+        });
     }
   }
 

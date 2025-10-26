@@ -21,7 +21,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   posts = signal<Post[]>([]);
   reports = signal<Report[]>([]);
   stats = signal<DashboardStats | null>(null);
-  constructor(private adminService: AdminService, private router: Router) {}
+  constructor(private adminService: AdminService, private router: Router) { }
 
   // UI state
   activeTab = signal('overview');
@@ -361,6 +361,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   onClickReport(postId: number | null) {
+    console.warn(postId);
     if (postId !== null) {
       this.router.navigate([`/post/${postId}`]);
     }
@@ -522,6 +523,87 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error dismissing report:', error);
           // You could add a toast notification here
+        },
+      });
+  }
+
+  // Handle reported user actions
+  banReportedUser(report: Report) {
+    const targetUser = this.getTargetUser(report);
+    if (!targetUser || this.isAdminUser(targetUser)) {
+      alert('Cannot ban this user');
+      return;
+    }
+
+    this.adminService
+      .banUser(targetUser.id, false, 30, 'days', report.reason)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('Reported user banned:', targetUser.id);
+          // Mark report as resolved
+          this.reports.update((reports) => {
+            const reportIndex = reports.findIndex((r) => r.id === report.id);
+            if (reportIndex !== -1) {
+              const newReports = [...reports];
+              newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
+              return newReports;
+            }
+            return reports;
+          });
+          // Update user status
+          this.users.update((users) => {
+            const userIndex = users.findIndex((u) => u.id === targetUser.id);
+            if (userIndex !== -1) {
+              const newUsers = [...users];
+              newUsers[userIndex] = { ...newUsers[userIndex], banned: true };
+              return newUsers;
+            }
+            return users;
+          });
+          this.updateTabBadges();
+          setTimeout(() => this.loadDashboardData(), 500);
+        },
+        error: (error) => {
+          console.error('Error banning reported user:', error);
+        },
+      });
+  }
+
+  deleteReportedUser(report: Report) {
+    const targetUser = this.getTargetUser(report);
+    if (!targetUser || this.isAdminUser(targetUser)) {
+      alert('Cannot delete this user');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete user "${targetUser.username}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    this.adminService
+      .deleteUser(targetUser.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('Reported user deleted:', targetUser.id);
+          // Mark report as resolved
+          this.reports.update((reports) => {
+            const reportIndex = reports.findIndex((r) => r.id === report.id);
+            if (reportIndex !== -1) {
+              const newReports = [...reports];
+              newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
+              return newReports;
+            }
+            return reports;
+          });
+          // Remove user from list
+          this.users.update((users) => users.filter((u) => u.id !== targetUser.id));
+          this.updateTabBadges();
+          setTimeout(() => this.loadDashboardData(), 500);
+        },
+        error: (error) => {
+          console.error('Error deleting reported user:', error);
         },
       });
   }

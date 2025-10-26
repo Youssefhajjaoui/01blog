@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { NotificationService as UINotificationService } from '../../../services/ui-notification.service';
 
 @Component({
   selector: 'app-signup',
@@ -24,7 +25,7 @@ export class Signup {
   isLoading = signal(false);
   errorMessage = signal('');
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, private notificationService: UINotificationService) { }
 
   async onSubmit() {
     this.isLoading.set(true);
@@ -101,7 +102,7 @@ export class Signup {
 
       // Show success message and redirect to login
       this.errorMessage.set('');
-      alert('Account created successfully! Please login with your credentials.');
+      this.notificationService.success('Account created successfully! Please login with your credentials.');
       this.router.navigate(['/auth/login']);
     } catch (err: any) {
       console.error('Signup error:', err);

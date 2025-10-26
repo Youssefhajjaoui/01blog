@@ -119,7 +119,7 @@
                         </svg>
                         <!-- Notification Counter -->
                         <span *ngIf="unreadCount() > 0" class="notification-badge">{{ unreadCount() > 99 ? '99+' :
-                            unreadCount }}</span>
+                            unreadCount() }}</span>
                     </button>
 
                     <!-- Notification Panel -->
@@ -159,21 +159,21 @@
                             <!-- Notifications List -->
                             <div *ngIf="notifications().length > 0" class="notifications-list">
                                 <div *ngFor="let notification of notifications()" class="notification-item"
-                                    [class.unread]="!notification.read"
+                                    [class.unread]="!notification.isRead"
                                     (click)="markNotificationAsRead(notification.id)">
                                     <div class="notification-content">
                                         <div class="notification-header">
-                                            <h4 class="notification-title">{{ notification.title }}</h4>
+                                            <h4 class="notification-title">{{ notification.message }}</h4>
                                             <span class="notification-time">{{
-                                                formatNotificationDate(notification.creationDate) }}</span>
+                                                formatNotificationDate(notification.createdAt) }}</span>
                                         </div>
-                                        <p class="notification-message">{{ notification.content }}</p>
+                                        <p class="notification-message">{{ notification.message }}</p>
                                         <div class="notification-meta">
-                                            <span class="notification-creator">by {{ notification.creatorName }}</span>
+                                            <span class="notification-creator">{{ notification.type }}</span>
                                         </div>
                                     </div>
                                     <div class="notification-status">
-                                        <div *ngIf="!notification.read" class="unread-indicator"></div>
+                                        <div *ngIf="!notification.isRead" class="unread-indicator"></div>
                                     </div>
                                 </div>
                             </div>

@@ -1,10 +1,20 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Post, User, Comment, CreateCommentRequest } from '../models';
 import { AuthService } from '../services/auth.service';
 import { PostService } from '../services/post.service';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../services/user.service';
+import { NotificationService as UINotificationService } from '../services/ui-notification.service';
 
 @Component({
   selector: 'app-post-card',
@@ -13,7 +23,7 @@ import { UserService } from '../services/user.service';
   templateUrl: './post-card.component.html',
   styleUrls: ['./post-card.component.css'],
 })
-export class AppPostCardComponent implements OnInit {
+export class AppPostCardComponent implements OnInit, OnChanges {
   @Input() post!: Post;
   @Input() variant: string = 'feed';
   @Input() showExcerpt: boolean = false;
@@ -60,7 +70,8 @@ export class AppPostCardComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private postService: PostService,
-    private userService: UserService
+    private userService: UserService,
+    private notificationService: UINotificationService
   ) {}
 
   reportReasons = [
@@ -113,6 +124,15 @@ export class AppPostCardComponent implements OnInit {
     this.localSubscribed.set(this.post.isSubscribed);
     this.localLikes.set(this.post.likes);
     this.currentUser = this.authService.getCurrentUser();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['post'] && changes['post'].currentValue) {
+      const post = changes['post'].currentValue;
+      this.localLiked.set(post.isLiked);
+      this.localSubscribed.set(post.isSubscribed);
+      this.localLikes.set(post.likes);
+    }
   }
 
   get isOwner(): boolean {
@@ -283,6 +303,9 @@ export class AppPostCardComponent implements OnInit {
           mediaUrl: updated.mediaUrl,
           mediaType: updated.mediaType,
           updatedAt: updated.updatedAt,
+          media: updated.mediaType && updated.mediaUrl
+            ? [{ type: updated.mediaType, url: updated.mediaUrl ?? '' }]
+            : [],
         };
 
         // Update the excerpt if it's derived from content
@@ -296,11 +319,11 @@ export class AppPostCardComponent implements OnInit {
         // Emit the updated post to parent component
         this.updated.emit(this.post);
 
-        console.log('Post updated successfully:', this.post);
+        this.notificationService.success('Post updated successfully');
       },
       error: (err) => {
         console.error('Update failed:', err);
-        alert('Could not update post');
+        this.notificationService.error('Could not update post. Please try again.');
       },
     });
   }
@@ -313,7 +336,7 @@ export class AppPostCardComponent implements OnInit {
     const previousLikes = this.localLikes();
 
     // Toggle immediately for UX
-    this.localLiked.update((v) => !v);
+    this.localLiked.set(!this.localLiked());
     this.localLikes.update((count) => (this.localLiked() ? count + 1 : count - 1));
 
     // Call backend
@@ -325,6 +348,7 @@ export class AppPostCardComponent implements OnInit {
       next: () => {
         // success, nothing else to do
         this.like.emit({ postId: this.post.id });
+        // this.localLiked.update
       },
       error: (err) => {
         console.error('Failed to toggle like', err);
@@ -337,32 +361,10 @@ export class AppPostCardComponent implements OnInit {
 
   handleSubscribe(event: Event) {
     event.stopPropagation();
-    console.warn(this.localSubscribed());
-    if (this.localSubscribed()) {
-      this.userService.unfollowUser(this.post.author.id).subscribe({
-        next: () => {
-          this.localSubscribed.set(false);
-          this.subscribe.emit({ userId: this.post.author.id });
-        },
-        error: (error) => {
-          console.error('Error unfollowing user:', error);
-          // Revert the UI state on error
-          this.localSubscribed.set(true);
-        },
-      });
-    } else {
-      this.userService.followUser(this.post.author.id).subscribe({
-        next: () => {
-          this.localSubscribed.set(true);
-          this.subscribe.emit({ userId: this.post.author.id });
-        },
-        error: (error) => {
-          console.error('Error following user:', error);
-          // Revert the UI state on error
-          this.localSubscribed.set(false);
-        },
-      });
-    }
+
+    // Just emit the event to parent - parent will handle the API call
+    // The UI state will be updated when the parent updates the post data
+    this.subscribe.emit({ userId: this.post.author.id });
   }
 
   handleComment(event: Event) {
@@ -377,19 +379,21 @@ export class AppPostCardComponent implements OnInit {
 
   handleDelete(event: Event) {
     event.stopPropagation();
-    console.log('Delete clicked for post:', this.post?.id);
 
     if (!this.post?.id) {
-      console.warn('No post id found');
+      this.notificationService.error('Unable to delete post: Post ID not found');
       return;
     }
 
     this.postService.deletePost(this.post.id).subscribe({
       next: () => {
-        console.warn('deleted', this.post.id);
+        this.notificationService.success('Post deleted successfully');
         this.deleted.emit(this.post.id);
       },
-      error: (err) => console.error('Delete failed:', err),
+      error: (err) => {
+        console.error('Delete failed:', err);
+        this.notificationService.error('Failed to delete post. Please try again.');
+      },
     });
   }
 
@@ -434,14 +438,15 @@ export class AppPostCardComponent implements OnInit {
         this.showReportModal.set(false);
         this.selectedReason.set('');
         this.reportDetails.set('');
-        alert('Report submitted successfully. Thank you for helping keep our community safe.');
-        console.log('Report submitted:', response);
+        this.notificationService.success(
+          'Report submitted successfully. Thank you for helping keep our community safe.'
+        );
         // ✨ No more detectChanges!
       },
       error: (err) => {
         this.submittingReport.set(false);
         console.error('Failed to submit report:', err);
-        alert('Failed to submit report. Please try again.');
+        this.notificationService.error('Failed to submit report. Please try again.');
       },
     });
   }
@@ -522,7 +527,7 @@ export class AppPostCardComponent implements OnInit {
         };
 
         this.comments.update((comments) => [newComment, ...comments]); // Add to beginning of array
-        console.log('Comment created successfully:', response);
+        this.notificationService.success('Comment posted successfully');
         // ✨ No more detectChanges!
       },
       error: (err: any) => {
@@ -543,12 +548,12 @@ export class AppPostCardComponent implements OnInit {
     this.postService.deleteComment(commentId).subscribe({
       next: () => {
         this.comments.update((comments) => comments.filter((c) => c.id !== commentId));
-        console.log('Comment deleted successfully');
+        this.notificationService.success('Comment deleted successfully');
         // ✨ No more detectChanges!
       },
       error: (err) => {
         console.error('Failed to delete comment:', err);
-        alert('Failed to delete comment. Please try again.');
+        this.notificationService.error('Failed to delete comment. Please try again.');
       },
     });
   }
@@ -635,7 +640,7 @@ export class AppPostCardComponent implements OnInit {
           return comments;
         });
 
-        console.log('Comment updated successfully:', response);
+        this.notificationService.success('Comment updated successfully');
       },
       error: (err: any) => {
         console.error('Update error:', err);

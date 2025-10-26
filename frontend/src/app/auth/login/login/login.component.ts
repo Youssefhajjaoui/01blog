@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { NotificationService as UINotificationService } from '../../../services/ui-notification.service';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +20,7 @@ export class Login {
   isLoading = signal(false);
   errorMessage = signal('');
 
-  constructor(private router: Router, private authService: AuthService) { }
+  constructor(private router: Router, private authService: AuthService, private notificationService: UINotificationService) { }
   onSubmit() {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -28,12 +29,14 @@ export class Login {
       this.authService.login({ username: this.username(), password: this.password() }).subscribe({
         next: (res) => {
           console.log('Login success', res);
+          this.notificationService.success('Welcome back!');
           this.isLoading.set(false); // ✅ immediately stop loading
           this.router.navigate(['/']);
         },
         error: (err) => {
           console.error('Login failed:', err);
           this.errorMessage.set(err.error.message || 'Login failed');
+          this.notificationService.error(err.error.message || 'Login failed');
           this.isLoading.set(false); // ✅ stop loading on error
         },
       });
