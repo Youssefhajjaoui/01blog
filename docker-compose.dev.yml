@@ -16,6 +16,18 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    command: redis-server --appendonly yes
+
   backend:
     build:
       context: ./backend
@@ -25,12 +37,14 @@ services:
       - "9090:9090"
     depends_on:
       - postgres
+      - redis
     volumes:
       - ./backend/src:/app/src
       - ./backend/pom.xml:/app/pom.xml
       - maven_cache:/root/.m2
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - REDIS_HOST=redis
     networks:
       - app-network
 
@@ -58,6 +72,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   maven_cache:
   node_modules:
 
