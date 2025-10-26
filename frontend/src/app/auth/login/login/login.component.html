@@ -14,11 +14,11 @@
 
     <form (ngSubmit)="onSubmit()" class="auth-form">
       <div class="form-group">
-        <label for="username">Email Address</label>
+        <label for="username">Username</label>
         <div class="input-wrapper">
           <img src="assets/mail.png" alt="Email" class="logo-img">
           <input type="text" id="username" name="username" [ngModel]="username()" (ngModelChange)="username.set($event)"
-            placeholder="Enter your email" required autocomplete="username" />
+            placeholder="Enter your username" required autocomplete="username" />
         </div>
       </div>
 

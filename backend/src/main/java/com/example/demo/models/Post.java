@@ -63,6 +63,9 @@ public class Post {
 	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
 	private List<Comment> comments;
 
+	@OneToMany(mappedBy = "reportedPost", cascade = CascadeType.ALL)
+	private List<Report> reports;
+
 	public Post() {
 	}
 
@@ -144,5 +147,13 @@ public class Post {
 
 	public List<Comment> getComments() {
 		return this.comments;
+	}
+
+	public List<Report> getReports() {
+		return this.reports;
+	}
+
+	public void setReports(List<Report> reports) {
+		this.reports = reports;
 	}
 }

@@ -28,7 +28,8 @@ public class ReportDto {
         private Integer following;
         private Integer posts;
 
-        public SimpleUserDto() {}
+        public SimpleUserDto() {
+        }
 
         public SimpleUserDto(User user) {
             if (user != null) {
@@ -46,26 +47,85 @@ public class ReportDto {
         }
 
         // Getters and setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-        public String getAvatar() { return avatar; }
-        public void setAvatar(String avatar) { this.avatar = avatar; }
-        public String getRole() { return role; }
-        public void setRole(String role) { this.role = role; }
-        public Boolean getBanned() { return banned; }
-        public void setBanned(Boolean banned) { this.banned = banned; }
-        public String getCreatedAt() { return createdAt; }
-        public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
-        public Integer getFollowers() { return followers; }
-        public void setFollowers(Integer followers) { this.followers = followers; }
-        public Integer getFollowing() { return following; }
-        public void setFollowing(Integer following) { this.following = following; }
-        public Integer getPosts() { return posts; }
-        public void setPosts(Integer posts) { this.posts = posts; }
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public String getAvatar() {
+            return avatar;
+        }
+
+        public void setAvatar(String avatar) {
+            this.avatar = avatar;
+        }
+
+        public String getRole() {
+            return role;
+        }
+
+        public void setRole(String role) {
+            this.role = role;
+        }
+
+        public Boolean getBanned() {
+            return banned;
+        }
+
+        public void setBanned(Boolean banned) {
+            this.banned = banned;
+        }
+
+        public String getCreatedAt() {
+            return createdAt;
+        }
+
+        public void setCreatedAt(String createdAt) {
+            this.createdAt = createdAt;
+        }
+
+        public Integer getFollowers() {
+            return followers;
+        }
+
+        public void setFollowers(Integer followers) {
+            this.followers = followers;
+        }
+
+        public Integer getFollowing() {
+            return following;
+        }
+
+        public void setFollowing(Integer following) {
+            this.following = following;
+        }
+
+        public Integer getPosts() {
+            return posts;
+        }
+
+        public void setPosts(Integer posts) {
+            this.posts = posts;
+        }
     }
 
     // Nested DTO for Post to avoid circular references
@@ -77,7 +137,8 @@ public class ReportDto {
         private String createdAt;
         private java.util.List<String> tags;
 
-        public SimplePostDto() {}
+        public SimplePostDto() {
+        }
 
         public SimplePostDto(Post post) {
             if (post != null) {
@@ -91,22 +152,58 @@ public class ReportDto {
         }
 
         // Getters and setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getTitle() { return title; }
-        public void setTitle(String title) { this.title = title; }
-        public String getContent() { return content; }
-        public void setContent(String content) { this.content = content; }
-        public SimpleUserDto getAuthor() { return author; }
-        public void setAuthor(SimpleUserDto author) { this.author = author; }
-        public String getCreatedAt() { return createdAt; }
-        public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
-        public java.util.List<String> getTags() { return tags; }
-        public void setTags(java.util.List<String> tags) { this.tags = tags; }
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getContent() {
+            return content;
+        }
+
+        public void setContent(String content) {
+            this.content = content;
+        }
+
+        public SimpleUserDto getAuthor() {
+            return author;
+        }
+
+        public void setAuthor(SimpleUserDto author) {
+            this.author = author;
+        }
+
+        public String getCreatedAt() {
+            return createdAt;
+        }
+
+        public void setCreatedAt(String createdAt) {
+            this.createdAt = createdAt;
+        }
+
+        public java.util.List<String> getTags() {
+            return tags;
+        }
+
+        public void setTags(java.util.List<String> tags) {
+            this.tags = tags;
+        }
     }
 
     // Constructors
-    public ReportDto() {}
+    public ReportDto() {
+    }
 
     public ReportDto(Report report) {
         if (report != null) {
@@ -186,4 +283,3 @@ public class ReportDto {
         this.createdAt = createdAt;
     }
 }
-

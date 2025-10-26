@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
 import { PostService } from '../../services/post.service';
 import { MarkdownPipe } from '../../pipes/markdown.pipe';
 import { NavbarComponent } from '../navbar/navbar.component';
+import { NotificationService as UINotificationService } from '../../services/ui-notification.service';
 
 @Component({
   selector: 'app-post-create',
@@ -36,7 +37,8 @@ export class PostCreate implements OnInit {
     public router: Router,
     private authService: AuthService,
     private cd: ChangeDetectorRef,
-    private postService: PostService
+    private postService: PostService,
+    private snackbarService: UINotificationService
   ) {
     this.postForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
@@ -171,7 +173,7 @@ export class PostCreate implements OnInit {
       const currentUser = this.authService.getCurrentUser();
       if (!currentUser) {
         console.error('User not authenticated');
-        alert('You must be logged in to create a post. Please log in and try again.');
+        this.snackbarService.error('You must be logged in to create a post. Please log in and try again.');
         this.router.navigate(['/auth']);
         this.isSubmitting = false;
         return;
@@ -207,12 +209,13 @@ export class PostCreate implements OnInit {
         const response = await this.postService.createPost(postData).toPromise();
 
         console.log('Post created successfully:', response);
+        this.snackbarService.success('Post created successfully!');
 
         // Redirect to home page or post detail
         this.router.navigate(['/']);
       } catch (error) {
         console.error('Error creating post:', error);
-        alert('Failed to create post. Please try again.');
+        this.snackbarService.error('Failed to create post. Please try again.');
       } finally {
         this.isSubmitting = false;
       }

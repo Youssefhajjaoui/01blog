@@ -88,7 +88,8 @@ public class PostController {
 
     @GetMapping
     public List<PostDto> getAllPosts(@AuthenticationPrincipal User principale) {
-        return postRepository.findAll().stream().map(post -> mapToDto(post, principale)).collect(Collectors.toList());
+        return postRepository.findAllByOrderByCreatedAtDesc().stream().map(post -> mapToDto(post, principale))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
@@ -166,13 +167,23 @@ public class PostController {
         if (optionalPost.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        if (currentUser.getRole() != UserRole.ADMIN && optionalPost.get().getCreator() != currentUser) {
+        if (currentUser.getRole() != UserRole.ADMIN
+                && !optionalPost.get().getCreator().getId().equals(currentUser.getId())) {
+            System.out.printf(optionalPost.get().getCreator().getId().toString(), "\n");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
         }
 
-        postRepository.delete(optionalPost.get());
-        return ResponseEntity.noContent().build();
+        Post post = optionalPost.get();
+
+        try {
+            postRepository.delete(post);
+            return ResponseEntity.noContent().build();
+
+        } catch (Exception e) {
+            // Log the error for debugging
+            System.err.println("Error deleting post: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/tags")

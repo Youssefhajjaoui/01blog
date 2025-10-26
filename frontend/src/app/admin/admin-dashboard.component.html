@@ -421,8 +421,9 @@
                     <!-- Reports List -->
                     <div class="reports-list">
                         <p>{{reports().length}}</p>
-                        <div *ngFor="let report of reports()" class="report-item">
-                            <div class="report-content" (click)="onClickReport(report.reportedPost?.id || null)">
+                        <div *ngFor="let report of reports()" class="report-item"
+                            (click)="onClickReport(report.reportedPost?.id || null)">
+                            <div class="report-content">
                                 <div class="report-header">
                                     <div [class]="getPriorityColor(report.status)" class="priority-dot"></div>
                                     <span [class]="getReportTypeClass(report)" class="report-type">
@@ -470,6 +471,17 @@
                             </div>
 
                             <div class="report-actions">
+                                <!-- User Report Actions -->
+                                <div *ngIf="!report.reportedPost && report.status === 'PENDING'" class="user-actions">
+                                    <button (click)="banReportedUser(report)" class="action-btn action-warning">
+                                        Ban User
+                                    </button>
+                                    <button (click)="deleteReportedUser(report)" class="action-btn action-danger">
+                                        Delete User
+                                    </button>
+                                </div>
+
+                                <!-- General Report Actions -->
                                 <button *ngIf="report.status === 'PENDING'" (click)="resolveReport(report)"
                                     class="action-btn action-success">
                                     Resolve

@@ -8,7 +8,7 @@ import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
 import { Post, User, Comment, CreateCommentRequest } from '../models';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationService as UINotificationService } from '../services/ui-notification.service';
 
 @Component({
   selector: 'app-post-detail',
@@ -37,7 +37,7 @@ export class PostDetailComponent implements OnInit {
     private authService: AuthService,
     private userService: UserService,
     private cd: ChangeDetectorRef,
-    private snackBar: MatSnackBar
+    private notificationService: UINotificationService
   ) {}
 
   ngOnInit() {
@@ -74,7 +74,7 @@ export class PostDetailComponent implements OnInit {
         console.error('Error loading post:', error);
         this.loading = false;
         this.cd.detectChanges();
-        this.snackBar.open('Error loading post', 'Close', { duration: 3000 });
+        this.notificationService.error('Error loading post');
         this.router.navigate(['/']);
       },
     });
@@ -92,6 +92,34 @@ export class PostDetailComponent implements OnInit {
         console.error('Error loading comments:', error);
         this.loadingComments = false;
       },
+    });
+  }
+
+  get isOwner(): boolean {
+    return this.post?.author.id === this.currentUser?.id;
+  }
+
+  get isAdmin(): boolean {
+    console.warn(this.currentUser?.role);
+    return this.currentUser?.role === 'ADMIN';
+  }
+
+  handleDelete(event: Event) {
+    event.stopPropagation();
+    console.log('Delete clicked for post:', this.post?.id);
+
+    if (!this.post?.id) {
+      console.warn('No post id found');
+      return;
+    }
+
+    this.postService.deletePost(this.post.id).subscribe({
+      next: () => {
+        console.warn('deleted', this.post?.id);
+        // this.deleted.emit(this.post.id);
+        this.router.navigateByUrl('/');
+      },
+      error: (err) => console.error('Delete failed:', err),
     });
   }
 
@@ -129,7 +157,7 @@ export class PostDetailComponent implements OnInit {
           };
           this.cd.detectChanges();
         }
-        this.snackBar.open('Error updating like', 'Close', { duration: 2000 });
+        this.notificationService.error('Error updating like');
       },
     });
   }
@@ -151,10 +179,8 @@ export class PostDetailComponent implements OnInit {
 
     apiCall.subscribe({
       next: () => {
-        this.snackBar.open(
-          wasSubscribed ? 'Unfollowed successfully' : 'Followed successfully',
-          'Close',
-          { duration: 2000 }
+        this.notificationService.success(
+          wasSubscribed ? 'Unfollowed successfully' : 'Followed successfully'
         );
       },
       error: (error) => {
@@ -164,9 +190,7 @@ export class PostDetailComponent implements OnInit {
           this.post = { ...this.post, isSubscribed: wasSubscribed };
           this.cd.detectChanges();
         }
-        this.snackBar.open('Error updating follow status', 'Close', {
-          duration: 2000,
-        });
+        this.notificationService.error('Error updating follow status');
       },
     });
   }
@@ -189,12 +213,12 @@ export class PostDetailComponent implements OnInit {
           this.post = { ...this.post, comments: this.post.comments + 1 };
         }
         this.cd.detectChanges();
-        this.snackBar.open('Comment added', 'Close', { duration: 2000 });
+        this.notificationService.success('Comment added');
       },
       error: (error: any) => {
         console.error('Error adding comment:', error);
         this.submittingComment = false;
-        this.snackBar.open('Error adding comment', 'Close', { duration: 3000 });
+        this.notificationService.error('Error adding comment');
       },
     });
   }
@@ -225,14 +249,12 @@ export class PostDetailComponent implements OnInit {
           this.editingCommentContent = '';
           this.updatingComment = false;
           this.cd.detectChanges();
-          this.snackBar.open('Comment updated', 'Close', { duration: 2000 });
+          this.notificationService.success('Comment updated');
         },
         error: (error: any) => {
           console.error('Error updating comment:', error);
           this.updatingComment = false;
-          this.snackBar.open('Error updating comment', 'Close', {
-            duration: 3000,
-          });
+          this.notificationService.error('Error updating comment');
         },
       });
   }
@@ -247,13 +269,11 @@ export class PostDetailComponent implements OnInit {
           this.post = { ...this.post, comments: Math.max(0, this.post.comments - 1) };
         }
         this.cd.detectChanges();
-        this.snackBar.open('Comment deleted', 'Close', { duration: 2000 });
+        this.notificationService.success('Comment deleted');
       },
       error: (error: any) => {
         console.error('Error deleting comment:', error);
-        this.snackBar.open('Error deleting comment', 'Close', {
-          duration: 3000,
-        });
+        this.notificationService.error('Error deleting comment');
       },
     });
   }
@@ -308,8 +328,8 @@ export class PostDetailComponent implements OnInit {
   }
 
   getPostMediaUrl(): string {
-    if (!this.post?.mediaUrl) return '';
-    const filename = this.post.mediaUrl.split('/').pop();
+    if (!this.post?.media || !this.post.media[0]?.url) return '';
+    const filename = this.post.media[0].url.split('/').pop();
     return `http://localhost:9090/api/files/uploads/${filename}`;
   }
 

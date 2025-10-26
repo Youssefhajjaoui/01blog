@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 public interface PostRepository extends JpaRepository<Post, Long> {
 
     // Custom query methods (auto-implemented by Spring Data JPA):
+    List<Post> findAllByOrderByCreatedAtDesc();
 
     // Find all posts by a given creator
     List<Post> findByCreator(User creator);
@@ -27,7 +28,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // (Optional) Order posts by creation date
     List<Post> findByCreatorOrderByCreatedAtDesc(User creator);
-    
+
     // Count posts created after a specific date
     long countByCreatedAtAfter(LocalDateTime date);
 }

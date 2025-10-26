@@ -2,6 +2,8 @@
     min-height: 100vh;
     background: linear-gradient(to bottom, #f8fafc, #e2e8f0);
     padding: 2rem 0;
+    padding-top: calc(64px + 2rem);
+    /* Account for fixed navbar (64px) + additional spacing */
 }
 
 .container {
