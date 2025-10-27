@@ -12,7 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data:Z
     networks:
       - app-network
 
@@ -23,7 +23,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - redis_data:/data:Z
     networks:
       - app-network
     command: redis-server --appendonly yes
@@ -39,12 +39,14 @@ services:
       - postgres
       - redis
     volumes:
-      - ./backend/src:/app/src
-      - ./backend/pom.xml:/app/pom.xml
-      - maven_cache:/root/.m2
+      - ./backend/src:/app/src:Z
+      - ./backend/pom.xml:/app/pom.xml:Z
+      - maven_cache:/root/.m2:Z
+      - /home/youzar-boot/uploads:/app/uploads:Z
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - REDIS_HOST=redis
+      - FILE_STORAGE_LOCAL_PATH=/app/uploads/
     networks:
       - app-network
 
@@ -56,13 +58,15 @@ services:
     ports:
       - "4200:4200"
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/angular.json:/app/angular.json
-      - ./frontend/package.json:/app/package.json
-      - ./frontend/package-lock.json:/app/package-lock.json
-      - ./frontend/tsconfig*.json:/app/
-      - ./frontend/public:/app/public
-      - node_modules:/app/node_modules
+      - ./frontend/src:/app/src:Z
+      - ./frontend/angular.json:/app/angular.json:Z
+      - ./frontend/package.json:/app/package.json:Z
+      - ./frontend/package-lock.json:/app/package-lock.json:Z
+      - ./frontend/tsconfig.json:/app/tsconfig.json:Z
+      - ./frontend/tsconfig.app.json:/app/tsconfig.app.json:Z
+      - ./frontend/tsconfig.spec.json:/app/tsconfig.spec.json:Z
+      - ./frontend/public:/app/public:Z
+      - node_modules:/app/node_modules:Z
     depends_on:
       - backend
     environment:
