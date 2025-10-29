@@ -188,10 +188,7 @@ public class PostController {
 
     @GetMapping("/tags")
     public ResponseEntity<Map<String, Object>> getTags(@AuthenticationPrincipal User principal) {
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
+        // Tags endpoint should be public - no authentication required
         List<Post> posts = postRepository.findAll();
 
         // Count how many posts have each tag
@@ -255,9 +252,16 @@ public class PostController {
         dto.setTags(post.getTags());
         dto.setLikes(post.getLikes() != null ? post.getLikes().size() : 0); // Request likes from backend
         dto.setComments(post.getComments() != null ? post.getComments().size() : 0); // Request comments from backend
-        dto.setLiked(likeRepository.findByCreator_IdAndPost_Id(principale.getId(), post.getId()).orElse(null) != null); // Set
-        dto.setSubscribed(
-                subscriptionRepository.findByFollowerAndFollowed(principale, post.getCreator()).orElse(null) != null); // Set
+        
+        // Handle unauthenticated requests (principale can be null)
+        if (principale != null) {
+            dto.setLiked(likeRepository.findByCreator_IdAndPost_Id(principale.getId(), post.getId()).orElse(null) != null);
+            dto.setSubscribed(subscriptionRepository.findByFollowerAndFollowed(principale, post.getCreator()).orElse(null) != null);
+        } else {
+            dto.setLiked(false);
+            dto.setSubscribed(false);
+        }
+        
         dto.setCreatedAt(post.getCreatedAt().toString());
         dto.setVisibility("public"); // Or your logic
         return dto;

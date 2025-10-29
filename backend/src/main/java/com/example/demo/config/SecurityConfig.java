@@ -29,15 +29,17 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final GatewayAuthenticationFilter gatewayAuthFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, GatewayAuthenticationFilter gatewayAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.gatewayAuthFilter = gatewayAuthFilter;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.disable()) // Disable backend CORS - Gateway handles it
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/posts/**").permitAll()
@@ -62,10 +64,21 @@ public class SecurityConfig {
                                 .requestMatcher(request -> request.isSecure())))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(401);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\""
-                                    + authException.getMessage() + "\"}");
+                            // Only handle authentication entry point for non-auth endpoints
+                            // Auth endpoints should handle their own errors
+                            String path = request.getRequestURI();
+                            if (path.startsWith("/api/auth/")) {
+                                // Let the controller handle the error
+                                response.setStatus(401);
+                                response.setContentType("application/json");
+                                response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\""
+                                        + authException.getMessage() + "\"}");
+                            } else {
+                                response.setStatus(401);
+                                response.setContentType("application/json");
+                                response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\""
+                                        + authException.getMessage() + "\"}");
+                            }
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(403);
@@ -74,6 +87,7 @@ public class SecurityConfig {
                                     + accessDeniedException.getMessage() + "\"}");
                         }));
 
+        http.addFilterBefore(gatewayAuthFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -92,11 +106,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*", "https://localhost:*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Allow requests from frontend through gateway and direct localhost access
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:*",
+                "http://gateway:*",
+                "*" // Allow any origin in development
+        ));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
+        configuration.setExposedHeaders(Arrays.asList("Set-Cookie", "Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

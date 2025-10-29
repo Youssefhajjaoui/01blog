@@ -151,29 +151,6 @@ public class AdminController {
         return ResponseEntity.ok().body(java.util.Map.of("message", "User unbanned successfully"));
     }
 
-    // Emergency endpoint to unban admin users (no authentication required for
-    // emergency)
-    @PostMapping("/emergency/unban-admin")
-    public ResponseEntity<Object> emergencyUnbanAdmin(@RequestParam String secretKey) {
-        // Simple secret key check for emergency access
-        if (!"EMERGENCY_ADMIN_UNBAN_2024".equals(secretKey)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(java.util.Map.of("error", "Invalid secret key"));
-        }
-
-        // Unban all admin users
-        List<User> adminUsers = userRepository.findAll().stream()
-                .filter(user -> user.getRole() == UserRole.ADMIN)
-                .collect(java.util.stream.Collectors.toList());
-
-        for (User admin : adminUsers) {
-            admin.setBanned(false);
-            admin.setBanEnd(null);
-        }
-
-        userRepository.saveAll(adminUsers);
-        return ResponseEntity.ok().body(java.util.Map.of("message", "All admin users have been unbanned successfully"));
-    }
-
     @DeleteMapping("/users/{id}")
     public ResponseEntity<Object> deleteUser(@PathVariable Long id, @AuthenticationPrincipal User principal) {
         if (principal == null || principal.getRole() != UserRole.ADMIN) {

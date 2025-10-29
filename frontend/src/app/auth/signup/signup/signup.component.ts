@@ -25,7 +25,7 @@ export class Signup {
   isLoading = signal(false);
   errorMessage = signal('');
 
-  constructor(private router: Router, private notificationService: UINotificationService) { }
+  constructor(private router: Router, private notificationService: UINotificationService) {}
 
   async onSubmit() {
     this.isLoading.set(true);
@@ -74,7 +74,7 @@ export class Signup {
         avatar: this.avatarBase64(), // Send as base64 string
       };
 
-      const response = await fetch('http://localhost:9090/api/auth/register', {
+      const response = await fetch('http://localhost:8080/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +102,9 @@ export class Signup {
 
       // Show success message and redirect to login
       this.errorMessage.set('');
-      this.notificationService.success('Account created successfully! Please login with your credentials.');
+      this.notificationService.success(
+        'Account created successfully! Please login with your credentials.'
+      );
       this.router.navigate(['/auth/login']);
     } catch (err: any) {
       console.error('Signup error:', err);
@@ -114,9 +116,9 @@ export class Signup {
 
   togglePasswordVisibility(field: 'password' | 'confirmPassword') {
     if (field === 'password') {
-      this.showPassword.update(v => !v);
+      this.showPassword.update((v) => !v);
     } else {
-      this.showConfirmPassword.update(v => !v);
+      this.showConfirmPassword.update((v) => !v);
     }
   }
 

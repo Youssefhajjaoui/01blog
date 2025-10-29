@@ -5,12 +5,58 @@ A modern blog application built with Angular frontend and Spring Boot backend.
 ## 🏗️ Architecture
 
 - **Frontend**: Angular 20 with Bootstrap 5
+- **API Gateway**: Spring Cloud Gateway with Redis-based rate limiting
 - **Backend**: Spring Boot 3.5.5 with Spring Security
 - **Database**: PostgreSQL 15
+- **Cache/Rate Limiting**: Redis 7
 - **Authentication**: JWT tokens
 - **Styling**: Bootstrap 5 + Custom SCSS
 
+### Architecture Diagram
+
+```
+┌──────────┐     ┌────────────────┐     ┌─────────────┐     ┌────────────┐
+│  Client  │────▶│  API Gateway   │────▶│   Backend   │────▶│ PostgreSQL │
+│          │     │   (Port 8080)  │     │ (Port 9090) │     │            │
+└──────────┘     └────────────────┘     └─────────────┘     └────────────┘
+                        │
+                        ▼
+                  ┌──────────┐
+                  │  Redis   │
+                  │ (Rate    │
+                  │ Limiting)│
+                  └──────────┘
+```
+
+### New: API Gateway
+
+The application now uses an API Gateway that provides:
+- ✅ **Early Rate Limiting**: Blocks abusive requests before they reach the backend
+- ✅ **Resource Efficiency**: Saves CPU, memory, and thread pool resources
+- ✅ **Enhanced Security**: Backend only accepts requests from gateway
+- ✅ **Centralized Control**: Single point for routing and rate limiting
+
+**📚 See [GATEWAY_SETUP_GUIDE.md](GATEWAY_SETUP_GUIDE.md) for detailed setup instructions**
+
+**📊 See [ARCHITECTURE_COMPARISON.md](ARCHITECTURE_COMPARISON.md) for performance comparison**
+
 ## 🚀 Quick Start
+
+### Option 1: Production Setup with API Gateway (Recommended)
+
+```bash
+# Quick start with gateway, backend, database, and Redis
+./start-gateway.sh
+
+# Or manually:
+docker-compose -f docker-compose.gateway.yml up -d
+```
+
+The gateway will be available at: http://localhost:8080
+
+**All requests should go through the gateway (port 8080), not directly to backend (port 9090)**
+
+### Option 2: Local Development Setup
 
 ### Prerequisites
 

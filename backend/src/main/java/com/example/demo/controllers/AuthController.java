@@ -16,8 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -98,14 +100,55 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(new AuthResponseDto("Email already exists"));
             }
 
-            // ✅ Save avatar from base64 if provided
-            String photoPath = null;
+            // ✅ Save avatar if provided (supports: full URL, data URL, raw base64)
+            String photoUrl = null;
             if (userDto.getAvatar() != null && !userDto.getAvatar().isEmpty()) {
                 try {
-                    // Use FileStorageService to save the image
-                    String avatarUrl = fileStorageService.saveBase64Image(userDto.getAvatar(), "avatar");
-                    // Store the relative path for database (remove base URL)
-                    photoPath = avatarUrl.replace(fileStorageService.getBaseUrl(), "");
+                    String avatar = userDto.getAvatar().trim();
+
+                    // If it's already a URL, store as-is
+                    if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
+                        photoUrl = avatar;
+                    } else {
+                        String contentType = "image/jpeg"; // default
+                        String filename = "avatar.jpg";
+                        String base64Payload = avatar;
+
+                        // data URL format: data:image/png;base64,<payload>
+                        if (avatar.startsWith("data:")) {
+                            int commaIndex = avatar.indexOf(',');
+                            if (commaIndex > 0) {
+                                String header = avatar.substring(0, commaIndex); // e.g. data:image/png;base64
+                                base64Payload = avatar.substring(commaIndex + 1);
+
+                                // Extract content type
+                                int colonIdx = header.indexOf(':');
+                                int semiIdx = header.indexOf(';');
+                                if (colonIdx >= 0 && semiIdx > colonIdx) {
+                                    contentType = header.substring(colonIdx + 1, semiIdx);
+                                }
+
+                                // Filename extension from contentType
+                                String ext = ".jpg";
+                                if (contentType.contains("png")) ext = ".png";
+                                else if (contentType.contains("jpeg")) ext = ".jpg";
+                                else if (contentType.contains("jpg")) ext = ".jpg";
+                                else if (contentType.contains("webp")) ext = ".webp";
+                                else if (contentType.contains("gif")) ext = ".gif";
+                                filename = "avatar" + ext;
+                            }
+                        }
+
+                        byte[] bytes;
+                        try {
+                            bytes = java.util.Base64.getDecoder().decode(base64Payload);
+                        } catch (IllegalArgumentException ex) {
+                            // Try URL-safe decoder as fallback
+                            bytes = java.util.Base64.getUrlDecoder().decode(base64Payload);
+                        }
+
+                        photoUrl = fileStorageService.uploadBytes(bytes, contentType, filename, "uploads");
+                    }
                 } catch (Exception e) {
                     return ResponseEntity.badRequest()
                             .body(new AuthResponseDto("Invalid avatar data: " + e.getMessage()));
@@ -117,7 +160,7 @@ public class AuthController {
                     userDto.getUsername(),
                     userDto.getEmail(),
                     passwordEncoder.encode(userDto.getPassword()),
-                    photoPath,
+                    photoUrl,
                     userDto.getBio());
 
             userRepository.save(user);
@@ -135,26 +178,49 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody UserLoginDto loginDto,
             BindingResult result,
             HttpServletResponse response) {
-        // authenticate user
-        Authentication authentication = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
-        User user = (User) authentication.getPrincipal();
+        try {
+            // authenticate user - wrap in try-catch to handle authentication exceptions
+            Authentication authentication = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
+            User user = (User) authentication.getPrincipal();
 
-        // generate JWT
-        String token = jwtUtil.generateToken(user);
+            // generate JWT
+            String token = jwtUtil.generateToken(user);
 
-        // Create HttpOnly cookie
-        ResponseCookie cookie = ResponseCookie.from("jwt", token)
-                .httpOnly(true)
-                .secure(false) // Set to true in production with HTTPS
-                .path("/")
-                .maxAge(15 * 60) // 15 minutes
-                .sameSite("Lax")
-                .build();
+            // Create HttpOnly cookie
+            ResponseCookie cookie = ResponseCookie.from("jwt", token)
+                    .httpOnly(true)
+                    .secure(false) // Set to true in production with HTTPS
+                    .path("/")
+                    .maxAge(15 * 60) // 15 minutes
+                    .sameSite("Lax")
+                    .build();
 
-        response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+            response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return ResponseEntity.ok(Map.of("message", "Logged in successfully"));
+            return ResponseEntity.ok(Map.of("message", "Logged in successfully"));
+        } catch (BadCredentialsException e) {
+            // Return proper error response directly (don't throw, Spring Security might
+            // intercept it)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthResponseDto("Invalid username or password"));
+        } catch (AuthenticationException e) {
+            // Handle other authentication exceptions
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthResponseDto("Authentication failed: " + e.getMessage()));
+        } catch (RuntimeException e) {
+            // Handle runtime exceptions (like banned users)
+            if (e.getMessage() != null && e.getMessage().contains("banned")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new AuthResponseDto("Account is banned"));
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthResponseDto("Authentication failed: " + e.getMessage()));
+        } catch (Exception e) {
+            // Handle any other exceptions
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new AuthResponseDto("Login failed: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/logout")
@@ -171,12 +237,12 @@ public class AuthController {
                     }
                 }
             }
-            
+
             // Blacklist the token so it cannot be used anymore
             if (token != null && !token.isEmpty()) {
                 tokenBlacklistService.blacklistToken(token);
             }
-            
+
             // Clear the JWT cookie on client side
             ResponseCookie cookie = ResponseCookie.from("jwt", "")
                     .httpOnly(true)

@@ -38,7 +38,7 @@ export class PostDetailComponent implements OnInit {
     private userService: UserService,
     private cd: ChangeDetectorRef,
     private notificationService: UINotificationService
-  ) {}
+  ) { }
 
   ngOnInit() {
     // Get current user
@@ -321,16 +321,14 @@ export class PostDetailComponent implements OnInit {
 
   getUserAvatarUrl(user: User): string {
     if (user.avatar) {
-      const filename = user.avatar.split('/').pop();
-      return `http://localhost:9090/api/files/uploads/${filename}`;
+      return user.avatar;
     }
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`;
   }
 
   getPostMediaUrl(): string {
     if (!this.post?.media || !this.post.media[0]?.url) return '';
-    const filename = this.post.media[0].url.split('/').pop();
-    return `http://localhost:9090/api/files/uploads/${filename}`;
+    return this.post.media[0].url;
   }
 
   formatDate(dateString: string): string {

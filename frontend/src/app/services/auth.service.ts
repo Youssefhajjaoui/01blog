@@ -1,13 +1,14 @@
 import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { User, LoginRequest, RegisterRequest } from '../models';
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:9090/api/auth';
+  // Use gateway hostname for SSR (Docker), localhost for browser
+  private readonly API_URL: string;
 
   // ✨ Use signal instead of BehaviorSubject
   private currentUserSignal = signal<User | null>(null);
@@ -18,14 +19,61 @@ export class AuthService {
   public isAuthenticated = computed(() => this.currentUserSignal() !== null);
   public isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+    // Use different API URL based on where code is running
+    if (isPlatformServer(this.platformId)) {
+      // Server-side (SSR in Docker): use gateway hostname
+      this.API_URL = 'http://gateway:8080/api/auth';
+    } else {
+      // Client-side (browser): use localhost
+      this.API_URL = 'http://localhost:8080/api/auth';
+    }
+  }
 
   /** Login - backend sets HttpOnly cookie automatically */
   login(loginData: LoginRequest): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/login`, loginData, { withCredentials: true }).pipe(
+    return this.http.post<any>(`${this.API_URL}/login`, loginData, {
+      withCredentials: true
+    }).pipe(
       tap(() => {
         // After successful login, fetch user data with statistics
         this.checkAuth().subscribe();
+      }),
+      catchError((error: any) => {
+        // Extract error message from different possible formats
+        let errorMessage = 'Login failed. Please try again.';
+
+        // HttpClient error responses already contain full error details
+        if (error.error) {
+          // Handle JSON error response from backend
+          if (error.error.message) {
+            errorMessage = error.error.message;
+          } else if (error.error.error) {
+            errorMessage = error.error.error;
+          } else if (typeof error.error === 'string') {
+            errorMessage = error.error;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        // Log the full error for debugging
+        console.error('Login error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error,
+          message: errorMessage,
+          url: error.url
+        });
+
+        // Preserve the original error structure so components can access all details
+        const customError: any = {
+          ...error,
+          error: error.error || { message: errorMessage },
+          message: errorMessage
+        };
+
+        return throwError(() => customError);
       })
     );
   }

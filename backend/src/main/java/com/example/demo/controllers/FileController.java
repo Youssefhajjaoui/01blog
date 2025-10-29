@@ -29,8 +29,8 @@ public class FileController {
     private static final Logger logger = LoggerFactory.getLogger(FileController.class);
     private final FileStorageService fileStorageService;
 
-    // @Value("${file.storage.local.path:uploads}")
-    private Path uploadPath = Paths.get(System.getProperty("user.home"), "uploads");
+    // Supabase folder inside bucket
+    private static final String SUPABASE_FOLDER = "uploads";
 
     public FileController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
@@ -49,33 +49,10 @@ public class FileController {
                 return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
             }
 
-            // Get file extension
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
+            String url = fileStorageService.uploadFile(file, SUPABASE_FOLDER);
 
-            // Generate unique filename
-            String filename = System.currentTimeMillis() + "_" + UUID.randomUUID().toString() + extension;
-
-            // Create uploads directory if it doesn't exist
-            Path uploadDir = this.uploadPath;
-
-            logger.info("Upload directory: {}", uploadDir.toString());
-            if (!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-                logger.info("Created upload directory: {}", uploadDir.toString());
-            }
-
-            // Save file
-            Path filePath = uploadDir.resolve(filename);
-            Files.write(filePath, file.getBytes());
-
-            // Return the filename (frontend will construct full URL)
             return ResponseEntity.ok(Map.of(
-                    "filename", filename,
-                    "url", "http://localhost:9090/api/files/uploads/" + filename,
+                    "url", url,
                     "message", "File uploaded successfully"));
 
         } catch (IOException e) {
@@ -94,12 +71,14 @@ public class FileController {
 
             String base64Data = request.get("base64Data");
             String filename = request.get("filename");
+            String contentType = request.getOrDefault("contentType", "application/octet-stream");
 
             if (base64Data == null || filename == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing base64Data or filename"));
             }
 
-            String fileUrl = fileStorageService.saveBase64Image(base64Data, filename);
+            byte[] bytes = java.util.Base64.getDecoder().decode(base64Data);
+            String fileUrl = fileStorageService.uploadBytes(bytes, contentType, filename, SUPABASE_FOLDER);
 
             return ResponseEntity.ok(Map.of(
                     "url", fileUrl,
@@ -110,70 +89,5 @@ public class FileController {
         }
     }
 
-    @GetMapping("/uploads/{filename}")
-    public ResponseEntity<Resource> getFile(@PathVariable String filename) {
-        try {
-            // Use the configured path
-            Path filePath = Paths.get(uploadPath.toString(), filename);
-            File file = filePath.toFile();
-
-            logger.info("Looking for file at: {}", filePath.toString());
-
-            if (!file.exists()) {
-                logger.error("File not found: {}", filePath.toString());
-                return ResponseEntity.notFound().build();
-            }
-
-            Resource resource = new FileSystemResource(file);
-
-            // Determine content type based on file extension
-            String contentType = "application/octet-stream";
-            String lowerFilename = filename.toLowerCase();
-
-            // Image types
-            if (lowerFilename.endsWith(".jpg") || lowerFilename.endsWith(".jpeg")) {
-                contentType = "image/jpeg";
-            } else if (lowerFilename.endsWith(".png")) {
-                contentType = "image/png";
-            } else if (lowerFilename.endsWith(".gif")) {
-                contentType = "image/gif";
-            } else if (lowerFilename.endsWith(".webp")) {
-                contentType = "image/webp";
-            } else if (lowerFilename.endsWith(".svg")) {
-                contentType = "image/svg+xml";
-            }
-            // Video types
-            else if (lowerFilename.endsWith(".mp4")) {
-                contentType = "video/mp4";
-            } else if (lowerFilename.endsWith(".webm")) {
-                contentType = "video/webm";
-            } else if (lowerFilename.endsWith(".avi")) {
-                contentType = "video/x-msvideo";
-            } else if (lowerFilename.endsWith(".mov")) {
-                contentType = "video/quicktime";
-            }
-            // Audio types
-            else if (lowerFilename.endsWith(".mp3")) {
-                contentType = "audio/mpeg";
-            } else if (lowerFilename.endsWith(".wav")) {
-                contentType = "audio/wav";
-            } else if (lowerFilename.endsWith(".ogg")) {
-                contentType = "audio/ogg";
-            }
-
-            logger.info("Serving file: {} with contentType: {}", filename, contentType);
-
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
-                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET")
-                    .header(HttpHeaders.ACCESS_CONTROL_MAX_AGE, "3600")
-                    .body(resource);
-
-        } catch (Exception e) {
-            logger.error("Error serving file: {}", filename, e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+    // Local file-serving endpoint removed in favor of direct Supabase public URLs
 }

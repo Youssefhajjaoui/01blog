@@ -149,8 +149,7 @@ export class ProfileComponent implements OnInit {
   getAvatarUrl(): string {
     const user = this.profileUser() || this.currentUser();
     if (user?.avatar) {
-      const filename = user.avatar.split('/').pop();
-      return `http://localhost:9090/api/files/uploads/${filename}`;
+      return user.avatar;
     }
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}`;
   }

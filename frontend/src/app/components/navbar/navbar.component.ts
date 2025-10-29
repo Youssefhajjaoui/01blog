@@ -163,7 +163,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   markNotificationAsRead(notificationId: number) {
     this.notificationService.markAsRead(notificationId).subscribe({
-      next(value) {},
+      next(value) { },
       error(value) {
         console.error(value);
       },
@@ -183,7 +183,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   clearAllNotifications() {
     this.notificationService.clearAll().subscribe({
-      next(value) {},
+      next(value) { },
       error(value) {
         console.error(value);
       },
@@ -227,9 +227,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   getAvatarUrl(): string {
     const currentUser = this.authService.getCurrentUser();
     if (currentUser?.avatar) {
-      // If user has uploaded avatar, use the backend API endpoint
-      const filename = currentUser.avatar.split('/').pop();
-      return `http://localhost:9090/api/files/uploads/${filename}`;
+      return currentUser.avatar;
     }
     // Fallback to generated avatar
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username || 'user'}`;
@@ -287,8 +285,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   getUserAvatarUrl(user: any): string {
     if (user?.avatar) {
-      const filename = user.avatar.split('/').pop();
-      return `http://localhost:9090/api/files/uploads/${filename}`;
+      return user.avatar;
     }
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}`;
   }

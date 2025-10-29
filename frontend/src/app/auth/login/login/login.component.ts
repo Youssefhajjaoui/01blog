@@ -35,8 +35,43 @@ export class Login {
         },
         error: (err) => {
           console.error('Login failed:', err);
-          this.errorMessage.set(err.error.message || 'Login failed');
-          this.notificationService.error(err.error.message || 'Login failed');
+
+          // Extract error message from different possible backend formats:
+          // 1. {"error":"Unauthorized","message":"..."}
+          // 2. {"message":"..."} (AuthResponseDto)
+          // 3. Plain string
+          let errorMsg = 'Login failed. Please check your credentials.';
+
+          if (err.error) {
+            // Check for nested error structure
+            if (err.error.message) {
+              errorMsg = err.error.message;
+            } else if (err.error.error) {
+              errorMsg = err.error.error;
+            } else if (typeof err.error === 'string') {
+              errorMsg = err.error;
+            } else if (err.error && Object.keys(err.error).length > 0) {
+              // Handle validation errors or other object formats
+              const errorValues = Object.values(err.error);
+              if (errorValues.length > 0 && typeof errorValues[0] === 'string') {
+                errorMsg = errorValues[0] as string;
+              }
+            }
+          } else if (err.message) {
+            errorMsg = err.message;
+          }
+
+          // Log full error for debugging - this helps identify the exact error format
+          console.error('Full error object:', {
+            status: err.status,
+            statusText: err.statusText,
+            error: err.error,
+            extractedMessage: errorMsg,
+            rawError: err
+          });
+
+          this.errorMessage.set(errorMsg);
+          this.notificationService.error(errorMsg);
           this.isLoading.set(false); // ✅ stop loading on error
         },
       });

@@ -129,13 +129,13 @@ export class PostCreate implements OnInit {
         formData.append('file', this.selectedFile!);
 
         this.http
-          .post<any>('http://localhost:9090/api/files/upload', formData, {
+          .post<any>('http://localhost:8080/api/files/upload', formData, {
             withCredentials: true,
           })
           .subscribe({
             next: (response) => {
               console.log('Upload successful:', response);
-              resolve(response.url || `http://localhost:9090/api/files/uploads/${response.filename}`);
+              resolve(response.url);
             },
             error: (error) => {
               console.error('Upload failed:', error);
@@ -299,9 +299,7 @@ export class PostCreate implements OnInit {
   getAvatarUrl(): string {
     const currentUser = this.authService.getCurrentUser();
     if (currentUser?.avatar) {
-      // If user has uploaded avatar, use the backend API endpoint
-      const filename = currentUser.avatar.split('/').pop();
-      return `http://localhost:9090/api/files/uploads/${filename}`;
+      return currentUser.avatar;
     }
     // Fallback to generated avatar
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username || 'user'}`;
