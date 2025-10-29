@@ -200,9 +200,7 @@ export class HomePageComponent implements OnInit {
     const user = this.authUser();
     if (user?.avatar) {
       // If user has uploaded avatar, use the backend API endpoint
-      // Extract filename from the full path (e.g., "uploads/filename.jpg" -> "filename.jpg")
-      const filename = user.avatar.split('/').pop();
-      return `http://localhost:9090/api/files/uploads/${filename}`;
+      return user.avatar;
     }
     // Fallback to generated avatar
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}`;
@@ -210,9 +208,7 @@ export class HomePageComponent implements OnInit {
 
   getSuggestedUserAvatarUrl(user: UserSuggestion): string {
     if (user.image) {
-      // If user has uploaded avatar, use the backend API endpoint
-      const filename = user.image.split('/').pop();
-      return `http://localhost:9090/api/files/uploads/${filename}`;
+      return user.image;
     }
     // Fallback to generated avatar
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`;

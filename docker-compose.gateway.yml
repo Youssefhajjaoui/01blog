@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # API Gateway - Entry point for all requests
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - BACKEND_URL=http://backend:9090
+      - GATEWAY_SECRET=${GATEWAY_SECRET:-change-this-secret-in-production}
+      - JWT_SECRET=${JWT_SECRET:-my-super-secret-jwt-key-that-should-be-at-least-256-bits-long-for-hs256-algorithm}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:4200,http://localhost:3000}
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - blog-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.production
+    container_name: backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/blogdb
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GATEWAY_SECRET=${GATEWAY_SECRET:-change-this-secret-in-production}
+      - GATEWAY_ENABLED=true
+      - JWT_SECRET=${JWT_SECRET:-my-super-secret-jwt-key-that-should-be-at-least-256-bits-long-for-hs256-algorithm}
+      - FILE_STORAGE_TYPE=${FILE_STORAGE_TYPE:-local}
+      - FILE_STORAGE_LOCAL_PATH=/app/uploads
+      - FILE_STORAGE_BASE_URL=${FILE_STORAGE_BASE_URL:-http://localhost:8080/api/files/uploads/}
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - blog-network
+    restart: unless-stopped
+    # Backend is not exposed directly - only accessible via gateway
+    expose:
+      - "9090"
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=blogdb
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - blog-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d blogdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Rate Limiting and Caching
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - blog-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Frontend (Angular)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: frontend
+    ports:
+      - "4200:4200"
+    environment:
+      - API_URL=http://localhost:8080
+    depends_on:
+      - gateway
+    networks:
+      - blog-network
+    restart: unless-stopped
+
+networks:
+  blog-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+

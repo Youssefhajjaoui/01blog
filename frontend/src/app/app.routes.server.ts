@@ -3,14 +3,14 @@ import { RenderMode, ServerRoute } from '@angular/ssr';
 export const serverRoutes: ServerRoute[] = [
   {
     path: 'post/:id',
-    renderMode: RenderMode.Server
+    renderMode: RenderMode.Prerender,
   },
   {
     path: 'profile/:userId',
-    renderMode: RenderMode.Server
+    renderMode: RenderMode.Prerender,
   },
   {
     path: '**',
-    renderMode: RenderMode.Prerender
-  }
+    renderMode: RenderMode.Prerender,
+  },
 ];

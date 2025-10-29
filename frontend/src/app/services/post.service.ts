@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable, timeout, catchError, of } from 'rxjs';
+import { isPlatformServer } from '@angular/common';
 import {
   Post,
   Media,
@@ -13,9 +14,15 @@ import {
   providedIn: 'root',
 })
 export class PostService {
-  private apiUrl = 'http://localhost:9090'; // replace with your backend URL
+  private apiUrl: string;
+  private readonly platformId = inject(PLATFORM_ID);
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+    // Use different API URL based on where code is running
+    this.apiUrl = isPlatformServer(this.platformId)
+      ? 'http://gateway:8080'  // Server-side (SSR in Docker)
+      : 'http://localhost:8080'; // Client-side (browser)
+  }
 
   getPosts(): Observable<Post[]> {
     return this.http
@@ -112,14 +119,14 @@ export class PostService {
   }
 
   uploadFile(formData: FormData): Observable<any> {
-    return this.http.post<any>('http://localhost:9090/api/files/upload', formData, {
+    return this.http.post<any>('http://localhost:8080/api/files/upload', formData, {
       withCredentials: true,
     });
   }
 
   reportPost(reportData: { postId: number; reason: string; details: string }): Observable<any> {
     return this.http.post<any>(
-      `http://localhost:9090/reports/posts/${reportData.postId}`,
+      `http://localhost:8080/reports/posts/${reportData.postId}`,
       {
         reason: reportData.reason,
         description: reportData.details,
@@ -133,7 +140,7 @@ export class PostService {
   }
   // In your Angular service
   connectToNotifications(): EventSource {
-    return new EventSource('http://localhost:9090/api/sse/notifications', {
+    return new EventSource('http://localhost:8080/api/sse/notifications', {
       withCredentials: true, // Important for JWT cookies
     });
   }

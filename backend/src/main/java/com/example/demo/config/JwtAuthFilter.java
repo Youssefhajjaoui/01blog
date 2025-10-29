@@ -25,6 +25,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserRepository userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
+    
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(JwtAuthFilter.class);
 
     public JwtAuthFilter(JwtUtil jwtUtil, UserRepository uds, TokenBlacklistService tokenBlacklistService) {
         this.jwtUtil = jwtUtil;
@@ -40,18 +42,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         String method = request.getMethod();
 
-        // Allow GET requests to posts without authentication
+        // Allow certain endpoints without authentication
         if (path.startsWith("/api/auth/") ||
-                path.startsWith("/api/files/uploads/")) {
+                path.startsWith("/api/files/uploads/") ||
+                path.startsWith("/uploads/") ||
+                path.equals("/error")) {
             filterChain.doFilter(request, response);
             return;
         }
+        
+        // Allow GET requests to posts without authentication
+        if ("GET".equalsIgnoreCase(method) && path.startsWith("/posts")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
+            // No cookies - let Spring Security decide if endpoint is permitAll
+            filterChain.doFilter(request, response);
             return;
         }
         // Find the "jwt" cookie
@@ -63,16 +72,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         }
 
+        // If no valid token found, let Spring Security decide if endpoint requires auth
         if (token == null || token.isEmpty()) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
+            filterChain.doFilter(request, response);
             return;
         }
 
         // Check if token is blacklisted (invalidated by logout)
         if (tokenBlacklistService.isTokenBlacklisted(token)) {
+            // Token was explicitly revoked - this is a hard rejection
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write(
@@ -80,32 +88,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        String username = jwtUtil.extractUsername(token);
+        try {
+            String username = jwtUtil.extractUsername(token);
+            logger.debug("Extracted username from token: {}", username);
 
-        if (username != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
-            Optional<User> optionalUser = userDetailsService.findByUsername(username);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                Optional<User> optionalUser = userDetailsService.findByUsername(username);
+                logger.debug("User found in database: {}", optionalUser.isPresent());
 
-            if (optionalUser.isEmpty() || optionalUser == null) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(
-                        "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
-                return; // stop filter chain here
+                if (optionalUser.isPresent()) {
+                    User user = optionalUser.get();
+                    boolean isValid = jwtUtil.validateToken(token, user);
+                    logger.debug("Token validation result: {}", isValid);
+                    
+                    if (isValid) {
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                user, null, user.getAuthorities());
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                        logger.debug("Authentication set for user: {}", username);
+                    }
+                }
             }
-
-            User user = optionalUser.get();
-            if (jwtUtil.validateToken(token, user)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        user, null, user.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
-        } else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"error\":\"Unauthorized\",\"message\":\"Full authentication is required to access this resource\"}");
-            return;
+        } catch (Exception e) {
+            logger.error("JWT filter error: ", e);
+            // Token parsing/validation failed - continue without authentication
+            // Let Spring Security decide if endpoint requires auth
         }
 
         filterChain.doFilter(request, response);

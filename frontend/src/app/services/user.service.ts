@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import { StorageService } from './storage.service';
+import { isPlatformServer } from '@angular/common';
 import {
   User,
   UserProfile,
@@ -16,8 +17,9 @@ import {
   providedIn: 'root',
 })
 export class UserService {
-  private readonly API_URL = 'http://localhost:9090';
+  private readonly API_URL: string;
   private readonly STORAGE_KEY = 'currentUser';
+  private readonly platformId = inject(PLATFORM_ID);
 
   // Current user state
   private currentUserSubject = new BehaviorSubject<User | null>(null);
@@ -28,6 +30,11 @@ export class UserService {
   public loading$ = this.loadingSubject.asObservable();
 
   constructor(private http: HttpClient, private storageService: StorageService) {
+    // Use different API URL based on where code is running
+    this.API_URL = isPlatformServer(this.platformId)
+      ? 'http://gateway:8080'  // Server-side (SSR in Docker)
+      : 'http://localhost:8080'; // Client-side (browser)
+
     // Automatically fetch user from server on service initialization
     // This ensures the user data is available immediately when any component injects this service
     this.initializeUser();

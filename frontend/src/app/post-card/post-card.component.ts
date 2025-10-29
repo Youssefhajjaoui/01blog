@@ -72,7 +72,7 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     private postService: PostService,
     private userService: UserService,
     private notificationService: UINotificationService
-  ) {}
+  ) { }
 
   reportReasons = [
     {
@@ -257,8 +257,7 @@ export class AppPostCardComponent implements OnInit, OnChanges {
       next: (response: any) => {
         this.uploadingMedia.set(false);
         // Update editable post with new media URL
-        const mediaUrl =
-          response.url || `http://localhost:9090/api/files/uploads/${response.filename}`;
+        const mediaUrl = response.url;
         this.editablePost.update((post) => ({
           ...post,
           mediaUrl,
@@ -693,8 +692,6 @@ export class AppPostCardComponent implements OnInit, OnChanges {
       return avatar;
     }
 
-    // If avatar is just a filename, construct the full URL
-    const filename = avatar.split('/').pop();
-    return `http://localhost:9090/api/files/uploads/${filename}`;
+    return avatar;
   }
 }

@@ -1,15 +1,19 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Comment, CreateCommentRequest } from '../models';
+import { isPlatformServer } from '@angular/common';
 
 @Injectable({
     providedIn: 'root',
 })
 export class CommentService {
-    private apiUrl = 'http://localhost:9090';
+    private apiUrl: string;
+    private readonly platformId = inject(PLATFORM_ID);
 
-    constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient) {
+        this.apiUrl = isPlatformServer(this.platformId) ? 'http://gateway:8080' : 'http://localhost:8080';
+    }
 
     getComments(postId: number): Observable<Comment[]> {
         return this.http.get<Comment[]>(`${this.apiUrl}/comments/post/${postId}`, {

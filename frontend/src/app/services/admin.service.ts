@@ -1,15 +1,20 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { User, Post, Report, DashboardStats, AdminAction, UserModeration, ContentModeration } from '../models';
+import { isPlatformServer } from '@angular/common';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AdminService {
-  private readonly API_URL = 'http://localhost:9090/api/admin';
+  private readonly API_URL: string;
+  private readonly platformId = inject(PLATFORM_ID);
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+    const baseUrl = isPlatformServer(this.platformId) ? 'http://gateway:8080' : 'http://localhost:8080';
+    this.API_URL = `${baseUrl}/api/admin`;
+  }
 
   // User Management
   getAllUsers(): Observable<User[]> {

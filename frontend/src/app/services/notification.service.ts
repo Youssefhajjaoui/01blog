@@ -29,7 +29,8 @@ export interface NotificationDto {
   providedIn: 'root',
 })
 export class NotificationService {
-  private readonly API_URL = 'http://localhost:9090/api';
+  private readonly API_URL: string;
+  private readonly BASE_URL: string;
   private eventSource: EventSource | null = null;
   private readonly platformId = inject(PLATFORM_ID);
 
@@ -44,7 +45,12 @@ export class NotificationService {
   public notifications$ = this.notificationsSubject.asObservable();
   public unreadCount$ = this.unreadCountSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    // Use gateway for SSR in Docker, localhost for browser
+    const baseUrl = isPlatformBrowser(this.platformId) ? 'http://localhost:8080' : 'http://gateway:8080';
+    this.BASE_URL = baseUrl;
+    this.API_URL = `${baseUrl}/api`;
+  }
 
   /**
    * Load notifications from backend

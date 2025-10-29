@@ -15,6 +15,7 @@ RUN mvn dependency:go-offline
 
 # Copy source code
 COPY src ./src
+COPY .env .env
 
 # Change ownership to the maven user
 RUN chown -R maven:maven /app
