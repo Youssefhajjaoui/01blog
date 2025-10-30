@@ -52,11 +52,11 @@
 
                     <!-- Post Media -->
                     <div *ngIf="post.media != undefined" class="post-media">
-                        <img *ngIf="post.media[0].type === 'IMAGE'" [src]="getPostMediaUrl()" [alt]="post.title"
+                        <img *ngIf="post.media[0]?.type === 'IMAGE'" [src]="getPostMediaUrl()" [alt]="post.title"
                             class="media-image" />
-                        <video *ngIf="post.media[0].type === 'VIDEO'" [src]="getPostMediaUrl()" controls
+                        <video *ngIf="post.media[0]?.type === 'VIDEO'" [src]="getPostMediaUrl()" controls
                             class="media-video"></video>
-                        <audio *ngIf="post.media[0].type === 'AUDIO'" [src]="getPostMediaUrl()" controls
+                        <audio *ngIf="post.media[0]?.type === 'AUDIO'" [src]="getPostMediaUrl()" controls
                             class="media-audio"></audio>
                     </div>
 
