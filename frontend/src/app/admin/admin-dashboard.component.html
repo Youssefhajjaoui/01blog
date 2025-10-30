@@ -420,7 +420,6 @@
 
                     <!-- Reports List -->
                     <div class="reports-list">
-                        <p>{{reports().length}}</p>
                         <div *ngFor="let report of reports()" class="report-item"
                             (click)="onClickReport(report.reportedPost?.id || null)">
                             <div class="report-content">

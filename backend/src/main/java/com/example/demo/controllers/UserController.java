@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.models.User;
+import com.example.demo.dtos.Userdto;
 import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.SubscriptionRepository;
 import com.example.demo.repositories.UserRepository;
@@ -34,7 +35,7 @@ public class UserController {
      * Get user profile by ID
      */
     @GetMapping("/{userId}")
-    public ResponseEntity<UserProfileDto> getUserProfile(@PathVariable Long userId, 
+    public ResponseEntity<Userdto> getUserProfile(@PathVariable Long userId, 
                                                          @AuthenticationPrincipal User currentUser) {
         Optional<User> userOpt = userRepository.findById(userId);
         
@@ -54,18 +55,16 @@ public class UserController {
         long followingCount = subscriptionRepository.countByFollower(user);
         long postCount = postRepository.findByCreator(user).size();
 
-        UserProfileDto profile = new UserProfileDto(
-            user.getId(),
-            user.getUsername(),
-            user.getEmail(),
-            user.getImage(),
-            user.getBio(),
-            user.getRole().toString(),
-            followerCount,
-            followingCount,
-            postCount,
-            user.getCreatedAt()
-        );
+        Userdto profile = new Userdto();
+        profile.setId(user.getId());
+        profile.setUsername(user.getUsername());
+        profile.setEmail(user.getEmail());
+        profile.setAvatar(user.getImage());
+        profile.setBio(user.getBio());
+        profile.setRole(user.getRole());
+        profile.setFollowers((int) followerCount);
+        profile.setFollowing((int) followingCount);
+        profile.setPosts((int) postCount);
 
         return ResponseEntity.ok(profile);
     }
@@ -91,67 +90,6 @@ public class UserController {
         return ResponseEntity.ok(isFollowing);
     }
 
-    /**
-     * DTO for user profile
-     */
-    public static class UserProfileDto {
-        private Long id;
-        private String username;
-        private String email;
-        private String image;
-        private String bio;
-        private String role;
-        private long followerCount;
-        private long followingCount;
-        private long postCount;
-        private java.time.LocalDateTime createdAt;
-
-        public UserProfileDto(Long id, String username, String email, String image, 
-                            String bio, String role, long followerCount, 
-                            long followingCount, long postCount, 
-                            java.time.LocalDateTime createdAt) {
-            this.id = id;
-            this.username = username;
-            this.email = email;
-            this.image = image;
-            this.bio = bio;
-            this.role = role;
-            this.followerCount = followerCount;
-            this.followingCount = followingCount;
-            this.postCount = postCount;
-            this.createdAt = createdAt;
-        }
-
-        // Getters and Setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
-        
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-        
-        public String getImage() { return image; }
-        public void setImage(String image) { this.image = image; }
-        
-        public String getBio() { return bio; }
-        public void setBio(String bio) { this.bio = bio; }
-        
-        public String getRole() { return role; }
-        public void setRole(String role) { this.role = role; }
-        
-        public long getFollowerCount() { return followerCount; }
-        public void setFollowerCount(long followerCount) { this.followerCount = followerCount; }
-        
-        public long getFollowingCount() { return followingCount; }
-        public void setFollowingCount(long followingCount) { this.followingCount = followingCount; }
-        
-        public long getPostCount() { return postCount; }
-        public void setPostCount(long postCount) { this.postCount = postCount; }
-        
-        public java.time.LocalDateTime getCreatedAt() { return createdAt; }
-        public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
-    }
+    // Removed inner UserProfileDto to avoid duplication; using shared Userdto instead
 }
 

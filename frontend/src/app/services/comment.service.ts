@@ -12,7 +12,7 @@ export class CommentService {
     private readonly platformId = inject(PLATFORM_ID);
 
     constructor(private http: HttpClient) {
-        this.apiUrl = isPlatformServer(this.platformId) ? 'http://gateway:8080' : 'http://localhost:8080';
+        this.apiUrl = isPlatformServer(this.platformId) ? 'http://gateway:8080/api' : 'http://localhost:8080/api';
     }
 
     getComments(postId: number): Observable<Comment[]> {

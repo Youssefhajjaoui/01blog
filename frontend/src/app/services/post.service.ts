@@ -20,8 +20,8 @@ export class PostService {
   constructor(private http: HttpClient) {
     // Use different API URL based on where code is running
     this.apiUrl = isPlatformServer(this.platformId)
-      ? 'http://gateway:8080'  // Server-side (SSR in Docker)
-      : 'http://localhost:8080'; // Client-side (browser)
+      ? 'http://gateway:8080/api'  // Server-side (SSR in Docker)
+      : 'http://localhost:8080/api'; // Client-side (browser)
   }
 
   getPosts(): Observable<Post[]> {
@@ -126,7 +126,7 @@ export class PostService {
 
   reportPost(reportData: { postId: number; reason: string; details: string }): Observable<any> {
     return this.http.post<any>(
-      `http://localhost:8080/reports/posts/${reportData.postId}`,
+      `${this.apiUrl}/reports/posts/${reportData.postId}`,
       {
         reason: reportData.reason,
         description: reportData.details,

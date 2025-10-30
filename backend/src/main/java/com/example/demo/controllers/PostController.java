@@ -9,6 +9,8 @@ import com.example.demo.models.Subscription;
 import com.example.demo.models.User;
 import com.example.demo.models.UserRole;
 import com.example.demo.models.MediaType;
+import com.example.demo.services.FileStorageService;
+import com.example.demo.services.MediaService;
 import com.example.demo.repositories.LikeRepository;
 import com.example.demo.services.SseNotificationService;
 import com.example.demo.dtos.NotificationDto;
@@ -30,7 +32,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/posts")
+@RequestMapping("/api/posts")
 public class PostController {
 
     private final PostRepository postRepository;
@@ -38,17 +40,22 @@ public class PostController {
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
     private final SseNotificationService sseNotificationService;
+    private final MediaService mediaService;
     private final LikeRepository likeRepository;
+    private final FileStorageService fileservise;
 
     public PostController(PostRepository postRepository, UserRepository userRepository,
             SubscriptionRepository subscriptionRepository, NotificationRepository notificationRepository,
-            SseNotificationService sseNotificationService, LikeRepository likerepository) {
+            SseNotificationService sseNotificationService, LikeRepository likerepository, MediaService mediaService,
+            FileStorageService fileservice) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.notificationRepository = notificationRepository;
         this.sseNotificationService = sseNotificationService;
         this.likeRepository = likerepository;
+        this.mediaService = mediaService;
+        this.fileservise = fileservice;
     }
 
     // ----------------- CREATE -----------------
@@ -64,17 +71,9 @@ public class PostController {
 
         // Auto-determine media type based on file extension if not set
         if (post.getMediaUrl() != null && post.getMediaType() == null) {
-            String mediaUrl = post.getMediaUrl();
-            String lowerUrl = mediaUrl.toLowerCase();
-
-            if (lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".webm") ||
-                    lowerUrl.endsWith(".avi") || lowerUrl.endsWith(".mov") ||
-                    lowerUrl.endsWith(".mkv") || lowerUrl.endsWith(".flv")) {
-                post.setMediaType(MediaType.VIDEO);
-            } else if (lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg") ||
-                    lowerUrl.endsWith(".png") || lowerUrl.endsWith(".gif") ||
-                    lowerUrl.endsWith(".webp") || lowerUrl.endsWith(".svg")) {
-                post.setMediaType(MediaType.IMAGE);
+            MediaType detected = mediaService.determineMediaTypeFromUrl(post.getMediaUrl());
+            if (detected != null) {
+                post.setMediaType(detected);
             }
         }
 
@@ -176,6 +175,7 @@ public class PostController {
         Post post = optionalPost.get();
 
         try {
+            fileservise.deleteFileByUrl(post.getMediaUrl());
             postRepository.delete(post);
             return ResponseEntity.noContent().build();
 
@@ -252,16 +252,18 @@ public class PostController {
         dto.setTags(post.getTags());
         dto.setLikes(post.getLikes() != null ? post.getLikes().size() : 0); // Request likes from backend
         dto.setComments(post.getComments() != null ? post.getComments().size() : 0); // Request comments from backend
-        
+
         // Handle unauthenticated requests (principale can be null)
         if (principale != null) {
-            dto.setLiked(likeRepository.findByCreator_IdAndPost_Id(principale.getId(), post.getId()).orElse(null) != null);
-            dto.setSubscribed(subscriptionRepository.findByFollowerAndFollowed(principale, post.getCreator()).orElse(null) != null);
+            dto.setLiked(
+                    likeRepository.findByCreator_IdAndPost_Id(principale.getId(), post.getId()).orElse(null) != null);
+            dto.setSubscribed(subscriptionRepository.findByFollowerAndFollowed(principale, post.getCreator())
+                    .orElse(null) != null);
         } else {
             dto.setLiked(false);
             dto.setSubscribed(false);
         }
-        
+
         dto.setCreatedAt(post.getCreatedAt().toString());
         dto.setVisibility("public"); // Or your logic
         return dto;

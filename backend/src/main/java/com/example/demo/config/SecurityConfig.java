@@ -42,14 +42,13 @@ public class SecurityConfig {
                 .cors(cors -> cors.disable()) // Disable backend CORS - Gateway handles it
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/posts/**").authenticated()
                         .requestMatchers("/api/auth/test-suggestions").permitAll()
                         .requestMatchers("/api/suggestions/search").authenticated()
                         .requestMatchers("/api/suggestions/users").authenticated()
                         .requestMatchers("/api/users/**").authenticated()
-                        .requestMatchers("/api/files/uploads/**").permitAll()
-                        .requestMatchers("/uploads/**").permitAll()
+                        // Static local file serving removed
                         .requestMatchers("/api/sse/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()

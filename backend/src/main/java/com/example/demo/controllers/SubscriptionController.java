@@ -20,7 +20,7 @@ import com.example.demo.repositories.SubscriptionRepository;
 import com.example.demo.repositories.UserRepository;
 
 @RestController
-@RequestMapping("/subscriptions")
+@RequestMapping("/api/subscriptions")
 public class SubscriptionController {
 
     private final SubscriptionRepository subscriptionRepository;

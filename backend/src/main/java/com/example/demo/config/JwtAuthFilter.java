@@ -25,7 +25,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserRepository userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
-    
+
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(JwtAuthFilter.class);
 
     public JwtAuthFilter(JwtUtil jwtUtil, UserRepository uds, TokenBlacklistService tokenBlacklistService) {
@@ -44,19 +44,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // Allow certain endpoints without authentication
         if (path.startsWith("/api/auth/") ||
-                path.startsWith("/api/files/uploads/") ||
-                path.startsWith("/uploads/") ||
                 path.equals("/error")) {
             filterChain.doFilter(request, response);
             return;
         }
-        
-        // Allow GET requests to posts without authentication
-        if ("GET".equalsIgnoreCase(method) && path.startsWith("/posts")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-        
+
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             // No cookies - let Spring Security decide if endpoint is permitAll
@@ -100,7 +92,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     User user = optionalUser.get();
                     boolean isValid = jwtUtil.validateToken(token, user);
                     logger.debug("Token validation result: {}", isValid);
-                    
+
                     if (isValid) {
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                 user, null, user.getAuthorities());
