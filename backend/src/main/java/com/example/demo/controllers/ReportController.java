@@ -25,7 +25,7 @@ import com.example.demo.repositories.ReportRepository;
 import com.example.demo.repositories.UserRepository;
 
 @RestController
-@RequestMapping("/reports")
+@RequestMapping("/api/reports")
 public class ReportController {
 
     private final ReportRepository reportRepository;

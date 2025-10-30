@@ -20,6 +20,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dtos.DashboardStats;
+import com.example.demo.dtos.PostDto;
+import com.example.demo.dtos.Userdto;
+import com.example.demo.dtos.MediaDto;
 import com.example.demo.dtos.ReportDto;
 import com.example.demo.models.Post;
 import com.example.demo.models.Report;
@@ -31,6 +34,7 @@ import com.example.demo.models.Subscription;
 import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.ReportRepository;
 import com.example.demo.repositories.UserRepository;
+import com.example.demo.services.FileStorageService;
 import com.example.demo.repositories.CommentRepository;
 import com.example.demo.repositories.LikeRepository;
 import com.example.demo.repositories.SubscriptionRepository;
@@ -45,39 +49,43 @@ public class AdminController {
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final FileStorageService fileStorageService;
 
     public AdminController(UserRepository userRepository, PostRepository postRepository,
             ReportRepository reportRepository, CommentRepository commentRepository,
-            LikeRepository likeRepository, SubscriptionRepository subscriptionRepository) {
+            LikeRepository likeRepository, SubscriptionRepository subscriptionRepository,
+            FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.reportRepository = reportRepository;
         this.commentRepository = commentRepository;
         this.likeRepository = likeRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     // User Management Endpoints
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers(@AuthenticationPrincipal User principal) {
+    public ResponseEntity<List<Userdto>> getAllUsers(@AuthenticationPrincipal User principal) {
         if (principal == null || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        List<User> users = userRepository.findAll();
+        List<Userdto> users = userRepository.findAll().stream()
+                .map(this::mapUserToDto)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(users);
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id, @AuthenticationPrincipal User principal) {
+    public ResponseEntity<Userdto> getUserById(@PathVariable Long id, @AuthenticationPrincipal User principal) {
         if (principal == null || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         Optional<User> user = userRepository.findById(id);
-        return user.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        return user.map(u -> ResponseEntity.ok(mapUserToDto(u))).orElse(ResponseEntity.notFound().build());
     }
-
 
     @PostMapping("/users/{id}/ban")
     public ResponseEntity<Object> banUser(@PathVariable Long id, @RequestBody(required = false) BanRequest request,
@@ -170,8 +178,6 @@ public class AdminController {
         }
 
         try {
-            // Delete related entities first to avoid foreign key constraint violations
-
             // Delete user's posts
             List<Post> userPosts = postRepository.findByCreator_Id(id);
             if (!userPosts.isEmpty()) {
@@ -224,23 +230,25 @@ public class AdminController {
 
     // Post Management Endpoints
     @GetMapping("/posts")
-    public ResponseEntity<List<Post>> getAllPosts(@AuthenticationPrincipal User principal) {
+    public ResponseEntity<List<PostDto>> getAllPosts(@AuthenticationPrincipal User principal) {
         if (principal == null || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        List<Post> posts = postRepository.findAll();
+        List<PostDto> posts = postRepository.findAll().stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(posts);
     }
 
     @GetMapping("/posts/{id}")
-    public ResponseEntity<Post> getPostById(@PathVariable Long id, @AuthenticationPrincipal User principal) {
+    public ResponseEntity<PostDto> getPostById(@PathVariable Long id, @AuthenticationPrincipal User principal) {
         if (principal == null || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         Optional<Post> post = postRepository.findById(id);
-        return post.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        return post.map(p -> ResponseEntity.ok(mapToDto(p))).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/posts/{id}/hide")
@@ -271,7 +279,10 @@ public class AdminController {
             return ResponseEntity.notFound().build();
         }
 
-        postRepository.delete(optionalPost.get());
+        // Delete post media if present
+        Post post = optionalPost.get();
+        fileStorageService.deleteFileByUrl(post.getMediaUrl());
+        postRepository.delete(post);
         return ResponseEntity.ok().body(java.util.Map.of("message", "Post deleted successfully"));
     }
 
@@ -403,7 +414,7 @@ public class AdminController {
     }
 
     // Scheduled task to automatically unban users when their ban expires
-    @Scheduled(fixedRate = 300000) // Run every 5 minutes
+    @Scheduled(fixedRate = 60000) // Run every minute
     @Transactional
     public void autoUnbanExpiredUsers() {
         try {
@@ -554,14 +565,62 @@ public class AdminController {
         }
 
         List<User> users = userRepository.findAllById(request.userIds);
-        // Filter out admin users
+        // Filter out admin users and collect
         List<User> deletableUsers = users.stream()
                 .filter(user -> user.getRole() != UserRole.ADMIN)
                 .collect(Collectors.toList());
 
+        // Delete avatars and user posts' media, then delete users
+        for (User u : deletableUsers) {
+            fileStorageService.deleteFileByUrl(u.getImage());
+            List<Post> posts = postRepository.findByCreator_Id(u.getId());
+            for (Post p : posts) {
+                fileStorageService.deleteFileByUrl(p.getMediaUrl());
+            }
+        }
+
         userRepository.deleteAll(deletableUsers);
 
         return ResponseEntity.ok().body(java.util.Map.of("message", "Users deleted successfully"));
+    }
+
+    // Mapping helpers
+    private Userdto mapUserToDto(User user) {
+        Userdto dto = new Userdto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setAvatar(user.getImage());
+        dto.setBio(user.getBio());
+        dto.setRole(user.getRole());
+        dto.setFollowers(subscriptionRepository.findByFollowed(user).size());
+        dto.setFollowing(subscriptionRepository.findByFollower(user).size());
+        dto.setPosts(postRepository.findByCreator_Id(user.getId()).size());
+        return dto;
+    }
+
+    private PostDto mapToDto(Post post) {
+        PostDto dto = new PostDto();
+        dto.setId(post.getId().toString());
+        dto.setAuthor(mapUserToDto(post.getCreator()));
+        dto.setTitle(post.getTitle());
+        dto.setContent(post.getContent());
+        dto.setExcerpt(post.getContent() != null && post.getContent().length() > 100
+                ? post.getContent().substring(0, 100) + "..."
+                : post.getContent());
+        if (post.getMediaUrl() != null && post.getMediaType() != null) {
+            dto.setMedia(java.util.List.of(new MediaDto(post.getMediaType().name(), post.getMediaUrl(), post.getTitle())));
+        } else {
+            dto.setMedia(java.util.List.of());
+        }
+        dto.setTags(post.getTags());
+        dto.setLikes((int) likeRepository.countByPost_Id(post.getId()));
+        dto.setComments(commentRepository.findByPost_Id(post.getId()).size());
+        dto.setLiked(false);
+        dto.setSubscribed(false);
+        dto.setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : null);
+        dto.setVisibility("public");
+        return dto;
     }
 
     // DTOs for request bodies

@@ -46,30 +46,11 @@ public class FileStorageService {
     }
 
     /**
-     * Upload multiple files and return list of URLs
-     * 
-     * @param files  Array of files to upload
-     * @param folder Optional folder
-     * @return List of public URL strings
-     */
-    public List<String> uploadMultipleFiles(MultipartFile[] files, String folder) throws IOException {
-        List<String> urls = new ArrayList<>();
-
-        for (MultipartFile file : files) {
-            if (!file.isEmpty()) {
-                String url = uploadFile(file, folder);
-                urls.add(url);
-            }
-        }
-
-        return urls;
-    }
-
-    /**
      * Upload raw bytes with a provided filename and content type.
      * Useful for base64 uploads.
      */
-    public String uploadBytes(byte[] bytes, String contentType, String originalFilename, String folder) throws IOException {
+    public String uploadBytes(byte[] bytes, String contentType, String originalFilename, String folder)
+            throws IOException {
         if (bytes == null || bytes.length == 0) {
             throw new IllegalArgumentException("File bytes cannot be empty");
         }

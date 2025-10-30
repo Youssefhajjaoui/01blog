@@ -21,7 +21,7 @@ import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.UserRepository;
 
 @RestController
-@RequestMapping("/likes")
+@RequestMapping("/api/likes")
 public class LikeController {
 
     private final LikeRepository likeRepository;

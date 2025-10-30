@@ -26,7 +26,7 @@ import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.UserRepository;
 
 @RestController
-@RequestMapping("/comments")
+@RequestMapping("/api/comments")
 public class CommentController {
 
     private final CommentRepository commentRepository;

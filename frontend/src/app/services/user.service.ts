@@ -32,8 +32,8 @@ export class UserService {
   constructor(private http: HttpClient, private storageService: StorageService) {
     // Use different API URL based on where code is running
     this.API_URL = isPlatformServer(this.platformId)
-      ? 'http://gateway:8080'  // Server-side (SSR in Docker)
-      : 'http://localhost:8080'; // Client-side (browser)
+      ? 'http://gateway:8080/api'  // Server-side (SSR in Docker)
+      : 'http://localhost:8080/api'; // Client-side (browser)
 
     // Automatically fetch user from server on service initialization
     // This ensures the user data is available immediately when any component injects this service
@@ -65,7 +65,7 @@ export class UserService {
    * Check authentication status by calling /api/auth/me
    */
   private checkAuthStatus(): Observable<User | null> {
-    return this.http.get<User>(`${this.API_URL}/api/auth/me`, { withCredentials: true }).pipe(
+    return this.http.get<User>(`${this.API_URL}/auth/me`, { withCredentials: true }).pipe(
       tap((user) => {
         // Store user data both in memory and localStorage for persistence
         this.currentUserSubject.next(user);
@@ -121,7 +121,7 @@ export class UserService {
   getUserProfile(userId: number): Observable<UserProfile> {
     this.loadingSubject.next(true);
     return this.http
-      .get<UserProfile>(`${this.API_URL}/api/users/${userId}`, { withCredentials: true })
+      .get<UserProfile>(`${this.API_URL}/users/${userId}`, { withCredentials: true })
       .pipe(
         tap(() => this.loadingSubject.next(false)),
         catchError((error) => {
@@ -151,7 +151,7 @@ export class UserService {
   updateProfile(updateData: UpdateProfileRequest): Observable<User> {
     this.loadingSubject.next(true);
     return this.http
-      .put<User>(`${this.API_URL}/api/users/profile`, updateData, { withCredentials: true })
+      .put<User>(`${this.API_URL}/users/profile`, updateData, { withCredentials: true })
       .pipe(
         tap((updatedUser) => {
           this.currentUserSubject.next(updatedUser);
@@ -171,7 +171,7 @@ export class UserService {
   changePassword(passwordData: ChangePasswordRequest): Observable<any> {
     this.loadingSubject.next(true);
     return this.http
-      .put(`${this.API_URL}/api/users/change-password`, passwordData, { withCredentials: true })
+      .put(`${this.API_URL}/users/change-password`, passwordData, { withCredentials: true })
       .pipe(
         tap(() => this.loadingSubject.next(false)),
         catchError((error) => {
@@ -190,7 +190,7 @@ export class UserService {
     formData.append('avatar', file);
 
     return this.http
-      .post<{ avatarUrl: string }>(`${this.API_URL}/api/users/upload-avatar`, formData, {
+      .post<{ avatarUrl: string }>(`${this.API_URL}/users/upload-avatar`, formData, {
         withCredentials: true,
       })
       .pipe(
@@ -268,7 +268,7 @@ export class UserService {
    * Search users by username
    */
   searchUsers(query: string): Observable<User[]> {
-    return this.http.get<User[]>(`${this.API_URL}/api/suggestions/search`, {
+    return this.http.get<User[]>(`${this.API_URL}/suggestions/search`, {
       params: { q: query },
       withCredentials: true,
     });

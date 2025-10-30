@@ -1,24 +1,15 @@
 package com.example.demo.controllers;
 
 import com.example.demo.services.FileStorageService;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import com.example.demo.services.MediaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.beans.factory.annotation.Value;
 import com.example.demo.models.User;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +19,14 @@ public class FileController {
 
     private static final Logger logger = LoggerFactory.getLogger(FileController.class);
     private final FileStorageService fileStorageService;
+    private final MediaService mediaService;
 
     // Supabase folder inside bucket
     private static final String SUPABASE_FOLDER = "uploads";
 
-    public FileController(FileStorageService fileStorageService) {
+    public FileController(FileStorageService fileStorageService, MediaService mediaService) {
         this.fileStorageService = fileStorageService;
+        this.mediaService = mediaService;
     }
 
     @PostMapping("/upload")
@@ -77,8 +70,7 @@ public class FileController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Missing base64Data or filename"));
             }
 
-            byte[] bytes = java.util.Base64.getDecoder().decode(base64Data);
-            String fileUrl = fileStorageService.uploadBytes(bytes, contentType, filename, SUPABASE_FOLDER);
+            String fileUrl = mediaService.uploadBase64(base64Data, filename, contentType, SUPABASE_FOLDER);
 
             return ResponseEntity.ok(Map.of(
                     "url", fileUrl,

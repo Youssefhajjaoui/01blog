@@ -1,10 +1,6 @@
 package com.example.demo.controllers;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.Date;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -19,16 +15,13 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.dtos.AuthResponseDto;
 import com.example.demo.dtos.UserLoginDto;
@@ -38,11 +31,10 @@ import com.example.demo.repositories.UserRepository;
 import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.SubscriptionRepository;
 import com.example.demo.services.FileStorageService;
+import com.example.demo.services.MediaService;
+import com.example.demo.services.TimeFormatter;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.security.TokenBlacklistService;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,6 +50,7 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final ObjectMapper objectMapper;
     private final FileStorageService fileStorageService;
+    private final MediaService mediaService;
     private final PostRepository postRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final TokenBlacklistService tokenBlacklistService;
@@ -68,6 +61,7 @@ public class AuthController {
             AuthenticationManager authManager,
             ObjectMapper objectMapper,
             FileStorageService fileStorageService,
+            MediaService mediaService,
             PostRepository postRepository,
             SubscriptionRepository subscriptionRepository,
             TokenBlacklistService tokenBlacklistService) {
@@ -77,6 +71,7 @@ public class AuthController {
         this.authManager = authManager;
         this.objectMapper = objectMapper;
         this.fileStorageService = fileStorageService;
+        this.mediaService = mediaService;
         this.postRepository = postRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.tokenBlacklistService = tokenBlacklistService;
@@ -104,51 +99,7 @@ public class AuthController {
             String photoUrl = null;
             if (userDto.getAvatar() != null && !userDto.getAvatar().isEmpty()) {
                 try {
-                    String avatar = userDto.getAvatar().trim();
-
-                    // If it's already a URL, store as-is
-                    if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
-                        photoUrl = avatar;
-                    } else {
-                        String contentType = "image/jpeg"; // default
-                        String filename = "avatar.jpg";
-                        String base64Payload = avatar;
-
-                        // data URL format: data:image/png;base64,<payload>
-                        if (avatar.startsWith("data:")) {
-                            int commaIndex = avatar.indexOf(',');
-                            if (commaIndex > 0) {
-                                String header = avatar.substring(0, commaIndex); // e.g. data:image/png;base64
-                                base64Payload = avatar.substring(commaIndex + 1);
-
-                                // Extract content type
-                                int colonIdx = header.indexOf(':');
-                                int semiIdx = header.indexOf(';');
-                                if (colonIdx >= 0 && semiIdx > colonIdx) {
-                                    contentType = header.substring(colonIdx + 1, semiIdx);
-                                }
-
-                                // Filename extension from contentType
-                                String ext = ".jpg";
-                                if (contentType.contains("png")) ext = ".png";
-                                else if (contentType.contains("jpeg")) ext = ".jpg";
-                                else if (contentType.contains("jpg")) ext = ".jpg";
-                                else if (contentType.contains("webp")) ext = ".webp";
-                                else if (contentType.contains("gif")) ext = ".gif";
-                                filename = "avatar" + ext;
-                            }
-                        }
-
-                        byte[] bytes;
-                        try {
-                            bytes = java.util.Base64.getDecoder().decode(base64Payload);
-                        } catch (IllegalArgumentException ex) {
-                            // Try URL-safe decoder as fallback
-                            bytes = java.util.Base64.getUrlDecoder().decode(base64Payload);
-                        }
-
-                        photoUrl = fileStorageService.uploadBytes(bytes, contentType, filename, "uploads");
-                    }
+                    photoUrl = mediaService.handleAvatarUpload(userDto.getAvatar());
                 } catch (Exception e) {
                     return ResponseEntity.badRequest()
                             .body(new AuthResponseDto("Invalid avatar data: " + e.getMessage()));
@@ -204,19 +155,18 @@ public class AuthController {
             // intercept it)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new AuthResponseDto("Invalid username or password"));
-        } catch (AuthenticationException e) {
-            // Handle other authentication exceptions
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new AuthResponseDto("Authentication failed: " + e.getMessage()));
         } catch (RuntimeException e) {
             // Handle runtime exceptions (like banned users)
-            if (e.getMessage() != null && e.getMessage().contains("banned")) {
+            if (e.getMessage().equals("User account is banned")) {
+                LocalDateTime banEnd = userRepository.findByUsername(loginDto.getUsername()).get().getBanEnd();
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(new AuthResponseDto("Account is banned"));
+                        .body(new AuthResponseDto(TimeFormatter.formatBanMessage(banEnd)));
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new AuthResponseDto("Authentication failed: " + e.getMessage()));
-        } catch (Exception e) {
+        } catch (
+
+        Exception e) {
             // Handle any other exceptions
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new AuthResponseDto("Login failed: " + e.getMessage()));
