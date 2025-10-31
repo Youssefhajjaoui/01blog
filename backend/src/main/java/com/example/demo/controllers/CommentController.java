@@ -21,6 +21,7 @@ import com.example.demo.dtos.UpdateCommentRequest;
 import com.example.demo.models.Comment;
 import com.example.demo.models.Post;
 import com.example.demo.models.User;
+import com.example.demo.models.UserRole;
 import com.example.demo.repositories.CommentRepository;
 import com.example.demo.repositories.PostRepository;
 import com.example.demo.repositories.UserRepository;
@@ -56,10 +57,10 @@ public class CommentController {
         comment.setCreator(principal);
         comment.setPost(optPost.get());
         Comment saved = commentRepository.save(comment);
-        
+
         // Convert to DTO
         CommentDto commentDto = convertToDTO(saved);
-        
+
         return ResponseEntity.status(HttpStatus.CREATED).body(commentDto);
     }
 
@@ -67,11 +68,11 @@ public class CommentController {
     @GetMapping("/post/{postId}")
     public ResponseEntity<List<CommentDto>> getCommentsForPost(@PathVariable Long postId) {
         List<Comment> comments = commentRepository.findByPost_Id(postId);
-        
+
         List<CommentDto> commentDtos = comments.stream()
-            .map(this::convertToDTO)
-            .collect(java.util.stream.Collectors.toList());
-            
+                .map(this::convertToDTO)
+                .collect(java.util.stream.Collectors.toList());
+
         return ResponseEntity.ok(commentDtos);
     }
 
@@ -91,14 +92,14 @@ public class CommentController {
         Comment comment = optComment.get();
         comment.setContent(updateRequest.getContent());
         Comment saved = commentRepository.save(comment);
-        
+
         // Convert to DTO
         CommentDto commentDto = convertToDTO(saved);
-        
+
         System.out.println("CommentController: Returning CommentDto: " + commentDto);
         System.out.println("CommentController: CommentDto ID: " + commentDto.getId());
         System.out.println("CommentController: CommentDto Content: " + commentDto.getContent());
-        
+
         return ResponseEntity.ok(commentDto);
     }
 
@@ -110,8 +111,10 @@ public class CommentController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         User currentUser = principal;
 
-        Optional<Comment> optComment = commentRepository.findByIdAndCreator_Id(id, currentUser.getId());
-        if (optComment.isEmpty())
+        Optional<Comment> optComment = commentRepository.findById(id);
+
+        if (optComment.isEmpty() || (!optComment.get().getCreator().equals(currentUser)
+                && !currentUser.getRole().equals(UserRole.ADMIN)))
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
         commentRepository.delete(optComment.get());
@@ -124,12 +127,11 @@ public class CommentController {
         authorDto.setId(comment.getCreator().getId());
         authorDto.setUsername(comment.getCreator().getUsername());
         authorDto.setAvatar(comment.getCreator().getImage());
-        
+
         return new CommentDto(
-            comment.getId(),
-            comment.getContent(),
-            comment.getCreatedAt(),
-            authorDto
-        );
+                comment.getId(),
+                comment.getContent(),
+                comment.getCreatedAt(),
+                authorDto);
     }
 }

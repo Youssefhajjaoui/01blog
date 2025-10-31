@@ -60,8 +60,8 @@ services:
       dockerfile: Dockerfile.dev
     container_name: backend-dev
     # Expose internally only for development (gateway will proxy)
-    expose:
-      - "9090"
+    ports:
+      - "9090:9090"
     depends_on:
       - postgres
       - redis
