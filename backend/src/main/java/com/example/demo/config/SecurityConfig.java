@@ -44,7 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/posts/**").authenticated()
-                        .requestMatchers("/api/auth/test-suggestions").permitAll()
+                        .requestMatchers("/api/auth/test-suggestions").authenticated()
                         .requestMatchers("/api/suggestions/search").authenticated()
                         .requestMatchers("/api/suggestions/users").authenticated()
                         .requestMatchers("/api/users/**").authenticated()
@@ -107,10 +107,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow requests from frontend through gateway and direct localhost access
         configuration.setAllowedOriginPatterns(Arrays.asList(
-                "http://localhost:*",
-                "http://gateway:*",
-                "*" // Allow any origin in development
-        ));
+                "http://localhost:8080",
+                "http://gateway:*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
