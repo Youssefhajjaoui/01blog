@@ -131,7 +131,10 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     this.localSubscribed.set(this.post.isSubscribed);
     this.localLikes.set(this.post.likes);
     this.currentUser = this.authService.getCurrentUser();
-    console.warn(this.post);
+    console.warn(this.post.hidden);
+    if (this.post.hidden) {
+      return;
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {

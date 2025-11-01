@@ -340,7 +340,7 @@ export class ProfileComponent implements OnInit {
 
   private handlePostClick(post: Post) {
     console.log('Navigate to post:', post);
-    // TODO: Implement post navigation
+    this.router.navigate(['/post', post.id]);
   }
 
   private handleUserClick(userId: string) {
