@@ -30,6 +30,8 @@ export interface Post {
   updatedAt?: string;
   visibility: 'PUBLIC' | 'PRIVATE' | 'FRIENDS';
   status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  hidden?: boolean;
+  hideReason?: string;
 }
 
 /**

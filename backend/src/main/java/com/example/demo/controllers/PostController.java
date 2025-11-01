@@ -87,20 +87,43 @@ public class PostController {
 
     @GetMapping
     public List<PostDto> getAllPosts(@AuthenticationPrincipal User principale) {
-        return postRepository.findAllByOrderByCreatedAtDesc().stream().map(post -> mapToDto(post, principale))
+        boolean isAdmin = principale != null && principale.getRole() == UserRole.ADMIN;
+
+        return postRepository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(post -> {
+                    boolean isCreator = principale != null && principale.getId().equals(post.getCreator().getId());
+                    return isAdmin || isCreator || !post.getHidden();
+                })
+                .map(post -> mapToDto(post, principale))
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PostDto> getPostById(@PathVariable Long id, @AuthenticationPrincipal User principale) {
-        return postRepository.findById(id)
-                .map(post -> ResponseEntity.ok(mapToDto(post, principale)))
-                .orElse(ResponseEntity.notFound().build());
+        boolean isAdmin = principale != null && principale.getRole() == UserRole.ADMIN;
+        Optional<Post> postOpt = postRepository.findById(id);
+        if (postOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Post post = postOpt.get();
+        boolean isCreator = principale != null && post.getCreator().getId().equals(principale.getId());
+        // Only admins and creators can see hidden posts
+        if (post.getHidden() && !isAdmin && !isCreator) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(mapToDto(post, principale));
     }
 
     @GetMapping("/user/{userId}")
-    public List<Post> getPostsByUser(@PathVariable Long userId) {
-        return postRepository.findByCreator_Id(userId);
+    public List<PostDto> getPostsByUser(@PathVariable Long userId,
+            @AuthenticationPrincipal User principale) {
+        boolean isAdmin = principale != null && principale.getRole() == UserRole.ADMIN;
+        boolean isCreator = principale != null && principale.getId().equals(userId);
+
+        return postRepository.findByCreator_Id(userId).stream()
+                .filter(post -> isAdmin || isCreator || !post.getHidden()) // Admins and creators can see hidden posts
+                .map(post -> mapToDto(post, principale))
+                .collect(Collectors.toList());
     }
 
     // ----------------- UPDATE -----------------
@@ -266,6 +289,8 @@ public class PostController {
 
         dto.setCreatedAt(post.getCreatedAt().toString());
         dto.setVisibility("public"); // Or your logic
+        dto.setHidden(post.getHidden() != null ? post.getHidden() : false);
+        dto.setHideReason(post.getHideReason());
         return dto;
     }
 

@@ -50,7 +50,7 @@ export class ProfileComponent implements OnInit {
     this.state.set({ currentUser: user });
 
     // Watch for route parameter changes
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params) => {
       const userId = params['userId'];
 
       console.log('Route params changed, userId:', userId);
@@ -87,13 +87,13 @@ export class ProfileComponent implements OnInit {
           id: userProfile.id,
           username: userProfile.username,
           email: userProfile.email,
-          avatar: userProfile.image,
+          avatar: userProfile.avatar,
           bio: userProfile.bio,
           role: userProfile.role,
           followers: userProfile.followerCount || 0,
           following: userProfile.followingCount || 0,
           posts: userProfile.postCount || 0,
-          createdAt: userProfile.createdAt || new Date().toISOString()
+          createdAt: userProfile.createdAt || new Date().toISOString(),
         });
 
         // ✨ No more detectChanges - signals auto-update!
@@ -109,7 +109,7 @@ export class ProfileComponent implements OnInit {
             },
             error: (error) => {
               console.error('Error checking follow status:', error);
-            }
+            },
           });
         }
 
@@ -123,7 +123,7 @@ export class ProfileComponent implements OnInit {
         // ✨ No more detectChanges!
         // Redirect to own profile if user not found
         this.router.navigate(['/profile']);
-      }
+      },
     });
   }
 
@@ -131,12 +131,10 @@ export class ProfileComponent implements OnInit {
     const user = this.profileUser();
     if (!user) return;
 
-    this.postService.getPosts().subscribe({
+    this.postService.getPostsByUser(user.id).subscribe({
       next: (posts) => {
-        // Filter posts by profile user
-        const filtered = posts.filter((post) => post.author.id === user.id);
-        this.userPosts.set(filtered);
-        console.log('Loaded user posts:', filtered.length, 'posts for user', user.username);
+        this.userPosts.set(posts);
+        console.log('Loaded user posts:', posts.length, 'posts for user', user.username);
         // ✨ No more detectChanges - signals auto-update!
       },
       error: (error) => {
@@ -147,7 +145,8 @@ export class ProfileComponent implements OnInit {
   }
 
   getAvatarUrl(): string {
-    const user = this.profileUser() || this.currentUser();
+    const user = this.profileUser();
+    console.warn(user);
     if (user?.avatar) {
       return user.avatar;
     }
@@ -181,15 +180,19 @@ export class ProfileComponent implements OnInit {
         next: () => {
           this.isFollowing.set(false);
           // Update follower count
-          this.profileUser.update(current => current ? {
-            ...current,
-            followers: Math.max(0, (current.followers || 0) - 1)
-          } : null);
+          this.profileUser.update((current) =>
+            current
+              ? {
+                ...current,
+                followers: Math.max(0, (current.followers || 0) - 1),
+              }
+              : null
+          );
           // ✨ No more detectChanges - signals auto-update!
         },
         error: (error) => {
           console.error('Error unfollowing user:', error);
-        }
+        },
       });
     } else {
       // Follow
@@ -197,15 +200,19 @@ export class ProfileComponent implements OnInit {
         next: () => {
           this.isFollowing.set(true);
           // Update follower count
-          this.profileUser.update(current => current ? {
-            ...current,
-            followers: (current.followers || 0) + 1
-          } : null);
+          this.profileUser.update((current) =>
+            current
+              ? {
+                ...current,
+                followers: (current.followers || 0) + 1,
+              }
+              : null
+          );
           // ✨ No more detectChanges - signals auto-update!
         },
         error: (error) => {
           console.error('Error following user:', error);
-        }
+        },
       });
     }
   }
@@ -283,12 +290,12 @@ export class ProfileComponent implements OnInit {
   }
 
   onPostDeleted(postId: number) {
-    this.userPosts.update(posts => posts.filter((p) => p.id !== postId));
+    this.userPosts.update((posts) => posts.filter((p) => p.id !== postId));
     console.log('Post deleted:', postId);
   }
 
   onPostUpdated(updatedPost: Post) {
-    this.userPosts.update(posts => {
+    this.userPosts.update((posts) => {
       const index = posts.findIndex((p) => p.id === updatedPost.id);
       if (index !== -1) {
         const newPosts = [...posts];
@@ -302,21 +309,25 @@ export class ProfileComponent implements OnInit {
 
   // Helper methods for post interactions
   private handleLike(postId: string) {
-    this.userPosts.update(posts => posts.map((post) =>
-      post.id === Number(postId)
-        ? {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-        }
-        : post
-    ));
+    this.userPosts.update((posts) =>
+      posts.map((post) =>
+        post.id === Number(postId)
+          ? {
+            ...post,
+            isLiked: !post.isLiked,
+            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+          }
+          : post
+      )
+    );
   }
 
   private handleSubscribe(userId: string) {
-    this.userPosts.update(posts => posts.map((post) =>
-      post.author.id === Number(userId) ? { ...post, isSubscribed: !post.isSubscribed } : post
-    ));
+    this.userPosts.update((posts) =>
+      posts.map((post) =>
+        post.author.id === Number(userId) ? { ...post, isSubscribed: !post.isSubscribed } : post
+      )
+    );
   }
 
   private handleComment(postId: string) {

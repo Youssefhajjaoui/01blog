@@ -42,16 +42,35 @@
                         </button>
                     </header>
 
+                    <!-- Hidden Post Warning (for admins and post creators) -->
+                    <div *ngIf="post.hidden && (isAdmin || isOwner)" class="hidden-post-warning">
+                        <div class="hidden-post-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div class="hidden-post-content">
+                            <strong class="hidden-post-title">This post has been hidden</strong>
+                            <p class="hidden-post-reason" *ngIf="post.hideReason">
+                                Reason: {{ post.hideReason }}
+                            </p>
+                            <p class="hidden-post-reason" *ngIf="!post.hideReason">
+                                No specific reason provided
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Post Title -->
-                    <h1 class="post-title">{{ post.title }}</h1>
+                    <h1 *ngIf="!post.hidden" class="post-title">{{ post.title }}</h1>
 
                     <!-- Post Tags -->
-                    <div *ngIf="post.tags && post.tags.length > 0" class="post-tags">
+                    <div *ngIf="post.tags && post.tags.length > 0 && !post.hidden" class="post-tags">
                         <span *ngFor="let tag of post.tags" class="tag-badge">#{{ tag }}</span>
                     </div>
 
                     <!-- Post Media -->
-                    <div *ngIf="post.media != undefined" class="post-media">
+                    <div *ngIf="post.media != undefined && !post.hidden" class="post-media">
                         <img *ngIf="post.media[0]?.type === 'IMAGE'" [src]="getPostMediaUrl()" [alt]="post.title"
                             class="media-image" />
                         <video *ngIf="post.media[0]?.type === 'VIDEO'" [src]="getPostMediaUrl()" controls
@@ -61,10 +80,10 @@
                     </div>
 
                     <!-- Post Content -->
-                    <div class="post-body" [innerHTML]="post.content"></div>
+                    <div *ngIf="!post.hidden" class="post-body" [innerHTML]="post.content"></div>
 
                     <!-- Post Actions -->
-                    <footer class="post-actions">
+                    <footer *ngIf="!post.hidden" class="post-actions">
                         <button class="action-btn" [class.active]="post.isLiked" (click)="handleLike()">
                             <svg class="action-icon" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -88,11 +107,25 @@
                             </svg>
                             Delete
                         </button>
+                        <button *ngIf="isAdmin && !post.hidden" class="action-btn" (click)="handleHide($event)">
+                            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                            Hide Post
+                        </button>
+                        <button *ngIf="isAdmin && post.hidden" class="action-btn" (click)="handleRestore($event)">
+                            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Restore Post
+                        </button>
                     </footer>
                 </article>
 
                 <!-- Comments Section -->
-                <section *ngIf="!loading && post" class="comments-section">
+                <section *ngIf="!loading && post && !post.hidden" class="comments-section">
                     <h2 class="comments-title">Comments ({{ post.comments }})</h2>
 
                     <!-- Add Comment Form -->

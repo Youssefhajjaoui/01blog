@@ -2,6 +2,8 @@ package com.example.demo.dtos;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class PostDto {
     private String id;
     private Userdto author;
@@ -12,10 +14,20 @@ public class PostDto {
     private List<String> tags;
     private int likes;
     private int comments;
+    
+    @JsonProperty("liked")
     private boolean isLiked;
+    
+    @JsonProperty("subscribed")
     private boolean isSubscribed;
+    
     private String createdAt;
     private String visibility;
+    
+    @JsonProperty("hidden")
+    private boolean hidden;
+    
+    private String hideReason;
 
     // Getters
     public String getId() {
@@ -70,6 +82,14 @@ public class PostDto {
         return this.visibility;
     }
 
+    public boolean isHidden() {
+        return this.hidden;
+    }
+
+    public String getHideReason() {
+        return this.hideReason;
+    }
+
     // Setters
     public void setId(String id) {
         this.id = id;
@@ -121,5 +141,13 @@ public class PostDto {
 
     public void setVisibility(String visibility) {
         this.visibility = visibility;
+    }
+
+    public void setHidden(boolean hidden) {
+        this.hidden = hidden;
+    }
+
+    public void setHideReason(String hideReason) {
+        this.hideReason = hideReason;
     }
 }
