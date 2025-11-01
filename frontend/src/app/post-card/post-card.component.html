@@ -24,9 +24,30 @@
       <span class="author-name-sm">{{post.author.username}}</span>
     </div>
 
-    <!-- Content -->
-    <h3 class="card-title-grid">{{post.title}}</h3>
-    <p class="card-excerpt-grid">{{getDisplayContent()}}</p>
+    <!-- Hidden Post Warning (for admins and post creators) -->
+    <div *ngIf="post.hidden && (isAdmin || isOwner)" class="hidden-post-warning">
+      <div class="hidden-post-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div class="hidden-post-content">
+        <strong class="hidden-post-title">This post has been hidden</strong>
+        <p class="hidden-post-reason" *ngIf="post.hideReason">
+          Reason: {{ post.hideReason }}
+        </p>
+        <p class="hidden-post-reason" *ngIf="!post.hideReason">
+          No specific reason provided
+        </p>
+      </div>
+    </div>
+
+    <!-- Title and excerpt only if not hidden -->
+    <ng-container *ngIf="!post.hidden">
+      <h3 class="card-title-grid">{{post.title}}</h3>
+      <p class="card-excerpt-grid">{{getDisplayContent()}}</p>
+    </ng-container>
   </div>
 
   <!-- Footer -->
@@ -280,11 +301,13 @@
       </div>
 
       <!-- Title -->
-      <ng-container *ngIf="!editMode() && !post.hidden; else editFields">
-        <h2 class="content-title">{{post.title}}</h2>
-        <p class="content-excerpt">{{getDisplayContent()}}</p>
-        <span *ngIf="showExcerpt && post.content.length > 200" class="read-more">Click to read more...</span>
-      </ng-container>
+      <div *ngIf="!post.hidden">
+        <ng-container *ngIf="!editMode(); else editFields">
+          <h2 class="content-title">{{post.title}}</h2>
+          <p class="content-excerpt">{{getDisplayContent()}}</p>
+          <span *ngIf="showExcerpt && post.content.length > 200" class="read-more">Click to read more...</span>
+        </ng-container>
+      </div>
 
       <ng-template #editFields>
         <input type="text" class="edit-input title-input" [ngModel]="editablePost().title"

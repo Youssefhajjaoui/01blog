@@ -69,7 +69,6 @@ services:
       - ./backend/src:/app/src:Z
       - ./backend/pom.xml:/app/pom.xml:Z
       - maven_cache:/root/.m2:Z
-      - /home/youzar-boot/uploads:/app/uploads:Z
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - REDIS_HOST=redis
