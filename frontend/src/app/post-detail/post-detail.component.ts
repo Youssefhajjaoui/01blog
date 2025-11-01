@@ -6,6 +6,7 @@ import { PostService } from '../services/post.service';
 import { CommentService } from '../services/comment.service';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
+import { AdminService } from '../services/admin.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
 import { Post, User, Comment, CreateCommentRequest } from '../models';
 import { NotificationService as UINotificationService } from '../services/ui-notification.service';
@@ -36,6 +37,7 @@ export class PostDetailComponent implements OnInit {
     private commentService: CommentService,
     private authService: AuthService,
     private userService: UserService,
+    private adminService: AdminService,
     private cd: ChangeDetectorRef,
     private notificationService: UINotificationService
   ) { }
@@ -384,5 +386,57 @@ export class PostDetailComponent implements OnInit {
     } else if (page === 'editor') {
       this.router.navigate(['/create-post']);
     }
+  }
+
+  handleHide(event: Event) {
+    event.stopPropagation();
+
+    if (!this.post?.id) {
+      this.notificationService.error('Unable to hide post: Post ID not found');
+      return;
+    }
+
+    const reason = prompt('Please provide a reason for hiding this post (optional):');
+    this.adminService.hidePost(this.post.id, reason?.trim() || undefined).subscribe({
+      next: () => {
+        this.notificationService.success('Post hidden successfully');
+        // Update the post locally
+        if (this.post) {
+          this.post = { ...this.post, hidden: true, hideReason: reason?.trim() };
+        }
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Hide failed:', err);
+        this.notificationService.error('Failed to hide post. Please try again.');
+      },
+    });
+  }
+
+  handleRestore(event: Event) {
+    event.stopPropagation();
+
+    if (!confirm('Are you sure you want to restore this post?')) {
+      return;
+    }
+
+    if (!this.post?.id) {
+      this.notificationService.error('Unable to restore post: Post ID not found');
+      return;
+    }
+
+    this.adminService.restorePost(this.post.id).subscribe({
+      next: () => {
+        this.notificationService.success('Post restored successfully');
+        if (this.post) {
+          this.post = { ...this.post, hidden: false, hideReason: undefined };
+        }
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Restore failed:', err);
+        this.notificationService.error('Failed to restore post. Please try again.');
+      },
+    });
   }
 }

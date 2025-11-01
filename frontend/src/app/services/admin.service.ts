@@ -46,8 +46,9 @@ export class AdminService {
     return this.http.get<Post>(`${this.API_URL}/posts/${id}`, { withCredentials: true });
   }
 
-  hidePost(id: number): Observable<any> {
-    return this.http.post(`${this.API_URL}/posts/${id}/hide`, {}, { withCredentials: true });
+  hidePost(id: number, reason?: string): Observable<any> {
+    const body = reason ? { reason } : {};
+    return this.http.post(`${this.API_URL}/posts/${id}/hide`, body, { withCredentials: true });
   }
 
   deletePost(id: number): Observable<any> {

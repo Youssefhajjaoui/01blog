@@ -30,6 +30,12 @@ export class PostService {
       .pipe(map((posts) => posts.map(mapBackendPostToFrontend)));
   }
 
+  getPostsByUser(userId: number): Observable<Post[]> {
+    return this.http
+      .get<any[]>(`${this.apiUrl}/posts/user/${userId}`, { withCredentials: true })
+      .pipe(map((posts) => posts.map(mapBackendPostToFrontend)));
+  }
+
   createPost(postData: CreatePostRequest): Observable<Post> {
     return this.http.post<Post>(`${this.apiUrl}/posts`, postData, { withCredentials: true });
   }
@@ -181,5 +187,7 @@ function mapBackendPostToFrontend(raw: any): Post {
     isSubscribed: raw.subscribed || false,
     createdAt: raw.createdAt,
     visibility: raw.visibility || 'PUBLIC',
+    hidden: raw.hidden || false,
+    hideReason: raw.hideReason,
   };
 }

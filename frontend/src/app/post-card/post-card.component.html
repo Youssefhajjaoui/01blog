@@ -101,6 +101,22 @@
             Edit
           </button>
 
+          <!-- Admin Hide/Restore buttons -->
+          <button *ngIf="isAdmin && !post.hidden" class="menu-item menu-item-warning" (click)="handleHide($event)">
+            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
+            Hide Post
+          </button>
+          <button *ngIf="isAdmin && post.hidden" class="menu-item menu-item-success" (click)="handleRestore($event)">
+            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Restore Post
+          </button>
+
           <!-- Show Save/Cancel when editing -->
           <div *ngIf="editMode()" class="menu-dropdown-actions">
             <button class="menu-item menu-item-success" (click)="saveEdit($event)">
@@ -193,10 +209,78 @@
       </div>
     </div>
 
+    <!-- Hide Post Modal (Admin Only) -->
+    <div *ngIf="showHideModal()" class="report-modal-overlay" (click)="closeHideModal($event)">
+      <div class="report-modal" (click)="$event.stopPropagation()">
+        <div class="report-modal-header">
+          <h3 class="report-modal-title">
+            <svg class="report-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            </svg>
+            Hide Post
+          </h3>
+          <button class="close-button" (click)="closeHideModal($event)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="report-modal-content">
+          <p class="report-description">
+            Please provide a reason for hiding this post from public view. This reason will be stored for administrative
+            purposes.
+          </p>
+
+          <div class="report-details">
+            <label class="details-label">Reason for hiding (optional)</label>
+            <textarea class="details-textarea" [ngModel]="hideReason()" (ngModelChange)="hideReason.set($event)"
+              placeholder="e.g., Inappropriate content, spam, violation of community guidelines..." rows="4"></textarea>
+          </div>
+        </div>
+
+        <div class="report-modal-footer">
+          <button class="btn-cancel" (click)="closeHideModal($event)">
+            Cancel
+          </button>
+          <button class="btn-submit-report" (click)="submitHide($event)" [disabled]="hidingPost()">
+            <svg *ngIf="!hidingPost()" class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <svg *ngIf="hidingPost()" class="btn-icon spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {{ hidingPost() ? 'Hiding...' : 'Hide Post' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Content -->
     <div class="content-section">
+      <!-- Hidden Post Warning (for admins and post creators) -->
+      <div *ngIf="post.hidden && (isAdmin || isOwner)" class="hidden-post-warning">
+        <div class="hidden-post-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div class="hidden-post-content">
+          <strong class="hidden-post-title">This post has been hidden</strong>
+          <p class="hidden-post-reason" *ngIf="post.hideReason">
+            Reason: {{ post.hideReason }}
+          </p>
+          <p class="hidden-post-reason" *ngIf="!post.hideReason">
+            No specific reason provided
+          </p>
+        </div>
+      </div>
+
       <!-- Title -->
-      <ng-container *ngIf="!editMode(); else editFields">
+      <ng-container *ngIf="!editMode() && !post.hidden; else editFields">
         <h2 class="content-title">{{post.title}}</h2>
         <p class="content-excerpt">{{getDisplayContent()}}</p>
         <span *ngIf="showExcerpt && post.content.length > 200" class="read-more">Click to read more...</span>
@@ -308,7 +392,7 @@
 
 
     <!-- Media -->
-    <div *ngIf="post.media && post.media.length > 0" class="media-section">
+    <div *ngIf="post.media && post.media.length > 0 && !post.hidden" class="media-section">
       <div *ngIf="post.media.length === 1" class="media-single">
         <!-- Image -->
         <img *ngIf="post.media[0].type === 'IMAGE'" [src]="post.media[0].url" [alt]="post.media[0].alt || post.title"
@@ -337,7 +421,7 @@
   </div>
 
   <!-- Actions Footer -->
-  <div class="card-actions">
+  <div class="card-actions" *ngIf="!post.hidden">
     <div class="actions-left">
       <button class="action-btn" [class.liked]="localLiked()" (click)="handleLike($event)">
         <svg class="action-icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24" [class.filled]="localLiked()">

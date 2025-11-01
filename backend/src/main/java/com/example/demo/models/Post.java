@@ -57,6 +57,13 @@ public class Post {
 
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
+
+	@Column(name = "hidden", nullable = false)
+	private Boolean hidden = false;
+
+	@Column(name = "hide_reason")
+	private String hideReason;
+
 	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
 	private List<Like> likes;
 
@@ -155,5 +162,21 @@ public class Post {
 
 	public void setReports(List<Report> reports) {
 		this.reports = reports;
+	}
+
+	public Boolean getHidden() {
+		return hidden != null ? hidden : false;
+	}
+
+	public void setHidden(Boolean hidden) {
+		this.hidden = hidden != null ? hidden : false;
+	}
+
+	public String getHideReason() {
+		return hideReason;
+	}
+
+	public void setHideReason(String hideReason) {
+		this.hideReason = hideReason;
 	}
 }

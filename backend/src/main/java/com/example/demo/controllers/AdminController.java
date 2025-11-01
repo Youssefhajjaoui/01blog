@@ -252,7 +252,9 @@ public class AdminController {
     }
 
     @PostMapping("/posts/{id}/hide")
-    public ResponseEntity<Object> hidePost(@PathVariable Long id, @AuthenticationPrincipal User principal) {
+    public ResponseEntity<Object> hidePost(@PathVariable Long id,
+            @RequestBody(required = false) HidePostRequest request,
+            @AuthenticationPrincipal User principal) {
         if (principal == null || principal.getRole() != UserRole.ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -263,9 +265,15 @@ public class AdminController {
         }
 
         Post post = optionalPost.get();
-        // You might want to add a 'hidden' field to Post entity
-        // For now, we'll just return success
-        return ResponseEntity.ok().body(java.util.Map.of("message", "Post hidden successfully"));
+        post.setHidden(true);
+        if (request != null && request.reason != null && !request.reason.trim().isEmpty()) {
+            post.setHideReason(request.reason.trim());
+        } else {
+            post.setHideReason("Hidden by admin");
+        }
+        postRepository.save(post);
+        return ResponseEntity.ok()
+                .body(java.util.Map.of("message", "Post hidden successfully", "reason", post.getHideReason()));
     }
 
     @DeleteMapping("/posts/{id}")
@@ -297,8 +305,10 @@ public class AdminController {
             return ResponseEntity.notFound().build();
         }
 
-        // You might want to add a 'hidden' field to Post entity
-        // For now, we'll just return success
+        Post post = optionalPost.get();
+        post.setHidden(false);
+        post.setHideReason(null);
+        postRepository.save(post);
         return ResponseEntity.ok().body(java.util.Map.of("message", "Post restored successfully"));
     }
 
@@ -620,6 +630,8 @@ public class AdminController {
         dto.setSubscribed(false);
         dto.setCreatedAt(post.getCreatedAt() != null ? post.getCreatedAt().toString() : null);
         dto.setVisibility("public");
+        dto.setHidden(post.getHidden() != null ? post.getHidden() : false);
+        dto.setHideReason(post.getHideReason());
         return dto;
     }
 
@@ -650,6 +662,10 @@ public class AdminController {
         public boolean permanent = false;
         public Integer duration;
         public String durationUnit; // "minutes", "hours", "days"
+    }
+
+    public static class HidePostRequest {
+        public String reason;
     }
 
 }

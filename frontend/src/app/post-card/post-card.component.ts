@@ -15,6 +15,7 @@ import { PostService } from '../services/post.service';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../services/user.service';
 import { NotificationService as UINotificationService } from '../services/ui-notification.service';
+import { AdminService } from '../services/admin.service';
 
 @Component({
   selector: 'app-post-card',
@@ -67,12 +68,18 @@ export class AppPostCardComponent implements OnInit, OnChanges {
   editingCommentContent = signal('');
   updatingComment = signal(false);
 
+  // Hide post properties
+  showHideModal = signal(false);
+  hideReason = signal('');
+  hidingPost = signal(false);
+
   constructor(
     private authService: AuthService,
     private postService: PostService,
     private userService: UserService,
-    private notificationService: UINotificationService
-  ) { }
+    private notificationService: UINotificationService,
+    private adminService: AdminService
+  ) {}
 
   reportReasons = [
     {
@@ -124,6 +131,7 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     this.localSubscribed.set(this.post.isSubscribed);
     this.localLikes.set(this.post.likes);
     this.currentUser = this.authService.getCurrentUser();
+    console.warn(this.post);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -302,9 +310,10 @@ export class AppPostCardComponent implements OnInit, OnChanges {
           mediaUrl: updated.mediaUrl,
           mediaType: updated.mediaType,
           updatedAt: updated.updatedAt,
-          media: updated.mediaType && updated.mediaUrl
-            ? [{ type: updated.mediaType, url: updated.mediaUrl ?? '' }]
-            : [],
+          media:
+            updated.mediaType && updated.mediaUrl
+              ? [{ type: updated.mediaType, url: updated.mediaUrl ?? '' }]
+              : [],
         };
 
         // Update the excerpt if it's derived from content
@@ -693,5 +702,69 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     }
 
     return avatar;
+  }
+
+  handleHide(event: Event) {
+    event.stopPropagation();
+    this.showMenu.set(false);
+    this.showHideModal.set(true);
+  }
+
+  closeHideModal(event: Event) {
+    event.stopPropagation();
+    this.showHideModal.set(false);
+    this.hideReason.set('');
+  }
+
+  submitHide(event: Event) {
+    event.stopPropagation();
+
+    if (!this.post?.id) {
+      this.notificationService.error('Unable to hide post: Post ID not found');
+      return;
+    }
+
+    this.hidingPost.set(true);
+    const reason = this.hideReason().trim() || undefined;
+
+    this.adminService.hidePost(this.post.id, reason).subscribe({
+      next: () => {
+        this.hidingPost.set(false);
+        this.showHideModal.set(false);
+        this.hideReason.set('');
+        this.notificationService.success('Post hidden successfully');
+        // Update the post locally
+        this.post = { ...this.post, hidden: true, hideReason: reason };
+      },
+      error: (err) => {
+        this.hidingPost.set(false);
+        console.error('Hide failed:', err);
+        this.notificationService.error('Failed to hide post. Please try again.');
+      },
+    });
+  }
+
+  handleRestore(event: Event) {
+    event.stopPropagation();
+
+    if (!confirm('Are you sure you want to restore this post?')) {
+      return;
+    }
+
+    if (!this.post?.id) {
+      this.notificationService.error('Unable to restore post: Post ID not found');
+      return;
+    }
+
+    this.adminService.restorePost(this.post.id).subscribe({
+      next: () => {
+        this.notificationService.success('Post restored successfully');
+        this.post = { ...this.post, hidden: false, hideReason: undefined };
+      },
+      error: (err) => {
+        console.error('Restore failed:', err);
+        this.notificationService.error('Failed to restore post. Please try again.');
+      },
+    });
   }
 }
