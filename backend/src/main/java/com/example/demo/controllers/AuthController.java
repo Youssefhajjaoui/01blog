@@ -173,7 +173,7 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/logout")
+    @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         try {
             // Extract token from request to blacklist it
@@ -193,12 +193,13 @@ public class AuthController {
                 tokenBlacklistService.blacklistToken(token);
             }
 
-            // Clear the JWT cookie on client side
+            // Clear the JWT cookie on client side - must match all attributes from login
             ResponseCookie cookie = ResponseCookie.from("jwt", "")
                     .httpOnly(true)
-                    .secure(false)
+                    .secure(false) // Match login cookie setting
                     .path("/")
                     .maxAge(0) // Expire immediately
+                    .sameSite("Lax") // Match login cookie setting
                     .build();
 
             response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -227,9 +228,13 @@ public class AuthController {
                 break;
             }
         }
-        System.out.println(token);
         if (token == null || token.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (tokenBlacklistService.isTokenBlacklisted(token)) {
+            // Token was explicitly revoked - this is a hard rejection
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         }
 
         // Extract username from token

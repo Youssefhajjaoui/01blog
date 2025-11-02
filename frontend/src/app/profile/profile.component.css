@@ -173,6 +173,26 @@
   color: #dc2626;
 }
 
+.report-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-btn:hover {
+  background: #dc2626;
+  color: white;
+}
+
 .btn-icon {
   width: 16px;
   height: 16px;
@@ -620,9 +640,11 @@
 
   .profile-actions {
     align-self: stretch;
+    flex-wrap: wrap;
   }
 
-  .edit-profile-btn {
+  .edit-profile-btn,
+  .report-btn {
     flex: 1;
     justify-content: center;
   }

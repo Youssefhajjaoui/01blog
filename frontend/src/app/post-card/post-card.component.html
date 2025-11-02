@@ -46,7 +46,7 @@
     <!-- Title and excerpt only if not hidden -->
     <ng-container *ngIf="!post.hidden">
       <h3 class="card-title-grid">{{post.title}}</h3>
-      <p class="card-excerpt-grid">{{getDisplayContent()}}</p>
+      <p class="card-excerpt-grid" [innerHTML]="getDisplayContent() | markdown"></p>
     </ng-container>
   </div>
 
@@ -304,7 +304,7 @@
       <div *ngIf="!post.hidden">
         <ng-container *ngIf="!editMode(); else editFields">
           <h2 class="content-title">{{post.title}}</h2>
-          <p class="content-excerpt">{{getDisplayContent()}}</p>
+          <p class="content-excerpt" [innerHTML]="getDisplayContent() | markdown"></p>
           <span *ngIf="showExcerpt && post.content.length > 200" class="read-more">Click to read more...</span>
         </ng-container>
       </div>

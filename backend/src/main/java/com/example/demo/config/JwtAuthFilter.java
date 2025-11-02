@@ -55,7 +55,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        // Find the "jwt" cookie
         String token = null;
         for (Cookie cookie : cookies) {
             if ("jwt".equals(cookie.getName())) {
@@ -64,7 +63,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         }
 
-        // If no valid token found, let Spring Security decide if endpoint requires auth
         if (token == null || token.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
@@ -103,8 +101,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         } catch (Exception e) {
             logger.error("JWT filter error: ", e);
-            // Token parsing/validation failed - continue without authentication
-            // Let Spring Security decide if endpoint requires auth
         }
 
         filterChain.doFilter(request, response);

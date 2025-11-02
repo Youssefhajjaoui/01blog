@@ -80,7 +80,7 @@
                     </div>
 
                     <!-- Post Content -->
-                    <div *ngIf="!post.hidden" class="post-body" [innerHTML]="post.content"></div>
+                    <div *ngIf="!post.hidden" class="post-body" [innerHTML]="post.content | markdown"></div>
 
                     <!-- Post Actions -->
                     <footer *ngIf="!post.hidden" class="post-actions">

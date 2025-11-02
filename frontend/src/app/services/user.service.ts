@@ -347,4 +347,19 @@ export class UserService {
   getUserAvatar(user: User): string {
     return user.avatar || '/assets/default-avatar.png';
   }
+
+  /**
+   * Report a user
+   */
+  reportUser(userId: number, reportData: { reason: string; details: string }): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/reports`,
+      {
+        reportedUser: { id: userId },
+        reason: reportData.reason,
+        description: reportData.details,
+      },
+      { withCredentials: true }
+    );
+  }
 }

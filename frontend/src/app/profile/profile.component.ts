@@ -5,14 +5,16 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import { PostService } from '../services/post.service';
+import { NotificationService } from '../services/ui-notification.service';
 import { User, Post } from '../models';
 import { NavbarComponent } from '../components/navbar/navbar.component';
 import { AppPostCardComponent } from '../post-card/post-card.component';
+import { ReportModalComponent } from '../components/report-modal/report-modal.component';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, AppPostCardComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, AppPostCardComponent, ReportModalComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css'],
 })
@@ -28,6 +30,7 @@ export class ProfileComponent implements OnInit {
   isOwnProfile = signal(true);
   isFollowing = signal(false);
   loading = signal(false);
+  showReportModal = signal(false);
 
   // Mock media items for the media tab
   mediaItems = [
@@ -41,14 +44,15 @@ export class ProfileComponent implements OnInit {
     private userService: UserService,
     private postService: PostService,
     private router: Router,
-    private route: ActivatedRoute
-  ) { }
-
-  ngOnInit() {
+    private route: ActivatedRoute,
+    private notificationService: NotificationService
+  ) {
     const user = this.authService.getCurrentUser();
     this.currentUser.set(user);
     this.state.set({ currentUser: user });
+  }
 
+  ngOnInit() {
     // Watch for route parameter changes
     this.route.params.subscribe((params) => {
       const userId = params['userId'];
@@ -352,5 +356,35 @@ export class ProfileComponent implements OnInit {
   private handleReport(postId: string) {
     console.log('Report post:', postId);
     // TODO: Implement report functionality
+  }
+
+  handleReportClick() {
+    this.showReportModal.set(true);
+  }
+
+  closeReportModal() {
+    this.showReportModal.set(false);
+  }
+
+  submitUserReport(event: { reason: string; details: string }) {
+    const user = this.profileUser();
+    if (!user) return;
+
+    this.userService.reportUser(user.id, event).subscribe({
+      next: (response) => {
+        console.log('User report submitted:', response);
+        this.showReportModal.set(false);
+        this.notificationService.success(
+          'Report submitted successfully. Thank you for helping keep our community safe.'
+        );
+      },
+      error: (error) => {
+        console.error('Failed to submit user report:', error);
+        this.notificationService.error('Failed to submit report. Please try again.');
+      },
+      complete: () => {
+        // Ensure loading state is reset
+      },
+    });
   }
 }

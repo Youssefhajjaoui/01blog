@@ -21,7 +21,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   posts = signal<Post[]>([]);
   reports = signal<Report[]>([]);
   stats = signal<DashboardStats | null>(null);
-  constructor(private adminService: AdminService, private router: Router) { }
+  constructor(private adminService: AdminService, private router: Router) {}
 
   // UI state
   activeTab = signal('overview');
@@ -32,6 +32,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   showBanModal = signal(false);
   showDeleteModal = signal(false);
   selectedUser = signal<User | null>(null);
+  selectedReport = signal<Report | null>(null);
   banDuration = signal(30);
   banDurationUnit = signal('days');
   banReason = signal('');
@@ -372,6 +373,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.showBanModal.set(false);
     this.showDeleteModal.set(false);
     this.selectedUser.set(null);
+    this.selectedReport.set(null);
   }
 
   // Execute ban
@@ -391,6 +393,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           console.log('User banned:', user.id);
+
           // Update user status immediately for better UX
           this.users.update((users) => {
             const userIndex = users.findIndex((u) => u.id === user.id);
@@ -401,6 +404,25 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             }
             return users;
           });
+
+          // If this ban was triggered from a report, mark it as resolved
+          const report = this.selectedReport();
+          if (report) {
+            this.reports.update((reports) => {
+              const reportIndex = reports.findIndex((r) => r.id === report.id);
+              if (reportIndex !== -1) {
+                this.adminService.resolveReport(report.id).subscribe({
+                  next: () => {
+                    newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
+                    return newReports;
+                  },
+                });
+                const newReports = [...reports];
+              }
+              return reports;
+            });
+          }
+
           this.updateTabBadges();
           // ✨ No more detectChanges!
           this.closeModals();
@@ -535,39 +557,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.adminService
-      .banUser(targetUser.id, false, 30, 'days', report.reason)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          console.log('Reported user banned:', targetUser.id);
-          // Mark report as resolved
-          this.reports.update((reports) => {
-            const reportIndex = reports.findIndex((r) => r.id === report.id);
-            if (reportIndex !== -1) {
-              const newReports = [...reports];
-              newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
-              return newReports;
-            }
-            return reports;
-          });
-          // Update user status
-          this.users.update((users) => {
-            const userIndex = users.findIndex((u) => u.id === targetUser.id);
-            if (userIndex !== -1) {
-              const newUsers = [...users];
-              newUsers[userIndex] = { ...newUsers[userIndex], banned: true };
-              return newUsers;
-            }
-            return users;
-          });
-          this.updateTabBadges();
-          setTimeout(() => this.loadDashboardData(), 500);
-        },
-        error: (error) => {
-          console.error('Error banning reported user:', error);
-        },
-      });
+    // Store the report and open the ban modal
+    this.selectedReport.set(report);
+    this.selectedUser.set(targetUser);
+    this.banDuration.set(30);
+    this.banDurationUnit.set('days');
+    this.banReason.set(report.reason || '');
+    this.isPermanentBan.set(true);
+    this.showBanModal.set(true);
   }
 
   deleteReportedUser(report: Report) {
@@ -577,7 +574,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete user "${targetUser.username}"? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete user "${targetUser.username}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 

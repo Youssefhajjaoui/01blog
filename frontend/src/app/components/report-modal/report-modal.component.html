@@ -1,0 +1,66 @@
+<!-- Report Modal -->
+<div *ngIf="show()" class="report-modal-overlay" (click)="closeModal($event)">
+    <div class="report-modal" (click)="$event.stopPropagation()">
+        <div class="report-modal-header">
+            <h3 class="report-modal-title">
+                <svg class="report-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {{ title }}
+            </h3>
+            <button class="close-button" (click)="closeModal($event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="report-modal-content">
+            <p class="report-description">
+                {{ description }}
+            </p>
+
+            <div class="report-reasons">
+                <label *ngFor="let reason of reportReasons" class="report-reason-item"
+                    [class.selected]="selectedReason() === reason.value">
+                    <input type="radio" name="reportReason" [value]="reason.value" [ngModel]="selectedReason()"
+                        (ngModelChange)="selectedReason.set($event)" class="report-radio" />
+                    <div class="reason-content">
+                        <div class="reason-icon" [innerHTML]="reason.icon"></div>
+                        <div class="reason-text">
+                            <span class="reason-title">{{ reason.label }}</span>
+                            <span class="reason-subtitle">{{ reason.description }}</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="report-details">
+                <label class="details-label">Additional details (optional)</label>
+                <textarea class="details-textarea" [ngModel]="reportDetails()"
+                    (ngModelChange)="reportDetails.set($event)"
+                    [placeholder]="'Provide more information about why you\'re reporting this ' + type + '...'"
+                    rows="4"></textarea>
+            </div>
+        </div>
+
+        <div class="report-modal-footer">
+            <button class="btn-cancel" (click)="closeModal($event)">
+                Cancel
+            </button>
+            <button class="btn-submit-report" (click)="submitReport($event)"
+                [disabled]="!selectedReason() || submittingReport()">
+                <svg *ngIf="!submittingReport()" class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <svg *ngIf="submittingReport()" class="btn-icon spinner" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {{ submittingReport() ? 'Submitting...' : 'Submit Report' }}
+            </button>
+        </div>
+    </div>
+</div>

@@ -215,9 +215,18 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   onSignOutClick() {
     this.closeUserDropdown();
-    // Handle sign out
-    this.authService.logout();
-    this.router.navigate(['/auth']);
+    // Handle sign out - subscribe to ensure logout request is made
+    this.authService.logout().subscribe({
+      next: () => {
+        // Logout successful - navigate to auth page
+        this.router.navigate(['/auth']);
+      },
+      error: (error) => {
+        // Even if logout fails, clear local state and navigate
+        console.error('Logout error:', error);
+        this.router.navigate(['/auth']);
+      }
+    });
   }
 
   getCurrentUser() {

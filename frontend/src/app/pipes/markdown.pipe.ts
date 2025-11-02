@@ -1,81 +1,56 @@
 import { Pipe, PipeTransform } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { marked } from 'marked';
+import DOMPurify from 'isomorphic-dompurify';
+
+// Configure marked once for the entire application
+marked.use({
+    gfm: true, // GitHub Flavored Markdown (includes tables)
+    breaks: true, // Support line breaks
+});
 
 @Pipe({
     name: 'markdown',
     standalone: true
 })
 export class MarkdownPipe implements PipeTransform {
-    transform(value: string): string {
-        if (!value) return '';
+    constructor(private sanitizer: DomSanitizer) { }
 
-        return this.parseMarkdown(value);
-    }
+    transform(value: string): SafeHtml {
+        if (!value) return this.sanitizer.bypassSecurityTrustHtml('');
 
-    private parseMarkdown(text: string): string {
-        // Convert markdown to HTML
-        let html = text;
+        try {
+            // Convert markdown to HTML synchronously
+            const rawHtml = marked.parse(value, { async: false });
 
-        // Headers
-        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+            // Sanitize the HTML to prevent XSS attacks
+            const cleanHtml = DOMPurify.sanitize(rawHtml, {
+                ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'u', 's',
+                    'a', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'br', 'img',
+                    'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+                ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'style', 'class'],
+                ALLOW_DATA_ATTR: false,
+            });
 
-        // Bold
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+            // Wrap images with max-width style for responsive design
+            const styledHtml = cleanHtml.replace(
+                /<img([^>]*)>/gi,
+                '<img$1 style="max-width: 100%; height: auto;">'
+            );
 
-        // Italic
-        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+            // Add safe rel attributes to external links
+            const safeLinksHtml = styledHtml.replace(
+                /<a([^>]*href="https?:\/\/[^"]*"[^>]*)>/gi,
+                '<a$1 rel="noopener noreferrer" target="_blank">'
+            );
 
-        // Code blocks
-        html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-
-        // Inline code
-        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
-
-        // Links
-        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
-
-        // Images
-        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
-
-        // Lists
-        html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
-        html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
-        html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
-
-        // Wrap consecutive list items in ul/ol
-        html = html.replace(/(<li>.*<\/li>)/gs, (match) => {
-            const listItems = match.match(/<li>.*?<\/li>/g);
-            if (listItems) {
-                return `<ul>${listItems.join('')}</ul>`;
-            }
-            return match;
-        });
-
-        // Blockquotes
-        html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-
-        // Line breaks
-        html = html.replace(/\n/g, '<br>');
-
-        // Remove extra line breaks before block elements
-        html = html.replace(/<br>(<h[1-6]>)/g, '$1');
-        html = html.replace(/<br>(<ul>)/g, '$1');
-        html = html.replace(/<br>(<ol>)/g, '$1');
-        html = html.replace(/<br>(<blockquote>)/g, '$1');
-        html = html.replace(/<br>(<pre>)/g, '$1');
-
-        // Wrap in paragraphs
-        html = html.replace(/([^<>]+)/g, (match) => {
-            const trimmed = match.trim();
-            if (trimmed && !trimmed.match(/^<(h[1-6]|ul|ol|li|blockquote|pre|code)/)) {
-                return `<p>${trimmed}</p>`;
-            }
-            return match;
-        });
-
-        return html;
+            // Return sanitized HTML marked as safe by Angular
+            // DOMPurify already sanitized, so we can safely bypass Angular's sanitizer
+            return this.sanitizer.bypassSecurityTrustHtml(safeLinksHtml);
+        } catch (error) {
+            console.error('Error parsing markdown:', error);
+            // Return original text if markdown parsing fails
+            return this.sanitizer.bypassSecurityTrustHtml(DOMPurify.sanitize(value));
+        }
     }
 }

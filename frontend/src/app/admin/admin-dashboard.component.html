@@ -464,6 +464,9 @@
                                             <span class="reason-badge">
                                                 {{ report.reason }}
                                             </span>
+                                            <span *ngIf="report.description" class="reason-badge">
+                                                {{ report.description }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
