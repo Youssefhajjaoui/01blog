@@ -1,3 +1,6 @@
+/* Import Angular Material theme */
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
 /* Import custom snackbar styles first */
 @import './app/styles/snackbar.css';
 

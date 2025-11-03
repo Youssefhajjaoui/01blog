@@ -36,10 +36,60 @@
                                 <time class="post-date">{{ formatDate(post.createdAt) }}</time>
                             </div>
                         </div>
-                        <button *ngIf="post.author.id !== currentUser?.id" class="follow-btn"
-                            [class.following]="post.isSubscribed" (click)="handleSubscribe()">
-                            {{ post.isSubscribed ? 'Following' : 'Follow' }}
-                        </button>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <button *ngIf="post.author.id !== currentUser?.id" class="follow-btn"
+                                [class.following]="post.isSubscribed" (click)="handleSubscribe()">
+                                {{ post.isSubscribed ? 'Following' : 'Follow' }}
+                            </button>
+
+                            <!-- Menu Button -->
+                            <div class="menu-wrapper">
+                                <button class="menu-btn" (click)="showMenu.set(!showMenu()); $event.stopPropagation()">
+                                    <svg class="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                    </svg>
+                                </button>
+                                <div *ngIf="showMenu()" class="menu-dropdown">
+                                    <button *ngIf="isOwner && !editMode()" class="menu-item"
+                                        (click)="handleEdit($event)">
+                                        <svg class="menu-item-icon" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Edit
+                                    </button>
+                                    <button *ngIf="isOwner || isAdmin" class="menu-item menu-item-danger"
+                                        (click)="handleDelete($event)">
+                                        <svg class="menu-item-icon" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete
+                                    </button>
+                                    <button *ngIf="isAdmin && !post.hidden" class="menu-item menu-item-warning"
+                                        (click)="handleHide($event)">
+                                        <svg class="menu-item-icon" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                        </svg>
+                                        Hide Post
+                                    </button>
+                                    <button *ngIf="isAdmin && post.hidden" class="menu-item menu-item-success"
+                                        (click)="handleRestore($event)">
+                                        <svg class="menu-item-icon" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        Restore Post
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </header>
 
                     <!-- Hidden Post Warning (for admins and post creators) -->
@@ -61,29 +111,116 @@
                         </div>
                     </div>
 
-                    <!-- Post Title -->
-                    <h1 *ngIf="!post.hidden" class="post-title">{{ post.title }}</h1>
+                    <!-- Post Title and Content -->
+                    <div *ngIf="!post.hidden">
+                        <ng-container *ngIf="!editMode(); else editFields">
+                            <h1 class="post-title">{{ post.title }}</h1>
 
-                    <!-- Post Tags -->
-                    <div *ngIf="post.tags && post.tags.length > 0 && !post.hidden" class="post-tags">
-                        <span *ngFor="let tag of post.tags" class="tag-badge">#{{ tag }}</span>
+                            <!-- Post Tags -->
+                            <div *ngIf="post.tags && post.tags.length > 0" class="post-tags">
+                                <span *ngFor="let tag of post.tags" class="tag-badge">#{{ tag }}</span>
+                            </div>
+
+                            <!-- Post Media -->
+                            <div *ngIf="post.media != undefined" class="post-media">
+                                <img *ngIf="post.media[0]?.type === 'IMAGE'" [src]="getPostMediaUrl()"
+                                    [alt]="post.title" class="media-image" />
+                                <video *ngIf="post.media[0]?.type === 'VIDEO'" [src]="getPostMediaUrl()" controls
+                                    class="media-video"></video>
+                                <audio *ngIf="post.media[0]?.type === 'AUDIO'" [src]="getPostMediaUrl()" controls
+                                    class="media-audio"></audio>
+                            </div>
+
+                            <!-- Post Content -->
+                            <div class="post-body" [innerHTML]="post.content | markdown"></div>
+                        </ng-container>
+
+                        <ng-template #editFields>
+                            <input type="text" class="edit-input title-input" [ngModel]="editablePost().title"
+                                (ngModelChange)="updateEditableTitle($event)" placeholder="Post title" />
+                            <textarea class="edit-textarea excerpt-input" [ngModel]="editablePost().content"
+                                (ngModelChange)="updateEditableContent($event)" placeholder="Post content"
+                                rows="10"></textarea>
+
+                            <!-- Media editing section -->
+                            <div class="edit-media-section">
+                                <!-- Original media from post creation -->
+                                <div *ngIf="getOriginalMediaUrl()" class="original-media-section">
+                                    <div class="media-section-header">
+                                        <span class="media-label">Original Media</span>
+                                        <div class="media-actions">
+                                            <button type="button" class="btn-keep-original"
+                                                [class.active]="editablePost().mediaUrl === getOriginalMediaUrl()"
+                                                (click)="keepOriginalMedia($event)" title="Keep original media">
+                                                Keep Original
+                                            </button>
+                                            <button type="button" class="btn-remove-all"
+                                                (click)="removeAllMedia($event)" title="Remove all media">
+                                                Remove All
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="original-media-preview">
+                                        <img *ngIf="getOriginalMediaType() === 'IMAGE'" [src]="getOriginalMediaUrl()"
+                                            class="media-preview-img" alt="Original media" />
+                                        <video *ngIf="getOriginalMediaType() === 'VIDEO'" [src]="getOriginalMediaUrl()"
+                                            class="media-preview-video" controls></video>
+                                        <audio *ngIf="getOriginalMediaType() === 'AUDIO'" [src]="getOriginalMediaUrl()"
+                                            class="media-preview-audio" controls></audio>
+                                    </div>
+                                </div>
+
+                                <!-- Currently selected/uploaded media (if different from original) -->
+                                <div *ngIf="editablePost().mediaUrl && editablePost().mediaUrl !== getOriginalMediaUrl()"
+                                    class="new-media-section">
+                                    <div class="media-section-header">
+                                        <span class="media-label">New Upload (will replace original)</span>
+                                        <button type="button" class="btn-remove-new" (click)="removeNewMedia($event)"
+                                            title="Cancel this upload">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                    <div class="new-media-preview">
+                                        <img *ngIf="editablePost().mediaType === 'IMAGE'"
+                                            [src]="editablePost().mediaUrl" class="media-preview-img" alt="New media" />
+                                        <video *ngIf="editablePost().mediaType === 'VIDEO'"
+                                            [src]="editablePost().mediaUrl" class="media-preview-video"
+                                            controls></video>
+                                        <audio *ngIf="editablePost().mediaType === 'AUDIO'"
+                                            [src]="editablePost().mediaUrl" class="media-preview-audio"
+                                            controls></audio>
+                                    </div>
+                                </div>
+
+                                <!-- No media state -->
+                                <div *ngIf="!editablePost().mediaUrl && !getOriginalMediaUrl()" class="no-media-state">
+                                    <p class="no-media-text">No media attached</p>
+                                </div>
+
+                                <!-- Upload button -->
+                                <div class="upload-media-section">
+                                    <label class="upload-label">
+                                        <input type="file" class="file-input" accept="image/*,video/*,audio/*"
+                                            (change)="onFileSelected($event)" />
+                                        <div class="upload-button">
+                                            Upload Media
+                                        </div>
+                                    </label>
+                                    <span *ngIf="uploadingMedia()" class="upload-status">Uploading...</span>
+                                    <span *ngIf="uploadError()" class="upload-error">{{ uploadError() }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Edit Save/Cancel buttons -->
+                            <div class="edit-actions" *ngIf="editMode()">
+                                <button class="btn-save" (click)="saveEdit($event)">Save</button>
+                                <button class="btn-cancel" (click)="cancelEdit($event)">Cancel</button>
+                            </div>
+                        </ng-template>
                     </div>
-
-                    <!-- Post Media -->
-                    <div *ngIf="post.media != undefined && !post.hidden" class="post-media">
-                        <img *ngIf="post.media[0]?.type === 'IMAGE'" [src]="getPostMediaUrl()" [alt]="post.title"
-                            class="media-image" />
-                        <video *ngIf="post.media[0]?.type === 'VIDEO'" [src]="getPostMediaUrl()" controls
-                            class="media-video"></video>
-                        <audio *ngIf="post.media[0]?.type === 'AUDIO'" [src]="getPostMediaUrl()" controls
-                            class="media-audio"></audio>
-                    </div>
-
-                    <!-- Post Content -->
-                    <div *ngIf="!post.hidden" class="post-body" [innerHTML]="post.content | markdown"></div>
 
                     <!-- Post Actions -->
-                    <footer *ngIf="!post.hidden" class="post-actions">
+                    <footer *ngIf="!post.hidden && !editMode()" class="post-actions">
                         <button class="action-btn" [class.active]="post.isLiked" (click)="handleLike()">
                             <svg class="action-icon" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -99,27 +236,6 @@
                             </svg>
                             <span class="action-text">{{ post.comments }} {{ post.comments === 1 ? 'Comment' :
                                 'Comments' }}</span>
-                        </button>
-                        <button *ngIf="isOwner || isAdmin" class="action-btn" (click)="handleDelete($event)">
-                            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                            </svg>
-                            Delete
-                        </button>
-                        <button *ngIf="isAdmin && !post.hidden" class="action-btn" (click)="handleHide($event)">
-                            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                            </svg>
-                            Hide Post
-                        </button>
-                        <button *ngIf="isAdmin && post.hidden" class="action-btn" (click)="handleRestore($event)">
-                            <svg class="menu-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Restore Post
                         </button>
                     </footer>
                 </article>

@@ -76,6 +76,11 @@ services:
       - GATEWAY_ENABLED=false
       - CORS_ALLOWED_ORIGINS=http://localhost:4200,http://localhost:3000,http://localhost:8080
       - JWT_SECRET=${JWT_SECRET:-my-super-secret-jwt-key-that-should-be-at-least-256-bits-long-for-hs256-algorithm}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-pass123}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@gmail.com}
+      - ADMIN_AVATR=${ADMIN_AVATR:-https://api.iconify.design/mdi:shield-account.svg?color=000000&width=48&height=48}
+      - ADMIN_BIO=${ADMIN_BIO:-Founder of 01blog platform}
     networks:
       - app-network
 

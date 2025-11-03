@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -30,6 +30,15 @@ export class PostDetailComponent implements OnInit {
   editingCommentId: number | null = null;
   editingCommentContent = '';
   updatingComment = false;
+
+  // Menu and edit state
+  showMenu = signal(false);
+  editMode = signal(false);
+  editablePost = signal<any>({});
+  uploadingMedia = signal(false);
+  uploadError = signal('');
+  originalMediaUrl = signal('');
+  originalMediaType = signal<'IMAGE' | 'VIDEO' | 'AUDIO' | null>(null);
 
   constructor(
     private route: ActivatedRoute,
@@ -334,6 +343,14 @@ export class PostDetailComponent implements OnInit {
     return this.post.media[0].url;
   }
 
+  getOriginalMediaUrl(): string {
+    return this.originalMediaUrl();
+  }
+
+  getOriginalMediaType(): 'IMAGE' | 'VIDEO' | 'AUDIO' | null {
+    return this.originalMediaType();
+  }
+
   formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -387,6 +404,171 @@ export class PostDetailComponent implements OnInit {
     } else if (page === 'editor') {
       this.router.navigate(['/create-post']);
     }
+  }
+
+  handleEdit(event: Event) {
+    event.stopPropagation();
+    if (!this.post) return;
+    this.editablePost.set({ ...this.post }); // clone current post
+    // Store original media URL and type
+    this.originalMediaUrl.set(this.post.mediaUrl || '');
+    this.originalMediaType.set(this.post.mediaType || null);
+    this.editMode.set(true);
+    this.showMenu.set(false);
+  }
+
+  updateEditableTitle(title: string) {
+    this.editablePost.update((p) => ({ ...p, title }));
+  }
+
+  updateEditableContent(content: string) {
+    this.editablePost.update((p) => ({ ...p, content }));
+  }
+
+  cancelEdit(event: Event) {
+    event.stopPropagation();
+    this.editMode.set(false);
+    this.uploadError.set('');
+    this.showMenu.set(false);
+  }
+
+  keepOriginalMedia(event: Event) {
+    event.stopPropagation();
+    // Restore original media
+    this.editablePost.update((post) => ({
+      ...post,
+      mediaUrl: this.originalMediaUrl(),
+      mediaType: this.originalMediaType(),
+    }));
+    this.uploadError.set('');
+  }
+
+  removeAllMedia(event: Event) {
+    event.stopPropagation();
+    if (confirm('Are you sure you want to remove all media from this post?')) {
+      this.editablePost.update((post) => ({
+        ...post,
+        mediaUrl: '',
+        mediaType: null,
+      }));
+      this.uploadError.set('');
+    }
+  }
+
+  removeNewMedia(event: Event) {
+    event.stopPropagation();
+    // Restore original media (or empty if there was no original)
+    this.editablePost.update((post) => ({
+      ...post,
+      mediaUrl: this.originalMediaUrl(),
+      mediaType: this.originalMediaType(),
+    }));
+    this.uploadError.set('');
+  }
+
+  onFileSelected(event: any) {
+    event.stopPropagation();
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      this.uploadError.set('File size must be less than 10MB');
+      return;
+    }
+
+    // Determine media type
+    let mediaType: 'IMAGE' | 'VIDEO' | 'AUDIO' | null = null;
+    if (file.type.startsWith('image/')) {
+      mediaType = 'IMAGE';
+    } else if (file.type.startsWith('video/')) {
+      mediaType = 'VIDEO';
+    } else if (file.type.startsWith('audio/')) {
+      mediaType = 'AUDIO';
+    } else {
+      this.uploadError.set('Invalid file type. Please upload an image, video, or audio file.');
+      return;
+    }
+
+    // Upload the file
+    this.uploadingMedia.set(true);
+    this.uploadError.set('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Use the file upload service
+    this.postService.uploadFile(formData).subscribe({
+      next: (response: any) => {
+        this.uploadingMedia.set(false);
+        // Update editable post with new media URL
+        const mediaUrl = response.url;
+        this.editablePost.update((post) => ({
+          ...post,
+          mediaUrl,
+          mediaType,
+        }));
+        this.uploadError.set('');
+        console.log('File uploaded successfully:', response);
+      },
+      error: (err: any) => {
+        this.uploadingMedia.set(false);
+        this.uploadError.set(err.error?.error || 'Upload failed. Please try again.');
+        console.error('Upload error:', err);
+      },
+    });
+
+    // Clear the file input
+    event.target.value = '';
+  }
+
+  saveEdit(event: Event) {
+    event.stopPropagation();
+
+    if (!this.post) return;
+
+    // Create update request with only the fields that can be updated
+    const editedPost = this.editablePost();
+    const updateRequest = {
+      title: editedPost.title,
+      content: editedPost.content,
+      tags: editedPost.tags,
+      mediaUrl: editedPost.mediaUrl,
+      mediaType: editedPost.mediaType,
+    };
+
+    this.postService.updatePost(this.post.id, updateRequest).subscribe({
+      next: (updated) => {
+        // Update the post with the new data from the server
+        this.post = {
+          ...this.post!,
+          title: updated.title,
+          content: updated.content,
+          tags: updated.tags,
+          mediaUrl: updated.mediaUrl,
+          mediaType: updated.mediaType,
+          updatedAt: updated.updatedAt,
+          media:
+            updated.mediaType && updated.mediaUrl
+              ? [{ type: updated.mediaType, url: updated.mediaUrl ?? '' }]
+              : [],
+        };
+
+        this.editMode.set(false);
+        this.showMenu.set(false);
+        this.cd.detectChanges();
+
+        this.notificationService.success('Post updated successfully');
+      },
+      error: (err) => {
+        console.error('Update failed:', err);
+        this.notificationService.error('Could not update post. Please try again.');
+      },
+    });
   }
 
   handleHide(event: Event) {

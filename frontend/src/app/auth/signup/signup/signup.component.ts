@@ -105,7 +105,6 @@ export class Signup {
       this.notificationService.success(
         'Account created successfully! Please login with your credentials.'
       );
-      this.router.navigate(['/auth/login']);
     } catch (err: any) {
       console.error('Signup error:', err);
       this.errorMessage.set(err.message || 'Signup failed');

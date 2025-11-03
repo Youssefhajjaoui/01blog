@@ -6,6 +6,7 @@ import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { AuthService } from './services/auth.service';
 import { firstValueFrom } from 'rxjs';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 // 🔐 Initialize authentication on app startup
 export function initializeAuth(authService: AuthService) {
@@ -19,5 +20,6 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
+    provideAnimations(), // Angular Material requires animations
   ]
 };

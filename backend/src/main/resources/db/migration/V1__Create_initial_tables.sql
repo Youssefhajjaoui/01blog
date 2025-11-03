@@ -23,7 +23,6 @@ CREATE TABLE posts
     content TEXT NOT NULL,
     media_url VARCHAR(255),
     media_type VARCHAR(50),
-    tags TEXT[],                            -- ✅ String[] equivalent in SQL
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP,
     CONSTRAINT fk_posts_creator FOREIGN KEY (creator_id) REFERENCES users(id)
@@ -87,11 +86,21 @@ CREATE TABLE reports
     reported_user_id BIGINT,
     reported_post_id BIGINT,
     reason TEXT NOT NULL,
+    description VARCHAR(1000),
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_reports_reporter FOREIGN KEY (reporter_id) REFERENCES users(id),
     CONSTRAINT fk_reports_reported_user FOREIGN KEY (reported_user_id) REFERENCES users(id),
     CONSTRAINT fk_reports_reported_post FOREIGN KEY (reported_post_id) REFERENCES posts(id)
+);
+
+-- Create post_tags collection table (for @ElementCollection mapping)
+CREATE TABLE post_tags
+(
+    post_id BIGINT NOT NULL,
+    tag VARCHAR(255) NOT NULL,
+    CONSTRAINT fk_post_tags_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    CONSTRAINT pk_post_tags PRIMARY KEY (post_id, tag)
 );
 
 -- Create indexes for better performance
@@ -107,3 +116,5 @@ CREATE INDEX idx_notifications_receiver_id ON notifications(receiver_id);
 CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX idx_reports_reporter_id ON reports(reporter_id);
 CREATE INDEX idx_reports_status ON reports(status);
+CREATE INDEX idx_post_tags_post_id ON post_tags(post_id);
+CREATE INDEX idx_post_tags_tag ON post_tags(tag);
