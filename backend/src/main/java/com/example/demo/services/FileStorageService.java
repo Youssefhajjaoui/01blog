@@ -3,16 +3,22 @@ package com.example.demo.services;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class FileStorageService {
+
+    private static final Logger logger = LoggerFactory.getLogger(FileStorageService.class);
 
     @Value("${supabase.url}")
     private String supabaseUrl;
@@ -62,8 +68,13 @@ public class FileStorageService {
         String uniqueFilename = UUID.randomUUID().toString() + extension;
         String filePath = (folder != null && !folder.isEmpty()) ? folder + "/" + uniqueFilename : uniqueFilename;
 
+        // Encode file path components for URL
+        String encodedFilePath = encodeFilePath(filePath);
         String uploadUrl = String.format("%s/storage/v1/object/%s/%s",
-                supabaseUrl, bucketName, filePath);
+                supabaseUrl, bucketName, encodedFilePath);
+
+        logger.debug("Uploading file to Supabase: {}", uploadUrl);
+        logger.debug("File size: {} bytes, Content-Type: {}", bytes.length, contentType);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + serviceRoleKey);
@@ -75,17 +86,28 @@ public class FileStorageService {
 
         HttpEntity<byte[]> requestEntity = new HttpEntity<>(bytes, headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                uploadUrl,
-                HttpMethod.POST,
-                requestEntity,
-                String.class);
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    uploadUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class);
 
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("Failed to upload file to Supabase: " + response.getBody());
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                String errorMsg = String.format("Failed to upload file to Supabase. Status: %s, Body: %s",
+                        response.getStatusCode(), response.getBody());
+                logger.error(errorMsg);
+                throw new RuntimeException(errorMsg);
+            }
+
+            logger.debug("File uploaded successfully: {}", filePath);
+            return getPublicUrl(filePath);
+        } catch (RestClientException e) {
+            String errorMsg = String.format("I/O error uploading file to Supabase. URL: %s, Error: %s",
+                    uploadUrl, e.getMessage());
+            logger.error(errorMsg, e);
+            throw new IOException(errorMsg, e);
         }
-
-        return getPublicUrl(filePath);
     }
 
     /**
@@ -158,8 +180,14 @@ public class FileStorageService {
     }
 
     private void uploadToSupabase(MultipartFile file, String filePath) throws IOException {
+        // Encode file path components for URL
+        String encodedFilePath = encodeFilePath(filePath);
         String uploadUrl = String.format("%s/storage/v1/object/%s/%s",
-                supabaseUrl, bucketName, filePath);
+                supabaseUrl, bucketName, encodedFilePath);
+
+        logger.debug("Uploading file to Supabase: {}", uploadUrl);
+        logger.debug("File name: {}, Size: {} bytes, Content-Type: {}", 
+                file.getOriginalFilename(), file.getSize(), file.getContentType());
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + serviceRoleKey);
@@ -167,14 +195,26 @@ public class FileStorageService {
 
         HttpEntity<byte[]> requestEntity = new HttpEntity<>(file.getBytes(), headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                uploadUrl,
-                HttpMethod.POST,
-                requestEntity,
-                String.class);
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    uploadUrl,
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class);
 
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("Failed to upload file to Supabase: " + response.getBody());
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                String errorMsg = String.format("Failed to upload file to Supabase. Status: %s, Body: %s",
+                        response.getStatusCode(), response.getBody());
+                logger.error(errorMsg);
+                throw new RuntimeException(errorMsg);
+            }
+
+            logger.debug("File uploaded successfully: {}", filePath);
+        } catch (RestClientException e) {
+            String errorMsg = String.format("I/O error uploading file to Supabase. URL: %s, Error: %s",
+                    uploadUrl, e.getMessage());
+            logger.error(errorMsg, e);
+            throw new IOException(errorMsg, e);
         }
     }
 
@@ -190,18 +230,50 @@ public class FileStorageService {
     }
 
     private void deleteFile(String filePath) {
+        String encodedFilePath = encodeFilePath(filePath);
         String deleteUrl = String.format("%s/storage/v1/object/%s/%s",
-                supabaseUrl, bucketName, filePath);
+                supabaseUrl, bucketName, encodedFilePath);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + serviceRoleKey);
 
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
 
-        restTemplate.exchange(
-                deleteUrl,
-                HttpMethod.DELETE,
-                requestEntity,
-                String.class);
+        try {
+            restTemplate.exchange(
+                    deleteUrl,
+                    HttpMethod.DELETE,
+                    requestEntity,
+                    String.class);
+        } catch (RestClientException e) {
+            logger.error("Failed to delete file from Supabase: {}", deleteUrl, e);
+            // Don't throw - deletion failures are often non-critical
+        }
+    }
+
+    /**
+     * Encode file path components for URL.
+     * Encodes each path segment separately to preserve slashes.
+     */
+    private String encodeFilePath(String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            return filePath;
+        }
+        
+        // Split by '/' and encode each segment separately
+        String[] segments = filePath.split("/");
+        StringBuilder encoded = new StringBuilder();
+        
+        for (int i = 0; i < segments.length; i++) {
+            if (i > 0) {
+                encoded.append("/");
+            }
+            // Only encode if segment is not empty
+            if (!segments[i].isEmpty()) {
+                encoded.append(URLEncoder.encode(segments[i], StandardCharsets.UTF_8));
+            }
+        }
+        
+        return encoded.toString();
     }
 }
