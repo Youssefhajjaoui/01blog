@@ -474,7 +474,9 @@ public class AdminController {
         stats.setPendingReports(pendingReports);
         stats.setCriticalReports(Math.max(1, pendingReports / 3)); // Mock calculation
         stats.setResolvedReports(resolvedReports);
-        stats.setPlatformHealth(98.5);
+        stats.setPlatformHealth(totalUsers != 0
+                ? ((double) (totalUsers - bannedUsers) / totalUsers) * 100
+                : 100);
         stats.setNewUsersThisMonth(newUsersThisMonth);
         stats.setNewPostsThisMonth(newPostsThisMonth);
 
@@ -619,7 +621,8 @@ public class AdminController {
                 ? post.getContent().substring(0, 100) + "..."
                 : post.getContent());
         if (post.getMediaUrl() != null && post.getMediaType() != null) {
-            dto.setMedia(java.util.List.of(new MediaDto(post.getMediaType().name(), post.getMediaUrl(), post.getTitle())));
+            dto.setMedia(
+                    java.util.List.of(new MediaDto(post.getMediaType().name(), post.getMediaUrl(), post.getTitle())));
         } else {
             dto.setMedia(java.util.List.of());
         }

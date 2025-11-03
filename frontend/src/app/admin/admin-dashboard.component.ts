@@ -65,38 +65,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     },
   ];
 
-  // Mock data for recent activity
-  recentActivity = [
-    {
-      action: 'User Banned',
-      admin: 'Admin',
-      target: 'john_doe',
-      details: 'Violation of community guidelines',
-      timestamp: '2 hours ago',
-    },
-    {
-      action: 'Report Resolved',
-      admin: 'Admin',
-      target: 'spam_post_123',
-      details: 'Content removed successfully',
-      timestamp: '4 hours ago',
-    },
-    {
-      action: 'User Banned',
-      admin: 'Admin',
-      target: 'spammer_user',
-      details: 'Multiple policy violations',
-      timestamp: '6 hours ago',
-    },
-    {
-      action: 'Content Moderated',
-      admin: 'Admin',
-      target: 'inappropriate_content',
-      details: 'Automated moderation action',
-      timestamp: '8 hours ago',
-    },
-  ];
-
   ngOnInit(): void {
     this.loadDashboardData();
   }

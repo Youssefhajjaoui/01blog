@@ -206,107 +206,12 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="metric-item">
-                                    <span class="metric-label">Content Engagement</span>
-                                    <span class="metric-value">87%</span>
-                                </div>
-                                <div class="progress-container">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill progress-green" style="width: 87%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Moderation Overview -->
-                    <div class="overview-card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                    </path>
-                                </svg>
-                                <h3>Moderation Overview</h3>
-                            </div>
-                            <p class="card-description">Content moderation and safety metrics</p>
-
-                            <div class="moderation-metrics">
-                                <div class="metric-grid">
-                                    <div class="metric-box">
-                                        <p class="metric-number metric-critical">{{ stats()?.criticalReports || 0 }}</p>
-                                        <p class="metric-label-small">Critical Reports</p>
-                                    </div>
-                                    <div class="metric-box">
-                                        <p class="metric-number metric-resolved">{{ stats()?.resolvedReports || 0 }}</p>
-                                        <p class="metric-label-small">Resolved Today</p>
-                                    </div>
-                                </div>
-
-                                <div class="moderation-separator"></div>
-
-                                <div class="moderation-progress">
-                                    <div class="progress-item">
-                                        <div class="progress-info">
-                                            <span class="progress-label">Resolution Rate</span>
-                                            <span class="progress-value">94%</span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill progress-green" style="width: 94%"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="progress-item">
-                                        <div class="progress-info">
-                                            <span class="progress-label">Response Time</span>
-                                            <span class="progress-value">&lt; 2h avg</span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill progress-blue" style="width: 85%"></div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Recent Activity -->
-                <div class="activity-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <h3>Recent Admin Activity</h3>
-                        </div>
-                        <p class="card-description">Latest moderation actions and system events</p>
 
-                        <div class="activity-list">
-                            <div *ngFor="let activity of recentActivity" class="activity-item">
-                                <div class="activity-icon">
-                                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                                        </path>
-                                    </svg>
-                                </div>
-                                <div class="activity-content">
-                                    <div class="activity-header">
-                                        <span class="activity-action">{{ activity.action }}</span>
-                                        <span class="activity-admin">{{ activity.admin }}</span>
-                                    </div>
-                                    <p class="activity-target">{{ activity.target }}</p>
-                                    <p *ngIf="activity.details" class="activity-details">{{ activity.details }}</p>
-                                </div>
-                                <span class="activity-time">{{ activity.timestamp }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Users Tab -->
