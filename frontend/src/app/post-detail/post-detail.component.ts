@@ -10,12 +10,11 @@ import { AdminService } from '../services/admin.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
 import { Post, User, Comment, CreateCommentRequest } from '../models';
 import { NotificationService as UINotificationService } from '../services/ui-notification.service';
-import { MarkdownPipe } from '../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, MarkdownPipe],
+  imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './post-detail.component.html',
   styleUrls: ['./post-detail.component.css'],
 })

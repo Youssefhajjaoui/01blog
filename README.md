@@ -4,13 +4,14 @@ A modern blog application built with Angular frontend and Spring Boot backend.
 
 ## 🏗️ Architecture
 
-- **Frontend**: Angular 20 with Bootstrap 5
+- **Frontend**: Angular 20 with Custom CSS (Angular Material components)
 - **API Gateway**: Spring Cloud Gateway with Redis-based rate limiting
 - **Backend**: Spring Boot 3.5.5 with Spring Security
-- **Database**: PostgreSQL 15
+- **Database**: PostgreSQL 15 with Flyway migrations
 - **Cache/Rate Limiting**: Redis 7
-- **Authentication**: JWT tokens
-- **Styling**: Bootstrap 5 + Custom SCSS
+- **Authentication**: JWT tokens with HttpOnly cookies
+- **Styling**: Custom CSS with CSS Variables
+- **Notifications**: Angular Material Snackbar
 
 ### Architecture Diagram
 
@@ -39,6 +40,17 @@ The application now uses an API Gateway that provides:
 **📚 See [GATEWAY_SETUP_GUIDE.md](GATEWAY_SETUP_GUIDE.md) for detailed setup instructions**
 
 **📊 See [ARCHITECTURE_COMPARISON.md](ARCHITECTURE_COMPARISON.md) for performance comparison**
+
+### Documentation Files
+
+📚 **See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for a complete guide to all documentation**
+
+**Main Guides**:
+- **[PROJECT_AUDIT_GUIDE.md](PROJECT_AUDIT_GUIDE.md)** - Comprehensive audit guide covering all aspects of the project
+- **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** - Complete database schema documentation
+- **[RATE_LIMITING_CONFIGURATION.md](RATE_LIMITING_CONFIGURATION.md)** - Rate limiting setup and limits
+- **[GATEWAY_ARCHITECTURE_EXPLANATION.md](GATEWAY_ARCHITECTURE_EXPLANATION.md)** - Gateway architecture details
+- **[backend/JWT_TOKEN_INVALIDATION_GUIDE.md](backend/JWT_TOKEN_INVALIDATION_GUIDE.md)** - JWT logout and blacklist
 
 ## 🚀 Quick Start
 
@@ -111,18 +123,28 @@ The frontend will be available at: http://localhost:4200
 ## 📁 Project Structure
 
 ```
-01Blog/
-├── backend/01blog/          # Spring Boot backend
+01blog/
+├── backend/                 # Spring Boot backend
 │   ├── src/main/java/       # Java source code
-│   ├── src/main/resources/  # Configuration files
+│   ├── src/main/resources/  # Configuration + Flyway migrations
 │   └── pom.xml             # Maven dependencies
 ├── frontend/                # Angular frontend
 │   ├── src/app/            # Angular components
-│   ├── src/styles.scss     # Global styles
+│   │   ├── auth/           # Login/signup
+│   │   ├── components/     # Reusable components
+│   │   ├── home/           # Home feed
+│   │   ├── post-detail/    # Post view with editing
+│   │   ├── profile/        # User profiles
+│   │   ├── admin/          # Admin dashboard
+│   │   ├── services/       # API services
+│   │   └── models/         # TypeScript interfaces
 │   └── package.json        # Node dependencies
-├── infra/                   # Infrastructure
-│   └── docker-compose.yml  # PostgreSQL setup
-└── Design 01Blog UI/       # React design reference
+├── gateway/                 # Spring Cloud Gateway
+│   ├── src/main/java/       # Gateway configuration
+│   └── pom.xml             # Maven dependencies
+├── docker-compose.dev.yml   # Full stack development setup
+├── docker-compose.gateway.yml # Production gateway setup
+└── *.md                     # Documentation files
 ```
 
 ## 🔧 Configuration
@@ -164,23 +186,31 @@ The application uses JWT (JSON Web Tokens) for authentication:
 ## 📱 Features
 
 ### Frontend Features
-- ✅ User authentication (login/signup)
-- ✅ Post creation and editing
+- ✅ User authentication (login/signup with HttpOnly cookies)
+- ✅ Post creation, editing, and deletion
 - ✅ Post feed with like/comment functionality
-- ✅ User profiles
+- ✅ Inline post editing with media management
+- ✅ User profiles with follow/unfollow
 - ✅ Settings management
 - ✅ Admin dashboard
 - ✅ Responsive design
-- ✅ Dark mode support
+- ✅ 404 error page
+- ✅ Real-time notifications (SSE)
+- ✅ Report posts/comments
 
 ### Backend Features
 - ✅ RESTful API endpoints
-- ✅ JWT authentication
-- ✅ User management
-- ✅ Post management
+- ✅ JWT authentication with Redis blacklist
+- ✅ User management (ban/unban, role management)
+- ✅ Post management (create, update, delete, hide/restore)
 - ✅ Comment system
+- ✅ Like/Unlike system
+- ✅ Follow/Subscribe system
 - ✅ Security configuration
-- ✅ Database integration
+- ✅ Database integration with Flyway migrations
+- ✅ File upload to Supabase
+- ✅ Server-Sent Events for notifications
+- ✅ Admin report management
 
 ## 🛠️ Development
 

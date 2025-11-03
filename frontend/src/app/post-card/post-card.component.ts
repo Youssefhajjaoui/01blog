@@ -16,12 +16,11 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from '../services/user.service';
 import { NotificationService as UINotificationService } from '../services/ui-notification.service';
 import { AdminService } from '../services/admin.service';
-import { MarkdownPipe } from '../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-post-card',
   standalone: true,
-  imports: [CommonModule, FormsModule, MarkdownPipe],
+  imports: [CommonModule, FormsModule],
   templateUrl: './post-card.component.html',
   styleUrls: ['./post-card.component.css'],
 })

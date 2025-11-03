@@ -132,7 +132,7 @@
                             </div>
 
                             <!-- Post Content -->
-                            <div class="post-body" [innerHTML]="post.content | markdown"></div>
+                            <div class="post-body">{{ post.content }}</div>
                         </ng-container>
 
                         <ng-template #editFields>

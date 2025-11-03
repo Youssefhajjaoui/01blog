@@ -35,27 +35,6 @@
                         </div>
                     </div>
 
-                    <!-- Content Tabs -->
-                    <div class="content-tabs">
-                        <button type="button" class="tab-button" [class.active]="!showPreview"
-                            (click)="togglePreview()">
-                            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Write
-                        </button>
-                        <button type="button" class="tab-button" [class.active]="showPreview" (click)="togglePreview()">
-                            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            Preview
-                        </button>
-                    </div>
-
                     <!-- Form -->
                     <form [formGroup]="postForm" id="postForm" class="post-form" (ngSubmit)="onSubmit()">
                         <!-- Title -->
@@ -81,17 +60,11 @@
                             </div>
 
                             <div class="content-editor-container">
-                                <div class="write-section" [class.hidden]="showPreview">
-                                    <textarea id="content" formControlName="content"
-                                        placeholder="Share your learning experience, insights, or tutorial..."
-                                        class="content-textarea" (input)="onTextareaInput($event)"
-                                        [class.error]="postForm.get('content')?.invalid && postForm.get('content')?.touched"
-                                        maxlength="5000"></textarea>
-                                </div>
-
-                                <div class="preview-section" [class.hidden]="!showPreview">
-                                    <div class="content-preview" [innerHTML]="markdownContent | markdown"></div>
-                                </div>
+                                <textarea id="content" formControlName="content"
+                                    placeholder="Share your learning experience, insights, or tutorial..."
+                                    class="content-textarea" (input)="onTextareaInput($event)"
+                                    [class.error]="postForm.get('content')?.invalid && postForm.get('content')?.touched"
+                                    maxlength="5000"></textarea>
                             </div>
 
                             <div class="character-counter">{{ postForm.get('content')?.value?.length || 0 }}/5000

@@ -11,13 +11,12 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PostService } from '../../services/post.service';
-import { MarkdownPipe } from '../../pipes/markdown.pipe';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { NotificationService as UINotificationService } from '../../services/ui-notification.service';
 
 @Component({
   selector: 'app-post-create',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MarkdownPipe, NavbarComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NavbarComponent],
   templateUrl: './post-create.html',
   styleUrl: './post-create.css',
 })
@@ -26,8 +25,6 @@ export class PostCreate implements OnInit {
   isSubmitting = false;
   selectedFile: File | null = null;
   previewUrl: string | null = null;
-  markdownContent = '';
-  showPreview = false;
   tagsInput = '';
   draftLoaded = false;
 
@@ -50,8 +47,6 @@ export class PostCreate implements OnInit {
   }
 
   ngOnInit() {
-    // Initialize with markdown content
-    this.markdownContent = this.postForm.get('content')?.value || '';
     this.loadDraftFromStorage();
   }
 
@@ -68,7 +63,6 @@ export class PostCreate implements OnInit {
 
         if (draft.content) {
           this.postForm.patchValue({ content: draft.content });
-          this.markdownContent = draft.content;
         }
 
         if (draft.tags && Array.isArray(draft.tags)) {
@@ -157,12 +151,7 @@ export class PostCreate implements OnInit {
   }
 
   onContentChange(content: string) {
-    this.markdownContent = content;
     this.postForm.patchValue({ content });
-  }
-
-  togglePreview() {
-    this.showPreview = !this.showPreview;
   }
 
   async onSubmit() {
