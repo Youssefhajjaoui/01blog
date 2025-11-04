@@ -46,7 +46,7 @@ The application now uses an API Gateway that provides:
 📚 **See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for a complete guide to all documentation**
 
 **Main Guides**:
-- **[PROJECT_AUDIT_GUIDE.md](PROJECT_AUDIT_GUIDE.md)** - Comprehensive audit guide covering all aspects of the project
+- **[PROJECT_AUDIT_GUIDE.md](PROJECT_AUDIT_GUIDE.md)** - Comprehensive guide covering all aspects of the project
 - **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** - Complete database schema documentation
 - **[RATE_LIMITING_CONFIGURATION.md](RATE_LIMITING_CONFIGURATION.md)** - Rate limiting setup and limits
 - **[GATEWAY_ARCHITECTURE_EXPLANATION.md](GATEWAY_ARCHITECTURE_EXPLANATION.md)** - Gateway architecture details

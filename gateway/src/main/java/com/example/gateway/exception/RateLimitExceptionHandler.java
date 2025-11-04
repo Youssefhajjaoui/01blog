@@ -31,11 +31,41 @@ public class RateLimitExceptionHandler implements ErrorWebExceptionHandler {
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
         DataBufferFactory bufferFactory = exchange.getResponse().bufferFactory();
         
+        // Check if response already has 429 status code (from rate limiter)
+        org.springframework.http.HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
+        if (statusCode != null && statusCode.isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)) {
+            exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+            exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            
+            Map<String, Object> errorBody = new HashMap<>();
+            errorBody.put("timestamp", Instant.now().toString());
+            errorBody.put("status", 429);
+            errorBody.put("error", "Too Many Requests");
+            errorBody.put("message", "Rate limit exceeded. Please try again later.");
+            
+            // Add retry-after header if available
+            String retryAfter = exchange.getResponse().getHeaders().getFirst("X-RateLimit-Retry-After");
+            if (retryAfter != null) {
+                errorBody.put("retryAfter", retryAfter);
+                exchange.getResponse().getHeaders().set("Retry-After", retryAfter);
+            }
+            
+            DataBuffer dataBuffer;
+            try {
+                dataBuffer = bufferFactory.wrap(objectMapper.writeValueAsBytes(errorBody));
+            } catch (JsonProcessingException e) {
+                dataBuffer = bufferFactory.wrap("{}".getBytes());
+            }
+            
+            return exchange.getResponse().writeWith(Mono.just(dataBuffer));
+        }
+        
+        // Check for ResponseStatusException with 429
         if (ex instanceof org.springframework.web.server.ResponseStatusException) {
             org.springframework.web.server.ResponseStatusException rse = 
                 (org.springframework.web.server.ResponseStatusException) ex;
             
-            if (rse.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+            if (rse.getStatusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)) {
                 exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
                 
