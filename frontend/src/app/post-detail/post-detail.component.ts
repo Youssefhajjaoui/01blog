@@ -49,7 +49,7 @@ export class PostDetailComponent implements OnInit {
     private adminService: AdminService,
     private cd: ChangeDetectorRef,
     private notificationService: UINotificationService
-  ) { }
+  ) {}
 
   ngOnInit() {
     // Get current user
@@ -111,7 +111,7 @@ export class PostDetailComponent implements OnInit {
   }
 
   get isAdmin(): boolean {
-    console.warn(this.currentUser?.role);
+    this.currentUser?.role;
     return this.currentUser?.role === 'ADMIN';
   }
 
@@ -120,13 +120,13 @@ export class PostDetailComponent implements OnInit {
     console.log('Delete clicked for post:', this.post?.id);
 
     if (!this.post?.id) {
-      console.warn('No post id found');
+      ('No post id found');
       return;
     }
 
     this.postService.deletePost(this.post.id).subscribe({
       next: () => {
-        console.warn('deleted', this.post?.id);
+        'deleted', this.post?.id;
         // this.deleted.emit(this.post.id);
         this.router.navigateByUrl('/');
       },

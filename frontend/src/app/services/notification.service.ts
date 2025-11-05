@@ -47,7 +47,9 @@ export class NotificationService {
 
   constructor(private http: HttpClient) {
     // Use gateway for SSR in Docker, localhost for browser
-    const baseUrl = isPlatformBrowser(this.platformId) ? 'http://localhost:8080' : 'http://gateway:8080';
+    const baseUrl = isPlatformBrowser(this.platformId)
+      ? 'http://localhost:8080'
+      : 'http://gateway:8080';
     this.BASE_URL = baseUrl;
     this.API_URL = `${baseUrl}/api`;
   }
@@ -71,7 +73,7 @@ export class NotificationService {
           this.updateUnreadCount();
         }),
         catchError((error) => {
-          console.warn('Failed to load notifications:', error);
+          'Failed to load notifications:', error;
           // Return empty array on error (e.g., user not authenticated)
           return of([]);
         })
@@ -96,7 +98,7 @@ export class NotificationService {
         map((response) => response.count),
         tap((count) => this.unreadCountSubject.next(count)),
         catchError((error) => {
-          console.warn('Failed to load unread count:', error);
+          'Failed to load unread count:', error;
           // Return 0 on error (e.g., user not authenticated)
           return of(0);
         })
@@ -119,7 +121,7 @@ export class NotificationService {
     }
 
     if (typeof EventSource === 'undefined') {
-      console.warn('EventSource not supported in this environment');
+      ('EventSource not supported in this environment');
       return;
     }
 
@@ -198,7 +200,7 @@ export class NotificationService {
           this.updateUnreadCount();
         }),
         catchError((error) => {
-          console.warn('Failed to mark notification as read:', error);
+          'Failed to mark notification as read:', error;
           return of(void 0);
         })
       );

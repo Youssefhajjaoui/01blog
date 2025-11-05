@@ -330,7 +330,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   onClickReport(postId: number | null) {
-    console.warn(postId);
     if (postId !== null) {
       this.router.navigate([`/post/${postId}`]);
     }

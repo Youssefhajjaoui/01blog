@@ -16,6 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from '../services/user.service';
 import { NotificationService as UINotificationService } from '../services/ui-notification.service';
 import { AdminService } from '../services/admin.service';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-post-card',
@@ -79,7 +80,7 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     private userService: UserService,
     private notificationService: UINotificationService,
     private adminService: AdminService
-  ) { }
+  ) {}
 
   reportReasons = [
     {
@@ -131,7 +132,6 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     this.localSubscribed.set(this.post.isSubscribed);
     this.localLikes.set(this.post.likes);
     this.currentUser = this.authService.getCurrentUser();
-    console.warn(this.post.hidden);
     if (this.post.hidden) {
       return;
     }
@@ -151,7 +151,7 @@ export class AppPostCardComponent implements OnInit, OnChanges {
   }
 
   get isAdmin(): boolean {
-    console.warn(this.currentUser?.role);
+    this.currentUser?.role;
     return this.currentUser?.role === 'ADMIN';
   }
 
@@ -416,7 +416,17 @@ export class AppPostCardComponent implements OnInit, OnChanges {
   handleReport(event: Event) {
     event.stopPropagation();
     this.showMenu.set(false);
+    // Reset form state when opening modal
+    this.selectedReason.set('');
+    this.reportDetails.set('');
+    this.submittingReport.set(false);
     this.showReportModal.set(true);
+  }
+
+  selectReportReason(reason: string) {
+    console.log('Selecting reason:', reason);
+    this.selectedReason.set(reason);
+    console.log('Selected reason after set:', this.selectedReason());
   }
 
   closeReportModal(event: Event) {
@@ -424,10 +434,17 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     this.showReportModal.set(false);
     this.selectedReason.set('');
     this.reportDetails.set('');
+    this.submittingReport.set(false); // Reset submitting state when closing
   }
 
   submitReport(event: Event) {
     event.stopPropagation();
+    event.preventDefault();
+
+    // Prevent double submission
+    if (this.submittingReport()) {
+      return;
+    }
 
     if (!this.selectedReason()) {
       return;
@@ -443,23 +460,28 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     };
 
     // Call the API to submit the report
-    this.postService.reportPost(reportData).subscribe({
-      next: (response) => {
-        this.submittingReport.set(false);
-        this.showReportModal.set(false);
-        this.selectedReason.set('');
-        this.reportDetails.set('');
-        this.notificationService.success(
-          'Report submitted successfully. Thank you for helping keep our community safe.'
-        );
-        // ✨ No more detectChanges!
-      },
-      error: (err) => {
-        this.submittingReport.set(false);
-        console.error('Failed to submit report:', err);
-        this.notificationService.error('Failed to submit report. Please try again.');
-      },
-    });
+    // Use take(1) to ensure only one response is handled and prevent duplicate subscriptions
+    this.postService
+      .reportPost(reportData)
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          // Reset state first
+          this.submittingReport.set(false);
+          this.selectedReason.set('');
+          this.reportDetails.set('');
+          this.showReportModal.set(false);
+          this.notificationService.success(
+            'Report submitted successfully. Thank you for helping keep our community safe.'
+          );
+        },
+        error: (err) => {
+          // Always reset submitting state on error
+          this.submittingReport.set(false);
+          console.error('Failed to submit report:', err);
+          this.notificationService.error('Failed to submit report. Please try again.');
+        },
+      });
   }
 
   // Comment modal methods

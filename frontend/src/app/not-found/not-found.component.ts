@@ -4,21 +4,20 @@ import { Router } from '@angular/router';
 import { NavbarComponent } from '../components/navbar/navbar.component';
 
 @Component({
-    selector: 'app-not-found',
-    standalone: true,
-    imports: [CommonModule, NavbarComponent],
-    templateUrl: './not-found.component.html',
-    styleUrl: './not-found.component.css',
+  selector: 'app-not-found',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './not-found.component.html',
+  styleUrl: './not-found.component.css',
 })
 export class NotFoundComponent {
-    constructor(private router: Router) { }
+  constructor(private router: Router) {}
 
-    goHome() {
-        this.router.navigate(['/']);
-    }
+  goHome() {
+    this.router.navigate(['/']);
+  }
 
-    goBack() {
-        window.history.back();
-    }
+  goBack() {
+    window.history.back();
+  }
 }
-

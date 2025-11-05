@@ -213,6 +213,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.navigate.emit({ page: 'profile' });
   }
 
+  onAdminClick() {
+    this.closeUserDropdown();
+    this.navigateToAdmin();
+  }
+
   onSignOutClick() {
     this.closeUserDropdown();
     // Handle sign out - subscribe to ensure logout request is made

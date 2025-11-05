@@ -150,7 +150,7 @@ export class ProfileComponent implements OnInit {
 
   getAvatarUrl(): string {
     const user = this.profileUser();
-    console.warn(user);
+    user;
     if (user?.avatar) {
       return user.avatar;
     }
@@ -187,9 +187,9 @@ export class ProfileComponent implements OnInit {
           this.profileUser.update((current) =>
             current
               ? {
-                ...current,
-                followers: Math.max(0, (current.followers || 0) - 1),
-              }
+                  ...current,
+                  followers: Math.max(0, (current.followers || 0) - 1),
+                }
               : null
           );
           // ✨ No more detectChanges - signals auto-update!
@@ -207,9 +207,9 @@ export class ProfileComponent implements OnInit {
           this.profileUser.update((current) =>
             current
               ? {
-                ...current,
-                followers: (current.followers || 0) + 1,
-              }
+                  ...current,
+                  followers: (current.followers || 0) + 1,
+                }
               : null
           );
           // ✨ No more detectChanges - signals auto-update!
@@ -317,10 +317,10 @@ export class ProfileComponent implements OnInit {
       posts.map((post) =>
         post.id === Number(postId)
           ? {
-            ...post,
-            isLiked: !post.isLiked,
-            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-          }
+              ...post,
+              isLiked: !post.isLiked,
+              likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+            }
           : post
       )
     );

@@ -20,14 +20,11 @@ export class AuthGuard implements CanActivate {
 
     return this.authService.checkAuth().pipe(
       tap((isAuth) => {
-        console.warn('AuthGuard - isAuth:', isAuth);
         if (!isAuth) {
-          console.warn('AuthGuard - User not authenticated, redirecting to /auth');
           this.router.navigate(['/auth']);
         }
       }),
       catchError((error) => {
-        console.warn('AuthGuard - Error checking auth:', error);
         this.router.navigate(['/auth']);
         return of(false);
       })

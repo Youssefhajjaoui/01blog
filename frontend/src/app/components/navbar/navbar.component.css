@@ -347,6 +347,15 @@
     color: #b91c1c;
 }
 
+.dropdown-item.admin-item {
+    color: var(--primary);
+}
+
+.dropdown-item.admin-item:hover {
+    background: rgba(92, 126, 143, 0.1);
+    color: var(--primary);
+}
+
 .dropdown-icon {
     width: 16px;
     height: 16px;

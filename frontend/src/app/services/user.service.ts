@@ -32,7 +32,7 @@ export class UserService {
   constructor(private http: HttpClient, private storageService: StorageService) {
     // Use different API URL based on where code is running
     this.API_URL = isPlatformServer(this.platformId)
-      ? 'http://gateway:8080/api'  // Server-side (SSR in Docker)
+      ? 'http://gateway:8080/api' // Server-side (SSR in Docker)
       : 'http://localhost:8080/api'; // Client-side (browser)
 
     // Automatically fetch user from server on service initialization
@@ -215,7 +215,7 @@ export class UserService {
    * Follow a user
    */
   followUser(userId: number): Observable<any> {
-    console.warn(userId);
+    userId;
     return this.http
       .post(`${this.API_URL}/subscriptions/follow/${userId}`, {}, { withCredentials: true })
       .pipe(
@@ -230,7 +230,7 @@ export class UserService {
    * Unfollow a user
    */
   unfollowUser(userId: number): Observable<any> {
-    console.warn(userId);
+    userId;
     return this.http
       .delete(`${this.API_URL}/subscriptions/unfollow/${userId}`, { withCredentials: true })
       .pipe(

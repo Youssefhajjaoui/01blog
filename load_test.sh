@@ -6,12 +6,12 @@ set -euo pipefail
 # -------------------------------
 
 # Hardcoded login info
-LOGIN_URL="http://localhost:8080/api/auth/login"
+LOGIN_URL="http://10.1.12.9:8080/api/auth/login"
 USERNAME="admin"
 PASSWORD="pass123"
 
 # Hardcoded target endpoint to load test (can change if needed)
-TARGET_URL="http://localhost:8080/api/posts"
+TARGET_URL="http://10.1.12.9:8080/api/posts"
 
 # Load test parameters (can be adjusted)
 # Adjusted to trigger rate limiting - sends burst of requests to exceed burst capacity

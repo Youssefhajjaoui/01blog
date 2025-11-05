@@ -191,9 +191,10 @@
           <div class="report-reasons">
             <label *ngFor="let reason of reportReasons" class="report-reason-item"
               [class.selected]="selectedReason() === reason.value">
-              <input type="radio" name="reportReason" [value]="reason.value" [ngModel]="selectedReason()"
-                (ngModelChange)="selectedReason.set($event)" class="report-radio" />
-              <div class="reason-content">
+              <input type="radio" name="reportReason" [value]="reason.value"
+                [checked]="selectedReason() === reason.value" (change)="selectReportReason(reason.value)"
+                (click)="selectReportReason(reason.value)" class="report-radio" />
+              <div class="reason-content" (click)="selectReportReason(reason.value)">
                 <div class="reason-icon" [innerHTML]="reason.icon"></div>
                 <div class="reason-text">
                   <span class="reason-title">{{ reason.label }}</span>
@@ -215,7 +216,8 @@
             Cancel
           </button>
           <button class="btn-submit-report" (click)="submitReport($event)"
-            [disabled]="!selectedReason() || submittingReport()">
+            [disabled]="!selectedReason() || submittingReport()"
+            [attr.aria-disabled]="!selectedReason() || submittingReport()">
             <svg *ngIf="!submittingReport()" class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -226,6 +228,11 @@
             </svg>
             {{ submittingReport() ? 'Submitting...' : 'Submit Report' }}
           </button>
+          <!-- Debug info (remove after testing) -->
+          <div style="font-size: 10px; color: #666; margin-top: 4px;">
+            Debug: selectedReason={{selectedReason()}}, submitting={{submittingReport()}}, disabled={{!selectedReason()
+            || submittingReport()}}
+          </div>
         </div>
       </div>
     </div>
