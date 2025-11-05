@@ -256,7 +256,6 @@
                                     <th>Status</th>
                                     <th>Posts</th>
                                     <th>Followers</th>
-                                    <th>Last Seen</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -283,7 +282,6 @@
                                     </td>
                                     <td>{{ user.posts }}</td>
                                     <td>{{ user.followers }}</td>
-                                    <td>{{ formatDate(user.createdAt) }}</td>
                                     <td class="actions-cell">
                                         <div class="action-buttons">
                                             <button (click)="openBanModal(user)" class="action-btn action-danger"

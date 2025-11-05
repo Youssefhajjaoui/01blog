@@ -126,7 +126,6 @@ export class PostDetailComponent implements OnInit {
 
     this.postService.deletePost(this.post.id).subscribe({
       next: () => {
-        'deleted', this.post?.id;
         // this.deleted.emit(this.post.id);
         this.router.navigateByUrl('/');
       },

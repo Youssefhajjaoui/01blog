@@ -73,7 +73,7 @@ export class NotificationService {
           this.updateUnreadCount();
         }),
         catchError((error) => {
-          'Failed to load notifications:', error;
+          console.warn('Failed to load notifications:', error);
           // Return empty array on error (e.g., user not authenticated)
           return of([]);
         })
@@ -98,7 +98,7 @@ export class NotificationService {
         map((response) => response.count),
         tap((count) => this.unreadCountSubject.next(count)),
         catchError((error) => {
-          'Failed to load unread count:', error;
+          console.warn('Failed to load unread count:', error);
           // Return 0 on error (e.g., user not authenticated)
           return of(0);
         })
@@ -200,7 +200,7 @@ export class NotificationService {
           this.updateUnreadCount();
         }),
         catchError((error) => {
-          'Failed to mark notification as read:', error;
+          console.warn('Failed to mark notification as read:', error);
           return of(void 0);
         })
       );
