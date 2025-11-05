@@ -51,7 +51,7 @@
                                     </svg>
                                 </button>
                                 <div *ngIf="showMenu()" class="menu-dropdown">
-                                    <button *ngIf="isOwner && !editMode()" class="menu-item"
+                                    <button *ngIf="isOwner && !editMode() && !post.hidden" class="menu-item"
                                         (click)="handleEdit($event)">
                                         <svg class="menu-item-icon" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
