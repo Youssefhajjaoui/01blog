@@ -179,32 +179,38 @@ public class User implements UserDetails {
 		return banned && (banEnd == null || banEnd.isAfter(LocalDateTime.now()));
 	}
 
+	@JsonIgnore
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
 	}
 
 	// UserDetails interface methods
 	@Override
+	@JsonIgnore
 	public String getPassword() {
 		return passwordHash;
 	}
 
 	@Override
+	@JsonIgnore
 	public boolean isAccountNonExpired() {
 		return true; // Account never expires
 	}
 
 	@Override
+	@JsonIgnore
 	public boolean isAccountNonLocked() {
 		return !isCurrentlyBanned(); // Account is locked if currently banned
 	}
 
 	@Override
+	@JsonIgnore
 	public boolean isCredentialsNonExpired() {
 		return true; // Credentials never expire
 	}
 
 	@Override
+	@JsonIgnore
 	public boolean isEnabled() {
 		return !isCurrentlyBanned(); // User is enabled if not currently banned
 	}

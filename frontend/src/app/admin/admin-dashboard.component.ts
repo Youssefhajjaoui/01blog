@@ -6,12 +6,13 @@ import { User, Post, Report, DashboardStats } from '../models';
 import { Observable, forkJoin, of, Subject } from 'rxjs';
 import { map, catchError, takeUntil } from 'rxjs/operators';
 import { NavbarComponent } from '../components/navbar/navbar.component';
+import { ConfirmationDialogComponent } from '../components/confirmation-dialog/confirmation-dialog.component';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, ConfirmationDialogComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
 })
@@ -21,7 +22,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   posts = signal<Post[]>([]);
   reports = signal<Report[]>([]);
   stats = signal<DashboardStats | null>(null);
-  constructor(private adminService: AdminService, private router: Router) {}
+  constructor(private adminService: AdminService, private router: Router) { }
 
   // UI state
   activeTab = signal('overview');
@@ -38,6 +39,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   banReason = signal('');
   deleteReason = signal('');
   isPermanentBan = signal(false);
+
+  // Confirmation dialog state
+  showConfirmDialog = signal(false);
+  confirmDialogTitle = signal('');
+  confirmDialogMessage = signal('');
+  confirmDialogType = signal<'danger' | 'warning' | 'info'>('info');
+  confirmDialogConfirmText = signal('Confirm');
+  pendingAction = signal<(() => void) | null>(null);
 
   // Change detection
   private destroy$ = new Subject<void>();
@@ -343,93 +352,147 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.selectedReport.set(null);
   }
 
+  // Helper method to show confirmation dialog
+  showConfirmation(
+    title: string,
+    message: string,
+    type: 'danger' | 'warning' | 'info' = 'info',
+    confirmText: string = 'Confirm',
+    action: () => void
+  ): void {
+    this.confirmDialogTitle.set(title);
+    this.confirmDialogMessage.set(message);
+    this.confirmDialogType.set(type);
+    this.confirmDialogConfirmText.set(confirmText);
+    this.pendingAction.set(action);
+    this.showConfirmDialog.set(true);
+  }
+
+  onConfirmDialogConfirmed(): void {
+    const action = this.pendingAction();
+    if (action) {
+      action();
+    }
+    this.showConfirmDialog.set(false);
+    this.pendingAction.set(null);
+  }
+
+  onConfirmDialogCancelled(): void {
+    this.showConfirmDialog.set(false);
+    this.pendingAction.set(null);
+  }
+
   // Execute ban
   executeBan() {
     const user = this.selectedUser();
     if (!user) return;
 
-    this.adminService
-      .banUser(
-        user.id,
-        this.isPermanentBan(),
-        this.banDuration(),
-        this.banDurationUnit(),
-        this.banReason()
-      )
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          console.log('User banned:', user.id);
+    const banAction = () => {
+      this.adminService
+        .banUser(
+          user.id,
+          this.isPermanentBan(),
+          this.banDuration(),
+          this.banDurationUnit(),
+          this.banReason()
+        )
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            console.log('User banned:', user.id);
 
-          // Update user status immediately for better UX
-          this.users.update((users) => {
-            const userIndex = users.findIndex((u) => u.id === user.id);
-            if (userIndex !== -1) {
-              const newUsers = [...users];
-              newUsers[userIndex] = { ...newUsers[userIndex], banned: true };
-              return newUsers;
-            }
-            return users;
-          });
-
-          // If this ban was triggered from a report, mark it as resolved
-          const report = this.selectedReport();
-          if (report) {
-            this.reports.update((reports) => {
-              const reportIndex = reports.findIndex((r) => r.id === report.id);
-              if (reportIndex !== -1) {
-                this.adminService.resolveReport(report.id).subscribe({
-                  next: () => {
-                    newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
-                    return newReports;
-                  },
-                });
-                const newReports = [...reports];
+            // Update user status immediately for better UX
+            this.users.update((users) => {
+              const userIndex = users.findIndex((u) => u.id === user.id);
+              if (userIndex !== -1) {
+                const newUsers = [...users];
+                newUsers[userIndex] = { ...newUsers[userIndex], banned: true };
+                return newUsers;
               }
-              return reports;
+              return users;
             });
-          }
 
-          this.updateTabBadges();
-          // ✨ No more detectChanges!
-          this.closeModals();
-          // Also refresh full data to ensure consistency
-          setTimeout(() => this.loadDashboardData(), 500);
-        },
-        error: (error) => {
-          console.error('Error banning user:', error);
-          alert('Error banning user: ' + (error.error || error.message || 'Unknown error'));
-        },
-      });
+            // If this ban was triggered from a report, mark it as resolved
+            const report = this.selectedReport();
+            if (report) {
+              this.reports.update((reports) => {
+                const reportIndex = reports.findIndex((r) => r.id === report.id);
+                if (reportIndex !== -1) {
+                  this.adminService.resolveReport(report.id).subscribe({
+                    next: () => {
+                      newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
+                      return newReports;
+                    },
+                  });
+                  const newReports = [...reports];
+                }
+                return reports;
+              });
+            }
+
+            this.updateTabBadges();
+            // ✨ No more detectChanges!
+            this.closeModals();
+            // Also refresh full data to ensure consistency
+            setTimeout(() => this.loadDashboardData(), 500);
+          },
+          error: (error) => {
+            console.error('Error banning user:', error);
+            alert('Error banning user: ' + (error.error || error.message || 'Unknown error'));
+          },
+        });
+    };
+
+    const durationText = this.isPermanentBan()
+      ? 'permanently'
+      : `for ${this.banDuration()} ${this.banDurationUnit()}`;
+
+    this.showConfirmation(
+      'Confirm Ban User',
+      `Are you sure you want to ban user "${user.username}" ${durationText}? This action will restrict their access to the platform.`,
+      'danger',
+      'Ban User',
+      banAction
+    );
   }
 
   unbanUser(user: User) {
-    this.adminService
-      .unbanUser(user.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          console.log('User unbanned:', user.id);
-          // Update user status immediately for better UX
-          this.users.update((users) => {
-            const userIndex = users.findIndex((u) => u.id === user.id);
-            if (userIndex !== -1) {
-              const newUsers = [...users];
-              newUsers[userIndex] = { ...newUsers[userIndex], banned: false };
-              return newUsers;
-            }
-            return users;
-          });
-          this.updateTabBadges();
-          // ✨ No more detectChanges!
-          // Also refresh full data to ensure consistency
-          setTimeout(() => this.loadDashboardData(), 500);
-        },
-        error: (error) => {
-          console.error('Error unbanning user:', error);
-          // You could add a toast notification here
-        },
-      });
+    const unbanAction = () => {
+      this.adminService
+        .unbanUser(user.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            console.log('User unbanned:', user.id);
+            // Update user status immediately for better UX
+            this.users.update((users) => {
+              const userIndex = users.findIndex((u) => u.id === user.id);
+              if (userIndex !== -1) {
+                const newUsers = [...users];
+                newUsers[userIndex] = { ...newUsers[userIndex], banned: false };
+                return newUsers;
+              }
+              return users;
+            });
+            this.updateTabBadges();
+            // ✨ No more detectChanges!
+            // Also refresh full data to ensure consistency
+            setTimeout(() => this.loadDashboardData(), 500);
+          },
+          error: (error) => {
+            console.error('Error unbanning user:', error);
+            // You could add a toast notification here
+          },
+        });
+    };
+
+    this.showConfirmation(
+      'Confirm Unban User',
+      `Are you sure you want to unban user "${user.username}"? They will regain full access to the platform.`,
+      'warning',
+      'Unban User',
+      unbanAction
+    );
   }
 
   // Execute delete
@@ -437,87 +500,126 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const user = this.selectedUser();
     if (!user) return;
 
-    this.adminService
-      .deleteUser(user.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          console.log('User deleted:', user.id);
-          // Remove user from local array immediately
-          this.users.update((users) => users.filter((u) => u.id !== user.id));
-          this.updateTabBadges();
-          // ✨ No more detectChanges!
-          this.closeModals();
-          // Also refresh full data to ensure consistency
-          setTimeout(() => this.loadDashboardData(), 500);
-        },
-        error: (error) => {
-          console.error('Error deleting user:', error);
-          alert('Error deleting user: ' + (error.error || error.message || 'Unknown error'));
-        },
-      });
+    const deleteAction = () => {
+      this.adminService
+        .deleteUser(user.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            console.log('User deleted:', user.id);
+            // Remove user from local array immediately
+            this.users.update((users) => users.filter((u) => u.id !== user.id));
+            this.updateTabBadges();
+            // ✨ No more detectChanges!
+            this.closeModals();
+            // Also refresh full data to ensure consistency
+            setTimeout(() => this.loadDashboardData(), 500);
+          },
+          error: (error) => {
+            console.error('Error deleting user:', error);
+            alert('Error deleting user: ' + (error.error || error.message || 'Unknown error'));
+          },
+        });
+    };
+
+    this.showConfirmation(
+      'Confirm Delete User',
+      `Are you sure you want to permanently delete user "${user.username}"? This action cannot be undone and will delete all associated data including posts, comments, and likes.`,
+      'danger',
+      'Delete User',
+      deleteAction
+    );
   }
 
-  resolveReport(report: Report) {
-    this.adminService
-      .resolveReport(report.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          console.log('Report resolved:', report.id);
-          // Update report status immediately for better UX
-          this.reports.update((reports) => {
-            const reportIndex = reports.findIndex((r) => r.id === report.id);
-            if (reportIndex !== -1) {
-              const newReports = [...reports];
-              newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
-              return newReports;
-            }
-            return reports;
-          });
-          this.updateTabBadges();
-          // ✨ No more detectChanges!
-          // Also refresh full data to ensure consistency
-          setTimeout(() => this.loadDashboardData(), 500);
-        },
-        error: (error) => {
-          console.error('Error resolving report:', error);
-          // You could add a toast notification here
-        },
-      });
+  resolveReport(report: Report, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    const resolveAction = () => {
+      this.adminService
+        .resolveReport(report.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            console.log('Report resolved:', report.id);
+            // Update report status immediately for better UX
+            this.reports.update((reports) => {
+              const reportIndex = reports.findIndex((r) => r.id === report.id);
+              if (reportIndex !== -1) {
+                const newReports = [...reports];
+                newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
+                return newReports;
+              }
+              return reports;
+            });
+            this.updateTabBadges();
+            // ✨ No more detectChanges!
+            // Also refresh full data to ensure consistency
+            setTimeout(() => this.loadDashboardData(), 500);
+          },
+          error: (error) => {
+            console.error('Error resolving report:', error);
+            // You could add a toast notification here
+          },
+        });
+    };
+
+    this.showConfirmation(
+      'Confirm Resolve Report',
+      `Are you sure you want to mark this report as resolved? This will close the report and remove it from the pending list.`,
+      'info',
+      'Resolve',
+      resolveAction
+    );
   }
 
-  dismissReport(report: Report) {
-    this.adminService
-      .dismissReport(report.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          console.log('Report dismissed:', report.id);
-          // Update report status immediately for better UX
-          this.reports.update((reports) => {
-            const reportIndex = reports.findIndex((r) => r.id === report.id);
-            if (reportIndex !== -1) {
-              const newReports = [...reports];
-              newReports[reportIndex] = { ...newReports[reportIndex], status: 'DISMISSED' };
-              return newReports;
-            }
-            return reports;
-          });
-          this.updateTabBadges();
-          // ✨ No more detectChanges!
-          // Also refresh full data to ensure consistency
-          setTimeout(() => this.loadDashboardData(), 500);
-        },
-        error: (error) => {
-          console.error('Error dismissing report:', error);
-          // You could add a toast notification here
-        },
-      });
+  dismissReport(report: Report, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    const dismissAction = () => {
+      this.adminService
+        .dismissReport(report.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            console.log('Report dismissed:', report.id);
+            // Update report status immediately for better UX
+            this.reports.update((reports) => {
+              const reportIndex = reports.findIndex((r) => r.id === report.id);
+              if (reportIndex !== -1) {
+                const newReports = [...reports];
+                newReports[reportIndex] = { ...newReports[reportIndex], status: 'DISMISSED' };
+                return newReports;
+              }
+              return reports;
+            });
+            this.updateTabBadges();
+            // ✨ No more detectChanges!
+            // Also refresh full data to ensure consistency
+            setTimeout(() => this.loadDashboardData(), 500);
+          },
+          error: (error) => {
+            console.error('Error dismissing report:', error);
+            // You could add a toast notification here
+          },
+        });
+    };
+
+    this.showConfirmation(
+      'Confirm Dismiss Report',
+      `Are you sure you want to dismiss this report? This will mark it as dismissed and remove it from the pending list.`,
+      'warning',
+      'Dismiss',
+      dismissAction
+    );
   }
 
   // Handle reported user actions
-  banReportedUser(report: Report) {
+  banReportedUser(report: Report, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
     const targetUser = this.getTargetUser(report);
     if (!targetUser || this.isAdminUser(targetUser)) {
       alert('Cannot ban this user');
@@ -534,50 +636,55 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.showBanModal.set(true);
   }
 
-  deleteReportedUser(report: Report) {
+  deleteReportedUser(report: Report, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
     const targetUser = this.getTargetUser(report);
     if (!targetUser || this.isAdminUser(targetUser)) {
       alert('Cannot delete this user');
       return;
     }
 
-    if (
-      !confirm(
-        `Are you sure you want to delete user "${targetUser.username}"? This action cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    const deleteAction = () => {
+      this.adminService
+        .deleteUser(targetUser.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            console.log('Reported user deleted:', targetUser.id);
+            // Mark report as resolved
+            this.reports.update((reports) => {
+              const reportIndex = reports.findIndex((r) => r.id === report.id);
+              if (reportIndex !== -1) {
+                const newReports = [...reports];
+                newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
+                return newReports;
+              }
+              return reports;
+            });
+            // Remove user from list
+            this.users.update((users) => users.filter((u) => u.id !== targetUser.id));
+            this.updateTabBadges();
+            setTimeout(() => this.loadDashboardData(), 500);
+          },
+          error: (error) => {
+            console.error('Error deleting reported user:', error);
+          },
+        });
+    };
 
-    this.adminService
-      .deleteUser(targetUser.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          console.log('Reported user deleted:', targetUser.id);
-          // Mark report as resolved
-          this.reports.update((reports) => {
-            const reportIndex = reports.findIndex((r) => r.id === report.id);
-            if (reportIndex !== -1) {
-              const newReports = [...reports];
-              newReports[reportIndex] = { ...newReports[reportIndex], status: 'RESOLVED' };
-              return newReports;
-            }
-            return reports;
-          });
-          // Remove user from list
-          this.users.update((users) => users.filter((u) => u.id !== targetUser.id));
-          this.updateTabBadges();
-          setTimeout(() => this.loadDashboardData(), 500);
-        },
-        error: (error) => {
-          console.error('Error deleting reported user:', error);
-        },
-      });
+    this.showConfirmation(
+      'Confirm Delete User',
+      `Are you sure you want to permanently delete user "${targetUser.username}"? This action cannot be undone and will delete all associated data including posts, comments, and likes.`,
+      'danger',
+      'Delete User',
+      deleteAction
+    );
   }
 
   deletePost(post: Post) {
-    if (confirm(`Are you sure you want to delete this post?`)) {
+    const deleteAction = () => {
       this.adminService
         .deletePost(post.id)
         .pipe(takeUntil(this.destroy$))
@@ -595,7 +702,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             // You could add a toast notification here
           },
         });
-    }
+    };
+
+    const postTitle = post.title ? `"${post.title}"` : 'this post';
+    this.showConfirmation(
+      'Confirm Delete Post',
+      `Are you sure you want to permanently delete ${postTitle}? This action cannot be undone and will remove the post and all associated comments and likes.`,
+      'danger',
+      'Delete Post',
+      deleteAction
+    );
   }
 
   getTodayUsers(): number {

@@ -32,6 +32,7 @@ export class AppPostCardComponent implements OnInit, OnChanges {
   @Input()
   currentUser!: User | null;
   @Output() deleted = new EventEmitter<number>();
+  @Output() deleteRequest = new EventEmitter<{ postId: number; post: Post }>();
   @Output() updated = new EventEmitter<Post>();
   @Output() like = new EventEmitter<{ postId: number }>();
   @Output() subscribe = new EventEmitter<{ userId: number }>();
@@ -80,7 +81,7 @@ export class AppPostCardComponent implements OnInit, OnChanges {
     private userService: UserService,
     private notificationService: UINotificationService,
     private adminService: AdminService
-  ) {}
+  ) { }
 
   reportReasons = [
     {
@@ -396,16 +397,8 @@ export class AppPostCardComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.postService.deletePost(this.post.id).subscribe({
-      next: () => {
-        this.notificationService.success('Post deleted successfully');
-        this.deleted.emit(this.post.id);
-      },
-      error: (err) => {
-        console.error('Delete failed:', err);
-        this.notificationService.error('Failed to delete post. Please try again.');
-      },
-    });
+    // Emit delete request event to parent component (home)
+    this.deleteRequest.emit({ postId: this.post.id, post: this.post });
   }
 
   handleUserClick(event: Event) {

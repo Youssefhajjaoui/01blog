@@ -20,6 +20,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import com.example.demo.dtos.PostDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
@@ -65,12 +66,15 @@ public class Post {
 	private String hideReason;
 
 	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+	@JsonIgnore
 	private List<Like> likes;
 
 	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+	@JsonIgnore
 	private List<Comment> comments;
 
 	@OneToMany(mappedBy = "reportedPost", cascade = CascadeType.ALL)
+	@JsonIgnore
 	private List<Report> reports;
 
 	public Post() {
@@ -100,6 +104,7 @@ public class Post {
 		this.title = title;
 	}
 
+	@JsonIgnore
 	public User getCreator() {
 		return creator;
 	}

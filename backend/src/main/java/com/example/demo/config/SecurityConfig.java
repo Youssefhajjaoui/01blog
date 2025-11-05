@@ -105,12 +105,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:9090"));
+        // Allow frontend origins and gateway origin for SSE connections
+        // Using allowedOriginPatterns for flexibility with credentials
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+            "http://localhost:*",     // All localhost ports (dev flexibility)
+            "http://127.0.0.1:*"     // Alternative localhost IP
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        configuration.setExposedHeaders(Arrays.asList("Set-Cookie", "Authorization"));
+        configuration.setExposedHeaders(Arrays.asList("Set-Cookie", "Authorization", "Content-Type", "Cache-Control"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -121,6 +126,10 @@ public class SecurityConfig {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // Ignore unknown properties to prevent deserialization errors
+        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // Ignore empty beans
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         return mapper;
     }
 }

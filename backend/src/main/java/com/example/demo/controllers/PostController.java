@@ -128,7 +128,7 @@ public class PostController {
 
     // ----------------- UPDATE -----------------
     @PutMapping("/{id}")
-    public ResponseEntity<Post> updatePost(@PathVariable Long id,
+    public ResponseEntity<PostDto> updatePost(@PathVariable Long id,
             @RequestBody Post postDetails,
             @AuthenticationPrincipal User principal) {
         if (principal == null) {
@@ -172,7 +172,8 @@ public class PostController {
         post.setUpdatedAt(java.time.LocalDateTime.now());
 
         Post updated = postRepository.save(post);
-        return ResponseEntity.ok(updated);
+        // Return PostDto instead of Post entity to avoid serialization issues
+        return ResponseEntity.ok(mapToDto(updated, principal));
     }
 
     // ----------------- DELETE -----------------

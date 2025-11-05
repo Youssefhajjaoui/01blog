@@ -284,8 +284,12 @@
                                     <td>{{ user.followers }}</td>
                                     <td class="actions-cell">
                                         <div class="action-buttons">
-                                            <button (click)="openBanModal(user)" class="action-btn action-danger"
+                                            <button *ngIf="!user.banned" (click)="openBanModal(user)"
+                                                class="action-btn action-danger"
                                                 [disabled]="isAdminUser(user)">Ban</button>
+                                            <button *ngIf="user.banned" (click)="unbanUser(user)"
+                                                class="action-btn action-success"
+                                                [disabled]="isAdminUser(user)">Unban</button>
                                             <button (click)="openDeleteModal(user)" class="action-btn action-danger"
                                                 [disabled]="isAdminUser(user)">Delete Account</button>
                                         </div>
@@ -375,23 +379,24 @@
                                 </div>
                             </div>
 
-                            <div class="report-actions">
+                            <div class="report-actions" (click)="$event.stopPropagation()">
                                 <!-- User Report Actions -->
                                 <div *ngIf="!report.reportedPost && report.status === 'PENDING'" class="user-actions">
-                                    <button (click)="banReportedUser(report)" class="action-btn action-warning">
+                                    <button (click)="banReportedUser(report, $event)" class="action-btn action-warning">
                                         Ban User
                                     </button>
-                                    <button (click)="deleteReportedUser(report)" class="action-btn action-danger">
+                                    <button (click)="deleteReportedUser(report, $event)"
+                                        class="action-btn action-danger">
                                         Delete User
                                     </button>
                                 </div>
 
                                 <!-- General Report Actions -->
-                                <button *ngIf="report.status === 'PENDING'" (click)="resolveReport(report)"
+                                <button *ngIf="report.status === 'PENDING'" (click)="resolveReport(report, $event)"
                                     class="action-btn action-success">
                                     Resolve
                                 </button>
-                                <button *ngIf="report.status === 'PENDING'" (click)="dismissReport(report)"
+                                <button *ngIf="report.status === 'PENDING'" (click)="dismissReport(report, $event)"
                                     class="action-btn action-secondary">
                                     Dismiss
                                 </button>
@@ -518,4 +523,10 @@
             </div>
         </div>
     </div>
+
+    <!-- Confirmation Dialog -->
+    <app-confirmation-dialog [show]="showConfirmDialog" [title]="confirmDialogTitle()"
+        [message]="confirmDialogMessage()" [type]="confirmDialogType()" [confirmText]="confirmDialogConfirmText()"
+        (confirmed)="onConfirmDialogConfirmed()" (cancelled)="onConfirmDialogCancelled()">
+    </app-confirmation-dialog>
 </div>

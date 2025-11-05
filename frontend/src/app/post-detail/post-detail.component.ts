@@ -9,6 +9,7 @@ import { UserService } from '../services/user.service';
 import { AdminService } from '../services/admin.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
 import { ReportModalComponent } from '../components/report-modal/report-modal.component';
+import { ConfirmationDialogComponent } from '../components/confirmation-dialog/confirmation-dialog.component';
 import { Post, User, Comment, CreateCommentRequest } from '../models';
 import { NotificationService as UINotificationService } from '../services/ui-notification.service';
 import { take } from 'rxjs';
@@ -16,7 +17,7 @@ import { take } from 'rxjs';
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, ReportModalComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, ReportModalComponent, ConfirmationDialogComponent],
   templateUrl: './post-detail.component.html',
   styleUrls: ['./post-detail.component.css'],
 })
@@ -49,6 +50,14 @@ export class PostDetailComponent implements OnInit {
 
   // Hide post modal state
   showHideModal = signal(false);
+
+  // Confirmation dialog state
+  showConfirmDialog = signal(false);
+  confirmDialogTitle = signal('');
+  confirmDialogMessage = signal('');
+  confirmDialogType = signal<'danger' | 'warning' | 'info'>('info');
+  confirmDialogConfirmText = signal('Confirm');
+  pendingAction = signal<(() => void) | null>(null);
   hideReason = signal('');
   hidingPost = signal(false);
 
@@ -138,22 +147,64 @@ export class PostDetailComponent implements OnInit {
     return this.currentUser()?.role === 'ADMIN';
   }
 
+  // Helper method to show confirmation dialog
+  showConfirmation(
+    title: string,
+    message: string,
+    type: 'danger' | 'warning' | 'info' = 'info',
+    confirmText: string = 'Confirm',
+    action: () => void
+  ): void {
+    this.confirmDialogTitle.set(title);
+    this.confirmDialogMessage.set(message);
+    this.confirmDialogType.set(type);
+    this.confirmDialogConfirmText.set(confirmText);
+    this.pendingAction.set(action);
+    this.showConfirmDialog.set(true);
+  }
+
+  onConfirmDialogConfirmed(): void {
+    const action = this.pendingAction();
+    if (action) {
+      action();
+    }
+    this.showConfirmDialog.set(false);
+    this.pendingAction.set(null);
+  }
+
+  onConfirmDialogCancelled(): void {
+    this.showConfirmDialog.set(false);
+    this.pendingAction.set(null);
+  }
+
   handleDelete(event: Event) {
     event.stopPropagation();
     console.log('Delete clicked for post:', this.post?.id);
 
     if (!this.post?.id) {
-      ('No post id found');
+      console.error('No post id found');
       return;
     }
 
-    this.postService.deletePost(this.post.id).subscribe({
-      next: () => {
-        // this.deleted.emit(this.post.id);
-        this.router.navigateByUrl('/');
-      },
-      error: (err) => console.error('Delete failed:', err),
-    });
+    const deleteAction = () => {
+      this.postService.deletePost(this.post!.id).subscribe({
+        next: () => {
+          this.router.navigateByUrl('/');
+        },
+        error: (err) => {
+          console.error('Delete failed:', err);
+        },
+      });
+    };
+
+    const postTitle = this.post.title ? `"${this.post.title}"` : 'this post';
+    this.showConfirmation(
+      'Confirm Delete Post',
+      `Are you sure you want to permanently delete ${postTitle}? This action cannot be undone and will remove the post and all associated comments and likes.`,
+      'danger',
+      'Delete Post',
+      deleteAction
+    );
   }
 
   handleLike() {
