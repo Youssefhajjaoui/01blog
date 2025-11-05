@@ -10,6 +10,7 @@ import { NavbarComponent } from '../components/navbar/navbar.component';
 import { SuggestionsService } from '../services/suggestions.service';
 import { NotificationService } from '../services/notification.service';
 import { NotificationService as UINotificationService } from '../services/ui-notification.service';
+import { ConfirmationDialogComponent } from '../components/confirmation-dialog/confirmation-dialog.component';
 import { User, Post, AppState, UserSuggestion } from '../models';
 
 const trendingTags = [
@@ -26,7 +27,7 @@ const trendingTags = [
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppPostCardComponent, NavbarComponent],
+  imports: [CommonModule, FormsModule, AppPostCardComponent, NavbarComponent, ConfirmationDialogComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css'],
 })
@@ -57,6 +58,14 @@ export class HomePageComponent implements OnInit {
   pageSize = signal(10);
   totalPosts = signal(0);
   hasMore = signal(true);
+
+  // Confirmation dialog state
+  showConfirmDialog = signal(false);
+  confirmDialogTitle = signal('');
+  confirmDialogMessage = signal('');
+  confirmDialogType = signal<'danger' | 'warning' | 'info'>('info');
+  confirmDialogConfirmText = signal('Confirm');
+  pendingDeletePost: { postId: number; post: Post } | null = null;
 
   // ✨ Computed signals for derived state
   filteredPosts = computed(() => {
@@ -122,7 +131,55 @@ export class HomePageComponent implements OnInit {
   }
   onPostDeleted(postId: number) {
     this.posts.update(posts => posts.filter((p) => p.id !== postId));
-    // Success message is handled by the post-card component
+    this.uiNotificationService.success('Post deleted successfully');
+  }
+
+  onDeleteRequest(event: { postId: number; post: Post }) {
+    this.pendingDeletePost = event;
+    const postTitle = event.post.title ? `"${event.post.title}"` : 'this post';
+    this.showConfirmation(
+      'Confirm Delete Post',
+      `Are you sure you want to permanently delete ${postTitle}? This action cannot be undone and will remove the post and all associated comments and likes.`,
+      'danger',
+      'Delete Post'
+    );
+  }
+
+  showConfirmation(
+    title: string,
+    message: string,
+    type: 'danger' | 'warning' | 'info' = 'info',
+    confirmText: string = 'Confirm'
+  ): void {
+    this.confirmDialogTitle.set(title);
+    this.confirmDialogMessage.set(message);
+    this.confirmDialogType.set(type);
+    this.confirmDialogConfirmText.set(confirmText);
+    this.showConfirmDialog.set(true);
+  }
+
+  onConfirmDialogConfirmed(): void {
+    if (this.pendingDeletePost) {
+      const { postId } = this.pendingDeletePost;
+      this.postService.deletePost(postId).subscribe({
+        next: () => {
+          this.onPostDeleted(postId);
+          this.showConfirmDialog.set(false);
+          this.pendingDeletePost = null;
+        },
+        error: (err) => {
+          console.error('Delete failed:', err);
+          this.uiNotificationService.error('Failed to delete post. Please try again.');
+          this.showConfirmDialog.set(false);
+          this.pendingDeletePost = null;
+        },
+      });
+    }
+  }
+
+  onConfirmDialogCancelled(): void {
+    this.showConfirmDialog.set(false);
+    this.pendingDeletePost = null;
   }
 
   onPostUpdated(updatedPost: Post) {

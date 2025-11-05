@@ -444,3 +444,9 @@
         </div>
     </div>
 </div>
+
+<!-- Confirmation Dialog -->
+<app-confirmation-dialog [show]="showConfirmDialog" [title]="confirmDialogTitle()" [message]="confirmDialogMessage()"
+    [type]="confirmDialogType()" [confirmText]="confirmDialogConfirmText()" (confirmed)="onConfirmDialogConfirmed()"
+    (cancelled)="onConfirmDialogCancelled()">
+</app-confirmation-dialog>

@@ -161,7 +161,7 @@ export class NotificationService {
       });
 
       this.eventSource.onerror = (error) => {
-        console.error('❌ SSE connection error:', error);
+        // console.error('❌ SSE connection error:', error);
         // The connection will automatically attempt to reconnect
         // If you want to prevent reconnection, call this.disconnect()
       };

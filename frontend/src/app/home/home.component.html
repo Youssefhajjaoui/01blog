@@ -100,7 +100,7 @@
                 [currentUser]="state.currentUser || null" [variant]="'grid'" [showExcerpt]="true"
                 (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)" (comment)="onComment($event)"
                 (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)" (report)="onReport($event)"
-                (deleted)="onPostDeleted($event)" (updated)="onPostUpdated($event)"></app-post-card>
+                (deleteRequest)="onDeleteRequest($event)" (updated)="onPostUpdated($event)"></app-post-card>
             </div>
 
             <!-- List View -->
@@ -109,7 +109,7 @@
                 [currentUser]="state.currentUser || null" [variant]="'feed'" [showExcerpt]="true"
                 (like)="onLike($event)" (subscribe)="onSubscribeEvent($event)" (comment)="onComment($event)"
                 (postClick)="onPostClick($event)" (userClick)="onUserClickEvent($event)" (report)="onReport($event)"
-                (deleted)="onPostDeleted($event)" (updated)="onPostUpdated($event)"></app-post-card>
+                (deleteRequest)="onDeleteRequest($event)" (updated)="onPostUpdated($event)"></app-post-card>
             </div>
 
             <!-- Pagination -->
@@ -249,3 +249,9 @@
     </div>
   </div>
 </div>
+
+<!-- Confirmation Dialog -->
+<app-confirmation-dialog [show]="showConfirmDialog()" [title]="confirmDialogTitle()" [message]="confirmDialogMessage()"
+  [type]="confirmDialogType()" [confirmText]="confirmDialogConfirmText()" (confirmed)="onConfirmDialogConfirmed()"
+  (cancelled)="onConfirmDialogCancelled()">
+</app-confirmation-dialog>
