@@ -163,7 +163,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   markNotificationAsRead(notificationId: number) {
     this.notificationService.markAsRead(notificationId).subscribe({
-      next(value) { },
+      next(value) {},
       error(value) {
         console.error(value);
       },
@@ -183,7 +183,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   clearAllNotifications() {
     this.notificationService.clearAll().subscribe({
-      next(value) { },
+      next(value) {},
       error(value) {
         console.error(value);
       },
@@ -225,12 +225,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
       next: () => {
         // Logout successful - navigate to auth page
         this.router.navigate(['/auth']);
+        // localStorage.removeItem("currentUser");
       },
       error: (error) => {
         // Even if logout fails, clear local state and navigate
         console.error('Logout error:', error);
         this.router.navigate(['/auth']);
-      }
+      },
     });
   }
 

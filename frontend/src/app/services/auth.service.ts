@@ -4,6 +4,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { User, LoginRequest, RegisterRequest } from '../models';
 import { isPlatformBrowser, isPlatformServer } from '@angular/common';
+import { UserService } from './user.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -19,7 +20,7 @@ export class AuthService {
   public isAuthenticated = computed(() => this.currentUserSignal() !== null);
   public isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private userService: UserService) {
     // Use different API URL based on where code is running
     if (isPlatformServer(this.platformId)) {
       // Server-side (SSR in Docker): use gateway hostname
@@ -32,50 +33,52 @@ export class AuthService {
 
   /** Login - backend sets HttpOnly cookie automatically */
   login(loginData: LoginRequest): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/login`, loginData, {
-      withCredentials: true
-    }).pipe(
-      tap(() => {
-        // After successful login, fetch user data with statistics
-        this.checkAuth().subscribe();
-      }),
-      catchError((error: any) => {
-        // Extract error message from different possible formats
-        let errorMessage = 'Login failed. Please try again.';
-
-        // HttpClient error responses already contain full error details
-        if (error.error) {
-          // Handle JSON error response from backend
-          if (error.error.message) {
-            errorMessage = error.error.message;
-          } else if (error.error.error) {
-            errorMessage = error.error.error;
-          } else if (typeof error.error === 'string') {
-            errorMessage = error.error;
-          }
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-
-        // Log the full error for debugging
-        console.error('Login error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          error: error.error,
-          message: errorMessage,
-          url: error.url
-        });
-
-        // Preserve the original error structure so components can access all details
-        const customError: any = {
-          ...error,
-          error: error.error || { message: errorMessage },
-          message: errorMessage
-        };
-
-        return throwError(() => customError);
+    return this.http
+      .post<any>(`${this.API_URL}/login`, loginData, {
+        withCredentials: true,
       })
-    );
+      .pipe(
+        tap(() => {
+          // After successful login, fetch user data with statistics
+          this.checkAuth().subscribe(() => {});
+        }),
+        catchError((error: any) => {
+          // Extract error message from different possible formats
+          let errorMessage = 'Login failed. Please try again.';
+
+          // HttpClient error responses already contain full error details
+          if (error.error) {
+            // Handle JSON error response from backend
+            if (error.error.message) {
+              errorMessage = error.error.message;
+            } else if (error.error.error) {
+              errorMessage = error.error.error;
+            } else if (typeof error.error === 'string') {
+              errorMessage = error.error;
+            }
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+
+          // Log the full error for debugging
+          console.error('Login error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            error: error.error,
+            message: errorMessage,
+            url: error.url,
+          });
+
+          // Preserve the original error structure so components can access all details
+          const customError: any = {
+            ...error,
+            error: error.error || { message: errorMessage },
+            message: errorMessage,
+          };
+
+          return throwError(() => customError);
+        })
+      );
   }
 
   /** Register new user */
@@ -92,9 +95,23 @@ export class AuthService {
 
   /** Logout - backend clears cookie */
   logout(): Observable<void> {
-    return this.http
-      .post<void>(`${this.API_URL}/logout`, {}, { withCredentials: true })
-      .pipe(tap(() => this.currentUserSignal.set(null)));
+    return this.http.post<void>(`${this.API_URL}/logout`, {}, { withCredentials: true }).pipe(
+      tap(() => {
+        // Clear user data from both auth service and user service
+        this.clearUserData();
+      }),
+      catchError((error) => {
+        // Even if logout request fails, clear local user data
+        this.clearUserData();
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /** Clear user data from all services */
+  private clearUserData(): void {
+    this.currentUserSignal.set(null);
+    this.userService.clearUser();
   }
 
   /** Check authentication by requesting /me */

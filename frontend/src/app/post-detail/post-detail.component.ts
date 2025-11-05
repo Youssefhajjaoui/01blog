@@ -21,7 +21,7 @@ import { NotificationService as UINotificationService } from '../services/ui-not
 export class PostDetailComponent implements OnInit {
   post: Post | null = null;
   comments: Comment[] = [];
-  currentUser: User | null = null;
+  currentUser = signal<User | null>(null);
   loading = false;
   loadingComments = false;
   newCommentContent = '';
@@ -53,11 +53,21 @@ export class PostDetailComponent implements OnInit {
 
   ngOnInit() {
     // Get current user
-    this.userService.currentUser$.subscribe((user: any) => {
-      this.currentUser = user;
-      this.cd.detectChanges();
+    this.userService.currentUser$.subscribe({
+      next: (user) => {
+        if (user) {
+          console.warn(user);
+          this.currentUser.set(user);
+        } else {
+          // Re-run checkAuth if user is not loaded yet
+          this.authService.checkAuth().subscribe({
+            next: (authUser) => this.currentUser.set(authUser),
+            error: () => this.currentUser.set(null),
+          });
+        }
+        this.cd.detectChanges();
+      },
     });
-
     // Get post ID from route
     this.route.paramMap.subscribe((params) => {
       const postId = params.get('id');
