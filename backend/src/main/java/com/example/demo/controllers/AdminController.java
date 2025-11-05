@@ -474,9 +474,11 @@ public class AdminController {
         stats.setPendingReports(pendingReports);
         stats.setCriticalReports(Math.max(1, pendingReports / 3)); // Mock calculation
         stats.setResolvedReports(resolvedReports);
-        stats.setPlatformHealth(totalUsers != 0
+        double platformHealth = totalUsers != 0
                 ? ((double) (totalUsers - bannedUsers) / totalUsers) * 100
-                : 100);
+                : 100;
+
+        stats.setPlatformHealth(Math.round(platformHealth * 100.0) / 100.0);
         stats.setNewUsersThisMonth(newUsersThisMonth);
         stats.setNewPostsThisMonth(newPostsThisMonth);
 
