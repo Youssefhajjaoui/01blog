@@ -37,7 +37,7 @@
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
-                            <button *ngIf="post.author.id !== currentUser?.id" class="follow-btn"
+                            <button *ngIf="post.author.id !== currentUser()?.id" class="follow-btn"
                                 [class.following]="post.isSubscribed" (click)="handleSubscribe()">
                                 {{ post.isSubscribed ? 'Following' : 'Follow' }}
                             </button>
@@ -86,6 +86,15 @@
                                                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                         </svg>
                                         Restore Post
+                                    </button>
+                                    <button *ngIf="!isOwner && !isAdmin" class="menu-item menu-item-danger"
+                                        (click)="handleReport($event)">
+                                        <svg class="menu-item-icon" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                        </svg>
+                                        Report
                                     </button>
                                 </div>
                             </div>
@@ -245,8 +254,8 @@
                     <h2 class="comments-title">Comments ({{ post.comments }})</h2>
 
                     <!-- Add Comment Form -->
-                    <div *ngIf="currentUser" class="add-comment-form">
-                        <img [src]="getUserAvatarUrl(currentUser)" [alt]="currentUser.username"
+                    <div *ngIf="currentUser()" class="add-comment-form">
+                        <img [src]="getUserAvatarUrl(currentUser()!)" [alt]="currentUser()?.username"
                             class="comment-avatar" />
                         <div class="comment-input-wrapper">
                             <textarea [(ngModel)]="newCommentContent" placeholder="Add a comment..."
@@ -315,7 +324,7 @@
                                 <!-- Comment Actions -->
                                 <div class="comment-actions">
                                     <button
-                                        *ngIf="comment.author.id === currentUser?.id && editingCommentId !== comment.id"
+                                        *ngIf="comment.author.id === currentUser()?.id && editingCommentId !== comment.id"
                                         class="comment-action-btn" (click)="startEditComment(comment)">
                                         <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -324,7 +333,7 @@
                                         Edit
                                     </button>
                                     <button
-                                        *ngIf="(comment.author.id === currentUser?.id || isAdmin) && editingCommentId !== comment.id"
+                                        *ngIf="(comment.author.id === currentUser()?.id || isAdmin) && editingCommentId !== comment.id"
                                         class="comment-action-btn delete-btn" (click)="deleteComment(comment.id)">
                                         <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -365,7 +374,7 @@
                                 <span class="stat-label">Following</span>
                             </div>
                         </div>
-                        <button *ngIf="post.author.id !== currentUser?.id" class="follow-author-btn"
+                        <button *ngIf="post.author.id !== currentUser()?.id" class="follow-author-btn"
                             [class.following]="post.isSubscribed" (click)="handleSubscribe()">
                             {{ post.isSubscribed ? 'Following' : 'Follow' }}
                         </button>
@@ -375,6 +384,63 @@
                 <!-- More from Author -->
                 <!-- This could be implemented later to show more posts from the same author -->
             </aside>
+        </div>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<app-report-modal type="post" [show]="showReportModal" (close)="closeReportModal()" (submit)="onReportSubmit($event)">
+</app-report-modal>
+
+<!-- Hide Post Modal (Admin Only) -->
+<div *ngIf="showHideModal()" class="report-modal-overlay" (click)="closeHideModal($event)">
+    <div class="report-modal" (click)="$event.stopPropagation()">
+        <div class="report-modal-header">
+            <h3 class="report-modal-title">
+                <svg class="report-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+                Hide Post
+            </h3>
+            <button class="close-button" (click)="closeHideModal($event)">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="report-modal-content">
+            <p class="report-description">
+                Please provide a reason for hiding this post from public view. This reason will be stored for
+                administrative
+                purposes.
+            </p>
+
+            <div class="report-details">
+                <label class="details-label">Reason for hiding (optional)</label>
+                <textarea class="details-textarea" [ngModel]="hideReason()" (ngModelChange)="hideReason.set($event)"
+                    placeholder="e.g., Inappropriate content, spam, violation of community guidelines..."
+                    rows="4"></textarea>
+            </div>
+        </div>
+
+        <div class="report-modal-footer">
+            <button class="btn-cancel" (click)="closeHideModal($event)">
+                Cancel
+            </button>
+            <button class="btn-submit-report" (click)="submitHidePost($event)" [disabled]="hidingPost()"
+                [attr.aria-disabled]="hidingPost()">
+                <svg *ngIf="!hidingPost()" class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <svg *ngIf="hidingPost()" class="btn-icon spinner" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {{ hidingPost() ? 'Hiding...' : 'Hide Post' }}
+            </button>
         </div>
     </div>
 </div>

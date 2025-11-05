@@ -290,6 +290,20 @@ export class UserService {
   }
 
   /**
+   * Set user data directly without making an HTTP request
+   * Useful for syncing with AuthService after login
+   */
+  setUser(user: User | null): void {
+    if (user) {
+      this.currentUserSubject.next(user);
+      this.storageService.setItem(this.STORAGE_KEY, JSON.stringify(user));
+    } else {
+      this.currentUserSubject.next(null);
+      this.storageService.removeItem(this.STORAGE_KEY);
+    }
+  }
+
+  /**
    * Manually trigger authentication check
    * Useful for components that need to refresh user data
    */

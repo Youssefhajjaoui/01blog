@@ -8,13 +8,15 @@ import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import { AdminService } from '../services/admin.service';
 import { NavbarComponent } from '../components/navbar/navbar.component';
+import { ReportModalComponent } from '../components/report-modal/report-modal.component';
 import { Post, User, Comment, CreateCommentRequest } from '../models';
 import { NotificationService as UINotificationService } from '../services/ui-notification.service';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, ReportModalComponent],
   templateUrl: './post-detail.component.html',
   styleUrls: ['./post-detail.component.css'],
 })
@@ -39,6 +41,17 @@ export class PostDetailComponent implements OnInit {
   originalMediaUrl = signal('');
   originalMediaType = signal<'IMAGE' | 'VIDEO' | 'AUDIO' | null>(null);
 
+  // Report modal state
+  showReportModal = signal(false);
+  selectedReason = signal('');
+  reportDetails = signal('');
+  submittingReport = signal(false);
+
+  // Hide post modal state
+  showHideModal = signal(false);
+  hideReason = signal('');
+  hidingPost = signal(false);
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -49,25 +62,26 @@ export class PostDetailComponent implements OnInit {
     private adminService: AdminService,
     private cd: ChangeDetectorRef,
     private notificationService: UINotificationService
-  ) {}
+  ) { }
 
   ngOnInit() {
-    // Get current user
+    // Get current user immediately (if already loaded)
+    const currentUserValue = this.userService.getCurrentUser();
+    if (currentUserValue) {
+      this.currentUser.set(currentUserValue);
+    }
+
+    // Subscribe to user changes - will update when user logs in/out
     this.userService.currentUser$.subscribe({
       next: (user) => {
-        if (user) {
-          console.warn(user);
-          this.currentUser.set(user);
-        } else {
-          // Re-run checkAuth if user is not loaded yet
-          this.authService.checkAuth().subscribe({
-            next: (authUser) => this.currentUser.set(authUser),
-            error: () => this.currentUser.set(null),
-          });
-        }
+        this.currentUser.set(user);
         this.cd.detectChanges();
       },
     });
+
+    // Ensure user data is refreshed when component loads
+    // This handles the case where user logged out and logged back in
+    this.authService.checkAuth().subscribe();
     // Get post ID from route
     this.route.paramMap.subscribe((params) => {
       const postId = params.get('id');
@@ -117,12 +131,11 @@ export class PostDetailComponent implements OnInit {
   }
 
   get isOwner(): boolean {
-    return this.post?.author.id === this.currentUser?.id;
+    return this.post?.author.id === this.currentUser()?.id;
   }
 
   get isAdmin(): boolean {
-    this.currentUser?.role;
-    return this.currentUser?.role === 'ADMIN';
+    return this.currentUser()?.role === 'ADMIN';
   }
 
   handleDelete(event: Event) {
@@ -381,7 +394,7 @@ export class PostDetailComponent implements OnInit {
   }
 
   navigateToProfile(userId: number) {
-    if (userId === this.currentUser?.id) {
+    if (userId === this.currentUser()?.id) {
       this.router.navigate(['/profile']);
     } else {
       this.router.navigate(['/profile', userId]);
@@ -581,23 +594,51 @@ export class PostDetailComponent implements OnInit {
 
   handleHide(event: Event) {
     event.stopPropagation();
+    this.showMenu.set(false);
+    // Reset form state when opening modal
+    this.hideReason.set('');
+    this.hidingPost.set(false);
+    this.showHideModal.set(true);
+  }
+
+  closeHideModal(event: Event) {
+    event.stopPropagation();
+    this.showHideModal.set(false);
+    this.hideReason.set('');
+    this.hidingPost.set(false);
+  }
+
+  submitHidePost(event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
 
     if (!this.post?.id) {
       this.notificationService.error('Unable to hide post: Post ID not found');
       return;
     }
 
-    const reason = prompt('Please provide a reason for hiding this post (optional):');
-    this.adminService.hidePost(this.post.id, reason?.trim() || undefined).subscribe({
+    // Prevent double submission
+    if (this.hidingPost()) {
+      return;
+    }
+
+    this.hidingPost.set(true);
+
+    const reason = this.hideReason()?.trim() || undefined;
+    this.adminService.hidePost(this.post.id, reason).subscribe({
       next: () => {
+        this.hidingPost.set(false);
+        this.hideReason.set('');
+        this.showHideModal.set(false);
         this.notificationService.success('Post hidden successfully');
         // Update the post locally
         if (this.post) {
-          this.post = { ...this.post, hidden: true, hideReason: reason?.trim() };
+          this.post = { ...this.post, hidden: true, hideReason: reason };
         }
         this.cd.detectChanges();
       },
       error: (err) => {
+        this.hidingPost.set(false);
         console.error('Hide failed:', err);
         this.notificationService.error('Failed to hide post. Please try again.');
       },
@@ -607,15 +648,13 @@ export class PostDetailComponent implements OnInit {
   handleRestore(event: Event) {
     event.stopPropagation();
 
-    if (!confirm('Are you sure you want to restore this post?')) {
-      return;
-    }
-
     if (!this.post?.id) {
       this.notificationService.error('Unable to restore post: Post ID not found');
       return;
     }
 
+    // Use a styled confirmation - we can add a confirmation modal later if needed
+    // For now, just restore directly
     this.adminService.restorePost(this.post.id).subscribe({
       next: () => {
         this.notificationService.success('Post restored successfully');
@@ -625,9 +664,61 @@ export class PostDetailComponent implements OnInit {
         this.cd.detectChanges();
       },
       error: (err) => {
-        console.error('Restore failed:', err);
-        this.notificationService.error('Failed to restore post. Please try again.');
+        console.error('Error restoring post:', err);
+        this.notificationService.error('Failed to restore post');
       },
     });
+  }
+
+  handleReport(event: Event) {
+    event.stopPropagation();
+    this.showMenu.set(false);
+    // Reset form state when opening modal
+    this.selectedReason.set('');
+    this.reportDetails.set('');
+    this.submittingReport.set(false);
+    this.showReportModal.set(true);
+  }
+
+  closeReportModal() {
+    this.showReportModal.set(false);
+    this.selectedReason.set('');
+    this.reportDetails.set('');
+    this.submittingReport.set(false);
+  }
+
+  onReportSubmit(event: { reason: string; details: string }) {
+    if (!this.post?.id) {
+      this.notificationService.error('Unable to report post: Post ID not found');
+      return;
+    }
+
+    this.submittingReport.set(true);
+
+    const reportData = {
+      postId: this.post.id,
+      reason: event.reason,
+      details: event.details,
+    };
+
+    this.postService
+      .reportPost(reportData)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.submittingReport.set(false);
+          this.selectedReason.set('');
+          this.reportDetails.set('');
+          this.showReportModal.set(false);
+          this.notificationService.success(
+            'Report submitted successfully. Thank you for helping keep our community safe.'
+          );
+        },
+        error: (err) => {
+          this.submittingReport.set(false);
+          console.error('Failed to submit report:', err);
+          this.notificationService.error('Failed to submit report. Please try again.');
+        },
+      });
   }
 }

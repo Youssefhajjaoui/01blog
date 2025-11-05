@@ -40,7 +40,7 @@ export class AuthService {
       .pipe(
         tap(() => {
           // After successful login, fetch user data with statistics
-          this.checkAuth().subscribe(() => {});
+          this.checkAuth().subscribe(() => { });
         }),
         catchError((error: any) => {
           // Extract error message from different possible formats
@@ -122,10 +122,17 @@ export class AuthService {
       return of(true);
     }
     return this.http.get<User>(`${this.API_URL}/me`, { withCredentials: true }).pipe(
-      tap((user) => this.currentUserSignal.set(user)),
+      tap((user) => {
+        // Update both auth service and user service to keep them in sync
+        this.currentUserSignal.set(user);
+        // Directly update user service with the data we already fetched (avoid duplicate API call)
+        this.userService.setUser(user);
+      }),
       map(() => true),
       catchError(() => {
         this.currentUserSignal.set(null);
+        // Clear user service on auth failure
+        this.userService.clearUser();
         return of(false);
       })
     );
